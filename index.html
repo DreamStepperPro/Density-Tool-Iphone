@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>JBT Density Tool v2</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon.png">
+    <style>
+        :root { --red: #ff4d4d; --yellow: #ffdb4d; --green: #4dff88; --dark: #1a1a1a; --blue: #007bff; --grey: #f4f4f9; }
+        body { font-family: -apple-system, sans-serif; background: var(--grey); margin: 0; padding: 10px; -webkit-tap-highlight-color: transparent; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        /* Icons */
+        .icon { width: 24px; height: 24px; fill: currentColor; vertical-align: middle; }
+        
+        /* Navigation */
+        .top-nav { display: flex; justify-content: space-between; margin-bottom: 15px; gap: 10px; }
+        .lang-btn { background: var(--blue); color: white; border: none; padding: 8px 12px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
+        .machine-toggle { display: flex; gap: 5px; flex-grow: 1; }
+        .m-btn { flex: 1; padding: 12px; font-weight: bold; border: 2px solid #ddd; border-radius: 8px; background: white; transition: 0.2s; }
+        .active-m { background: var(--dark); color: white; border-color: var(--dark); }
+
+        /* Inputs & Locks */
+        .header-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; background: #f8f9fa; padding: 12px; border-radius: 8px; }
+        .input-group { position: relative; display: flex; align-items: center; }
+        .lock-btn { background: none; border: none; padding: 0 0 0 8px; cursor: pointer; color: #ccc; transition: 0.2s; }
+        .lock-btn.locked { color: var(--blue); }
+        
+        label { font-size: 0.75rem; font-weight: bold; color: #555; display: block; margin-bottom: 4px; text-transform: uppercase; }
+        input, select { width: 100%; padding: 12px; font-size: 1.1rem; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        
+        /* Lane Cards */
+        .lane-card { border: 2px solid #ddd; padding: 12px; margin-bottom: 10px; border-radius: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; transition: 0.3s; }
+        .lane-header { grid-column: span 2; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 5px; margin-bottom: 5px;}
+        .lane-label { font-weight: 800; font-size: 1.1rem; }
+        
+        /* Result Box (Clickable) */
+        .result-box { grid-column: span 2; padding: 12px; font-weight: bold; text-align: center; border-radius: 8px; background: rgba(255,255,255,0.8); border: 2px dashed rgba(0,0,0,0.2); cursor: pointer; position: relative; user-select: none; }
+        .result-box:active { transform: scale(0.98); background: #fff; }
+        .tap-hint { display: block; font-size: 0.65rem; text-transform: uppercase; color: #555; margin-top: 2px; }
+
+        /* Footer Stats */
+        .stats-footer { background: var(--dark); color: white; padding: 12px; border-radius: 10px; display: flex; justify-content: space-around; align-items: center; margin-bottom: 15px; }
+        .stat-item { text-align: center; }
+        .stat-val { display: block; font-size: 1.4rem; font-weight: bold; }
+        .stat-lbl { font-size: 0.7rem; text-transform: uppercase; opacity: 0.8; }
+
+        /* Action Buttons */
+        .action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        button.action { border: none; padding: 16px; border-radius: 10px; font-weight: bold; font-size: 1rem; cursor: pointer; }
+        .save-btn { background: var(--blue); color: white; }
+        .reset-btn { background: var(--red); color: white; }
+        
+        /* History */
+        .history-section { margin-top: 25px; border-top: 2px solid #eee; padding-top: 15px; }
+        .scroll-box { overflow-x: auto; margin-top: 10px; border-radius: 8px; }
+        .history-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; background: #fff; }
+        .history-table th, .history-table td { border: 1px solid #ddd; padding: 8px; text-align: center; white-space: nowrap; }
+        .history-table th { background: #eee; }
+        .export-btn { background: #28a745; color: white; width: 100%; margin-top: 10px; border:none; padding: 12px; border-radius: 8px; font-weight: bold;}
+        
+        small { font-weight: bold; color: #666; font-size: 0.7rem; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="top-nav">
+        <div class="machine-toggle">
+            <button id="m1Btn" class="m-btn active-m" onclick="switchMachine(1)">M1</button>
+            <button id="m2Btn" class="m-btn" onclick="switchMachine(2)">M2</button>
+        </div>
+        <button class="lang-btn" id="langToggle" onclick="toggleLanguage()">EN ⇄ ES</button>
+    </div>
+
+    <div class="header-controls">
+        <div>
+            <label id="lblProduct">Product</label>
+            <select id="mode" onchange="calculate()">
+                <option value="0.017" id="optBfast">Breakfast (0.017)</option>
+                <option value="0.01" id="optLunch">Lunch (0.01)</option>
+            </select>
+        </div>
+        <div>
+            <label id="lblTarget">Target Weight</label>
+            <div class="input-group">
+                <input type="number" id="target" placeholder="101" oninput="calculate()" pattern="\d*">
+                <button class="lock-btn" id="lock-target" onclick="toggleLock('target')">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="lanesContainer">
+        </div>
+
+    <div class="stats-footer">
+        <div class="stat-item">
+            <span class="stat-val" id="machAvg">--</span>
+            <span class="stat-lbl" id="lblMachAvg">Avg Weight</span>
+        </div>
+        <div style="width:1px; height:30px; background:rgba(255,255,255,0.3);"></div>
+        <div class="stat-item">
+            <span class="stat-val" id="stdDev">--</span>
+            <span class="stat-lbl" id="lblStdDev">Std Dev</span>
+        </div>
+    </div>
+
+    <div class="action-btns">
+        <button class="action save-btn" id="btnSave" onclick="saveToHistory()">SAVE</button>
+        <button class="action reset-btn" id="btnReset" onclick="resetMachine()">RESET</button>
+    </div>
+
+    <div class="history-section">
+        <h3 id="lblHistory">Shift History</h3>
+        <button class="export-btn" id="btnExport" onclick="exportToCSV()">EXPORT TO EXCEL (.CSV)</button>
+        <div class="scroll-box">
+            <table class="history-table" id="histTable">
+                <thead>
+                    <tr>
+                        <th id="thTime">Time</th><th id="thMach">M#</th><th id="thProd">Prod</th>
+                        <th>Avg</th><th>SD</th>
+                        <th>L1</th><th>L2</th><th>L3</th><th>L4</th>
+                    </tr>
+                </thead>
+                <tbody id="histBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentLang = 'en';
+    let currentMachine = 1;
+    let historyData = [];
+    
+    // Lock States
+    let locks = {
+        target: false,
+        l1: false, l2: false, l3: false, l4: false
+    };
+
+    const translations = {
+        en: {
+            product: "Product", bfast: "Breakfast (0.017)", lunch: "Lunch (0.01)",
+            target: "Target Weight (g)", lane: "Lane", currDens: "Curr. Density", 
+            avgWt: "Avg Weight", newDens: "New", machAvg: "Avg Weight", stdDev: "Std Dev",
+            reset: "RESET", save: "SAVE", history: "Shift History", export: "EXPORT TO EXCEL",
+            thTime: "Time", thMach: "M#", thProd: "Prod", confirm: "Reset Machine?",
+            tapApply: "TAP TO APPLY"
+        },
+        es: {
+            product: "Producto", bfast: "Desayuno (0.017)", lunch: "Almuerzo (0.01)",
+            target: "Peso Meta (g)", lane: "Carril", currDens: "Densidad Act.", 
+            avgWt: "Peso Prom.", newDens: "Nueva", machAvg: "Peso Prom.", stdDev: "Desv. Est.",
+            reset: "REINICIAR", save: "GUARDAR", history: "Historial", export: "EXPORTAR A EXCEL",
+            thTime: "Hora", thMach: "M#", thProd: "Prod", confirm: "¿Reiniciar máquina?",
+            tapApply: "TOCAR PARA APLICAR"
+        }
+    };
+
+    // Store data per machine
+    let data = {
+        1: { target: '', mode: '0.017', lanes: [ {d:'', w:''}, {d:'', w:''}, {d:'', w:''}, {d:'', w:''} ] },
+        2: { target: '', mode: '0.017', lanes: [ {d:'', w:''}, {d:'', w:''}, {d:'', w:''}, {d:'', w:''} ] }
+    };
+
+    // INITIALIZATION
+    function init() {
+        const container = document.getElementById('lanesContainer');
+        let html = '';
+        for(let i=1; i<=4; i++) {
+            html += `
+                <div class="lane-card" id="card-${i}">
+                    <div class="lane-header">
+                        <div class="lane-label" id="laneTitle-${i}">Lane ${i}</div>
+                        <button class="lock-btn" id="lock-l${i}" onclick="toggleLock('l${i}')">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/></svg>
+                        </button>
+                    </div>
+                    <div class="input-group">
+                        <div style="width:100%">
+                            <small class="lblDensity">Curr. Density</small>
+                            <input type="number" id="currDens-${i}" step="0.001" oninput="calculate()" pattern="[0-9.]*">
+                        </div>
+                    </div>
+                    <div>
+                        <small class="lblAvgWt">Avg Weight</small>
+                        <input type="number" id="avgWt-${i}" oninput="calculate()" pattern="\\d*">
+                    </div>
+                    <div class="result-box" id="resBox-${i}" onclick="applyDensity(${i})">
+                        <span id="resVal-${i}">--</span>
+                        <span class="tap-hint" id="tapHint-${i}">TAP TO APPLY</span>
+                    </div>
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+        updateUI();
+    }
+
+    function toggleLock(key) {
+        locks[key] = !locks[key];
+        const btn = document.getElementById(`lock-${key}`);
+        if(locks[key]) {
+            btn.classList.add('locked');
+            // Change icon to locked
+             btn.innerHTML = `<svg class="icon" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>`;
+        } else {
+            btn.classList.remove('locked');
+             btn.innerHTML = `<svg class="icon" viewBox="0 0 24 24"><path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/></svg>`;
+        }
+    }
+
+    function applyDensity(i) {
+        const newValText = document.getElementById(`resVal-${i}`).innerText.split(": ")[1];
+        if(newValText && newValText !== "--") {
+            const newVal = parseFloat(newValText);
+            // Apply to density
+            document.getElementById(`currDens-${i}`).value = newVal;
+            // Clear weight
+            document.getElementById(`avgWt-${i}`).value = '';
+            // Recalc
+            calculate();
+        }
+    }
+
+    function toggleLanguage() {
+        currentLang = currentLang === 'en' ? 'es' : 'en';
+        updateUI();
+    }
+
+    function updateUI() {
+        const t = translations[currentLang];
+        document.getElementById('lblProduct').innerText = t.product;
+        document.getElementById('optBfast').innerText = t.bfast;
+        document.getElementById('optLunch').innerText = t.lunch;
+        document.getElementById('lblTarget').innerText = t.target;
+        document.getElementById('lblMachAvg').innerText = t.machAvg;
+        document.getElementById('lblStdDev').innerText = t.stdDev;
+        document.getElementById('btnReset').innerText = t.reset;
+        document.getElementById('btnSave').innerText = t.save;
+        document.getElementById('lblHistory').innerText = t.history;
+        document.getElementById('btnExport').innerText = t.export;
+        document.getElementById('thTime').innerText = t.thTime;
+        document.getElementById('thMach').innerText = t.thMach;
+        document.getElementById('thProd').innerText = t.thProd;
+
+        document.querySelectorAll('.lblDensity').forEach(el => el.innerText = t.currDens);
+        document.querySelectorAll('.lblAvgWt').forEach(el => el.innerText = t.avgWt);
+        document.querySelectorAll('.tap-hint').forEach(el => el.innerText = t.tapApply);
+        
+        for(let i=1; i<=4; i++) document.getElementById(`laneTitle-${i}`).innerText = `${t.lane} ${i}`;
+        calculate();
+        renderHistory();
+    }
+
+    function switchMachine(m) {
+        saveData(); // Save current screen to memory
+        currentMachine = m;
+        document.getElementById('m1Btn').className = m === 1 ? 'm-btn active-m' : 'm-btn';
+        document.getElementById('m2Btn').className = m === 2 ? 'm-btn active-m' : 'm-btn';
+        loadData(); // Load new machine from memory
+    }
+
+    function saveData() {
+        data[currentMachine].target = document.getElementById('target').value;
+        data[currentMachine].mode = document.getElementById('mode').value;
+        for(let i=1; i<=4; i++) {
+            data[currentMachine].lanes[i-1].d = document.getElementById(`currDens-${i}`).value;
+            data[currentMachine].lanes[i-1].w = document.getElementById(`avgWt-${i}`).value;
+        }
+    }
+
+    function loadData() {
+        const m = data[currentMachine];
+        document.getElementById('target').value = m.target;
+        document.getElementById('mode').value = m.mode;
+        for(let i=1; i<=4; i++) {
+            document.getElementById(`currDens-${i}`).value = m.lanes[i-1].d;
+            document.getElementById(`avgWt-${i}`).value = m.lanes[i-1].w;
+        }
+        calculate();
+    }
+
+    function calculate() {
+        const target = parseFloat(document.getElementById('target').value);
+        const factor = parseFloat(document.getElementById('mode').value);
+        let weights = [];
+        let count = 0;
+        const t = translations[currentLang];
+
+        for(let i=1; i<=4; i++) {
+            const currD = parseFloat(document.getElementById(`currDens-${i}`).value);
+            const avgW = parseFloat(document.getElementById(`avgWt-${i}`).value);
+            const valSpan = document.getElementById(`resVal-${i}`);
+            const card = document.getElementById(`card-${i}`);
+
+            if(!isNaN(target) && !isNaN(currD) && !isNaN(avgW)) {
+                const diff = avgW - target;
+                const newD = currD + (diff * factor);
+                valSpan.innerText = t.newDens + ": " + newD.toFixed(3);
+                
+                // NEW COLOR LOGIC: Round to nearest whole number
+                const roundedDiff = Math.round(Math.abs(diff));
+                
+                if(roundedDiff >= 4) card.style.backgroundColor = 'var(--red)';
+                else if(roundedDiff === 3) card.style.backgroundColor = 'var(--yellow)';
+                else if(roundedDiff <= 2) card.style.backgroundColor = 'var(--green)';
+                else card.style.backgroundColor = 'white';
+                
+                weights.push(avgW);
+                count++;
+            } else {
+                valSpan.innerText = t.newDens + ": --";
+                card.style.backgroundColor = 'white';
+            }
+        }
+        
+        // Calculate Mean and SD
+        if (count > 0) {
+            const mean = weights.reduce((a, b) => a + b, 0) / count;
+            document.getElementById('machAvg').innerText = mean.toFixed(1) + "g";
+            if (count > 1) {
+                const variance = weights.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / count;
+                document.getElementById('stdDev').innerText = Math.sqrt(variance).toFixed(2);
+            } else document.getElementById('stdDev').innerText = "--";
+        } else {
+            document.getElementById('machAvg').innerText = "--";
+            document.getElementById('stdDev').innerText = "--";
+        }
+    }
+
+    function resetMachine() {
+        if(confirm(translations[currentLang].confirm)) {
+            // Only clear target if NOT locked
+            if(!locks.target) {
+                document.getElementById('target').value = '';
+            }
+
+            for(let i=1; i<=4; i++) {
+                // Only clear density if lane is NOT locked
+                if(!locks['l'+i]) {
+                    document.getElementById(`currDens-${i}`).value = '';
+                }
+                // Always clear weight on reset
+                document.getElementById(`avgWt-${i}`).value = '';
+            }
+            calculate();
+        }
+    }
+
+    function saveToHistory() {
+        const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const prod = document.getElementById('mode').value == "0.017" ? "B-Fast" : "Lunch";
+        const avg = document.getElementById('machAvg').innerText;
+        const sd = document.getElementById('stdDev').innerText;
+        
+        let densities = [];
+        for(let i=1; i<=4; i++) {
+            const val = document.getElementById(`resVal-${i}`).innerText.split(": ")[1];
+            densities.push(val || "N/A");
+        }
+
+        historyData.unshift({ 
+            time, mach: "M" + currentMachine, prod, avg, sd, 
+            d1: densities[0], d2: densities[1], d3: densities[2], d4: densities[3] 
+        });
+        renderHistory();
+    }
+
+    function renderHistory() {
+        const body = document.getElementById('histBody');
+        body.innerHTML = historyData.map(h => `
+            <tr>
+                <td>${h.time}</td><td>${h.mach}</td><td>${h.prod}</td>
+                <td style="font-weight:bold">${h.avg}</td><td style="font-weight:bold">${h.sd}</td>
+                <td>${h.d1}</td><td>${h.d2}</td><td>${h.d3}</td><td>${h.d4}</td>
+            </tr>
+        `).join('');
+    }
+
+    function exportToCSV() {
+        let csv = "Time,Machine,Product,AvgWeight,StdDev,Lane1_Dens,Lane2_Dens,Lane3_Dens,Lane4_Dens\n";
+        historyData.forEach(h => {
+            csv += `${h.time},${h.mach},${h.prod},${h.avg},${h.sd},${h.d1},${h.d2},${h.d3},${h.d4}\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('hidden', '');
+        a.setAttribute('href', url);
+        a.setAttribute('download', 'shift_report.csv');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    // Run startup
+    init();
+</script>
+</body>
+</html>
