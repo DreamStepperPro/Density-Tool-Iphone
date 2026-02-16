@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icon.png">
     
-    <title>DSI Pro v11</title>
+    <title>DSI Pro v11.1</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
@@ -60,7 +60,7 @@
         .input-group { display: flex; gap: 5px; }
         input { width: 100%; padding: 12px; font-size: 1.1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--text); font-weight: bold; }
         
-        /* Read Only Logic for Density */
+        /* Read Only Logic */
         input.density-input:read-only { background: rgba(128,128,128,0.1); color: var(--text); opacity: 0.8; pointer-events: auto; }
         input.density-input:focus { background: var(--input-bg); border-color: var(--blue); outline: none; }
 
@@ -159,7 +159,7 @@
         
         <div class="modal-opt">
             <label id="lblMenuTarget">Target Weight (g)</label>
-            <input type="number" id="setTarget" oninput="updateTargetFromSettings()" style="background:var(--input-bg);">
+            <input type="number" id="setTarget" oninput="updateTargetLocal()" onblur="persist()" style="background:var(--input-bg);">
         </div>
 
         <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
@@ -290,7 +290,6 @@
     const FACTORS = { lunch: 0.01, bfast: 0.017 };
     let store = {}; let history = {}; let pressTimer; let lastTap = 0;
 
-    // --- TRANSLATIONS ---
     const T = {
         en: {
             title: "DSI Pro", target: "Target", newDens: "New Density", tapApply: "TAP TO APPLY", 
@@ -315,7 +314,7 @@
     };
 
     window.onload = function() {
-        const savedConfig = localStorage.getItem('dsi_config_v11');
+        const savedConfig = localStorage.getItem('dsi_config_v11_1');
         if (savedConfig) config = JSON.parse(savedConfig);
 
         updateText();
@@ -323,46 +322,31 @@
         if(!config.acceptedDisclaimer) {
             document.getElementById('disclaimerModal').style.display = 'flex';
         } else {
-            const hasData = localStorage.getItem('dsi_store_v11');
+            const hasData = localStorage.getItem('dsi_store_v11_1');
             if (!hasData) document.getElementById('setupWizard').style.display = 'flex';
             else document.getElementById('appContent').style.filter = 'none';
         }
         
-        loadStore();
-        applyTheme();
-        renderInterface();
-        initCloudSync();
+        loadStore(); applyTheme(); renderInterface(); initCloudSync();
     };
 
-    // --- FIREBASE CLOUD SYNC ENGINE ---
     function initCloudSync() {
-        // Connected Status Indicator
         const connectedRef = firebase.database().ref('.info/connected');
         connectedRef.on('value', (snap) => {
             const indicator = document.getElementById('cloudIndicator');
             if (snap.val() === true) {
-                indicator.innerHTML = "🟢 Online";
-                indicator.classList.add('cloud-online');
+                indicator.innerHTML = "🟢 Online"; indicator.classList.add('cloud-online');
             } else {
-                indicator.innerHTML = "🔴 Offline";
-                indicator.classList.remove('cloud-online');
+                indicator.innerHTML = "🔴 Offline"; indicator.classList.remove('cloud-online');
             }
         });
 
-        // Listen for Data Changes from coworkers
         appRef.on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                if (data.store) {
-                    store = data.store;
-                    localStorage.setItem('dsi_store_v11', JSON.stringify(store));
-                }
-                if (data.history) {
-                    history = data.history;
-                    localStorage.setItem('dsi_history_v11', JSON.stringify(history));
-                    renderHistoryTable();
-                }
-                softLoadProfileData(); // Updates screen without interrupting typing
+                if (data.store) { store = data.store; localStorage.setItem('dsi_store_v11_1', JSON.stringify(store)); }
+                if (data.history) { history = data.history; localStorage.setItem('dsi_history_v11_1', JSON.stringify(history)); renderHistoryTable(); }
+                softLoadProfileData(); 
             }
         });
     }
@@ -371,59 +355,43 @@
 
     function updateText() {
         const txt = T[config.lang];
-        document.getElementById('discTitle').innerText = txt.discTitle;
-        document.getElementById('discText').innerHTML = txt.discText;
-        document.getElementById('btnUnderstand').innerText = txt.understand;
-        document.getElementById('setupTitle').innerText = txt.setupTitle;
-        document.getElementById('lblSetMach').innerText = txt.numMach;
-        document.getElementById('lblSetLane').innerText = txt.laneConfig;
-        document.getElementById('lblSetProd').innerText = txt.defProd;
-        document.getElementById('btnStartApp').innerText = txt.start;
-        document.getElementById('lblHistory').innerText = txt.history;
-        document.getElementById('btnSaveCheck').innerText = txt.save;
-        document.getElementById('btnClearTable').innerText = txt.clear;
-        document.getElementById('lblAvg').innerText = txt.avg;
-        document.getElementById('lblSD').innerText = txt.sd;
-        document.getElementById('menuTitle').innerText = txt.options;
-        document.getElementById('lblMenuTarget').innerText = `${txt.target} (g)`;
-        document.getElementById('lblMenuMach').innerText = txt.mach;
-        document.getElementById('lblMenuLane').innerText = txt.config;
-        document.getElementById('lblMenuProd').innerText = txt.prod;
-        document.getElementById('lblMenuSmart').innerText = txt.smartMode;
-        document.getElementById('lblMenuTheme').innerText = txt.theme;
+        document.getElementById('discTitle').innerText = txt.discTitle; document.getElementById('discText').innerHTML = txt.discText;
+        document.getElementById('btnUnderstand').innerText = txt.understand; document.getElementById('setupTitle').innerText = txt.setupTitle;
+        document.getElementById('lblSetMach').innerText = txt.numMach; document.getElementById('lblSetLane').innerText = txt.laneConfig;
+        document.getElementById('lblSetProd').innerText = txt.defProd; document.getElementById('btnStartApp').innerText = txt.start;
+        document.getElementById('lblHistory').innerText = txt.history; document.getElementById('btnSaveCheck').innerText = txt.save;
+        document.getElementById('btnClearTable').innerText = txt.clear; document.getElementById('lblAvg').innerText = txt.avg;
+        document.getElementById('lblSD').innerText = txt.sd; document.getElementById('menuTitle').innerText = txt.options;
+        document.getElementById('lblMenuTarget').innerText = `${txt.target} (g)`; document.getElementById('lblMenuMach').innerText = txt.mach;
+        document.getElementById('lblMenuLane').innerText = txt.config; document.getElementById('lblMenuProd').innerText = txt.prod;
+        document.getElementById('lblMenuSmart').innerText = txt.smartMode; document.getElementById('lblMenuTheme').innerText = txt.theme;
         document.getElementById('lblMenuInput').innerText = txt.inputMode;
     }
 
     function acceptDisclaimer() {
         config.acceptedDisclaimer = true; saveConfig(); document.getElementById('disclaimerModal').style.display = 'none';
-        const hasData = localStorage.getItem('dsi_store_v11');
+        const hasData = localStorage.getItem('dsi_store_v11_1');
         if (!hasData) document.getElementById('setupWizard').style.display = 'flex';
         else document.getElementById('appContent').style.filter = 'none';
     }
 
     function completeSetup() {
-        config.machines = parseInt(document.getElementById('setupMachines').value);
-        config.lanes = parseInt(document.getElementById('setupLanes').value);
+        config.machines = parseInt(document.getElementById('setupMachines').value); config.lanes = parseInt(document.getElementById('setupLanes').value);
         config.product = document.getElementById('setupProd').value;
         saveConfig(); document.getElementById('setupWizard').style.display = 'none'; document.getElementById('appContent').style.filter = 'none';
         renderInterface();
     }
 
     function renderInterface() {
-        const txt = T[config.lang];
-        const nav = document.getElementById('machineNav');
+        const txt = T[config.lang]; const nav = document.getElementById('machineNav');
         
-        if (config.machines === 1) {
-            nav.className = 'machine-nav nav-hidden';
-            config.currentMachine = 1;
-        } else {
-            nav.className = 'machine-nav';
-            nav.innerHTML = '';
+        if (config.machines === 1) { nav.className = 'machine-nav nav-hidden'; config.currentMachine = 1; } 
+        else {
+            nav.className = 'machine-nav'; nav.innerHTML = '';
             for(let i=1; i<=config.machines; i++) {
                 const btn = document.createElement('button');
                 btn.className = `m-btn ${config.currentMachine === i ? 'm-active' : ''}`;
-                btn.innerText = `DSI ${i}`;
-                btn.onclick = () => switchMachine(i);
+                btn.innerText = `DSI ${i}`; btn.onclick = () => switchMachine(i);
                 nav.appendChild(btn);
             }
         }
@@ -431,24 +399,21 @@
         const prodName = config.product === 'lunch' ? txt.lunch : txt.bfast;
         document.getElementById('displayConfig').innerText = `${config.lanes} ${txt.lane} • ${prodName}`;
         
-        document.getElementById('setMachines').value = config.machines;
-        document.getElementById('setLanes').value = config.lanes;
-        document.getElementById('setProd').value = config.product;
-        document.getElementById('setSmart').value = config.smart;
-        document.getElementById('setTheme').value = config.theme;
-        document.getElementById('setInputMode').value = config.inputMode;
+        document.getElementById('setMachines').value = config.machines; document.getElementById('setLanes').value = config.lanes;
+        document.getElementById('setProd').value = config.product; document.getElementById('setSmart').value = config.smart;
+        document.getElementById('setTheme').value = config.theme; document.getElementById('setInputMode').value = config.inputMode;
 
-        const container = document.getElementById('lanesContainer');
-        container.innerHTML = '';
+        const container = document.getElementById('lanesContainer'); container.innerHTML = '';
         for(let i=1; i<=config.lanes; i++) {
             let labelText = txt.density;
-            if(config.inputMode === 'longpress') labelText += " (HOLD)";
-            if(config.inputMode === 'doubletap') labelText += " (x2)";
+            if(config.inputMode === 'longpress') labelText += " (HOLD)"; if(config.inputMode === 'doubletap') labelText += " (x2)";
 
             const btnHtml = config.inputMode === 'button' ? 
                 `<button class="btn-icon" id="lockDens-${i}" onclick="toggleLock(${i})">🔒</button>` : 
                 `<button class="btn-icon btn-hidden" id="lockDens-${i}">🔒</button>`;
 
+            // Note: Removed persist() from oninput to fix Race Condition. 
+            // It only persists onblur now.
             container.innerHTML += `
                 <div class="lane-card" id="card-${i}">
                     <div class="lane-header"><span>${txt.lane} ${i}</span><span class="smart-tag" id="tag-${i}">${txt.smart}</span></div>
@@ -462,7 +427,7 @@
                     <div>
                         <label>${txt.weight}</label>
                         <div class="input-group">
-                            <input type="number" id="avgWt-${i}" oninput="handleWeightInput(${i})" pattern="\\d*">
+                            <input type="number" id="avgWt-${i}" oninput="handleWeightInput(${i})" onblur="persist()" pattern="\\d*">
                             <button class="btn-icon btn-recheck" onclick="recheckLane(${i})">↻</button>
                         </div>
                     </div>
@@ -495,9 +460,7 @@
     function unlockAndFocus(i) {
         const el = document.getElementById(`currDens-${i}`);
         el.readOnly = false; el.focus(); el.style.borderColor = 'var(--blue)';
-        if(config.inputMode === 'button') {
-            document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓';
-        }
+        if(config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓'; }
     }
 
     function toggleLock(i) {
@@ -506,31 +469,29 @@
         const btn = document.getElementById(`lockDens-${i}`); const el = document.getElementById(`currDens-${i}`);
         if(!lane.locked) { el.readOnly = false; el.focus(); el.style.borderColor = 'var(--blue)'; btn.className = 'btn-icon'; btn.innerText = '🔓';
         } else { el.readOnly = true; el.style.borderColor = 'var(--border)'; btn.className = 'btn-icon locked'; btn.innerText = '🔒'; }
+        persist(); // Push lock state to cloud immediately
     }
 
     function getProfileKey() { return `M${config.currentMachine}_${config.product}_${config.lanes}L`; }
 
-    // This updates the screen WITHOUT deleting what you are currently typing
+    // Soft Load: Updates screen WITHOUT deleting active typing
     function softLoadProfileData() {
         const key = getProfileKey();
         if (!store[key]) {
             const defaultTarget = config.product === 'bfast' ? '63' : '102';
-            store[key] = { target: defaultTarget, lanes: Array(config.lanes).fill().map(() => ({ d:'', w:'', attempts: 0, smartActive: false, lastD: null, lastW: null })) };
+            store[key] = { target: defaultTarget, lanes: Array(config.lanes).fill().map(() => ({ d:'', w:'', attempts: 0, smartActive: false, lastD: null, lastW: null, locked: true })) };
         }
         
-        const p = store[key];
-        const txt = T[config.lang];
+        const p = store[key]; const txt = T[config.lang];
 
         const targetInp = document.getElementById('setTarget');
         if (document.activeElement !== targetInp) targetInp.value = p.target;
         document.getElementById('displayTarget').innerText = `${txt.target}: ${p.target}g`;
 
         for(let i=1; i<=config.lanes; i++) {
-            const l = p.lanes[i-1];
-            const dInp = document.getElementById(`currDens-${i}`);
-            const wInp = document.getElementById(`avgWt-${i}`);
+            const l = p.lanes[i-1]; const dInp = document.getElementById(`currDens-${i}`); const wInp = document.getElementById(`avgWt-${i}`);
             
-            // Only update input boxes if the user is NOT actively clicking inside them
+            // Only overwrite box if user is NOT currently focused on it
             if (document.activeElement !== dInp) {
                 dInp.value = l.d; 
                 if (config.inputMode === 'button' && !l.locked) {
@@ -538,52 +499,44 @@
                     document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓';
                 } else {
                     dInp.readOnly = true; dInp.style.borderColor = 'var(--border)';
-                    if(config.inputMode === 'button') {
-                        document.getElementById(`lockDens-${i}`).className = 'btn-icon locked'; document.getElementById(`lockDens-${i}`).innerText = '🔒';
-                    }
+                    if(config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon locked'; document.getElementById(`lockDens-${i}`).innerText = '🔒'; }
                 }
             }
             
             if (document.activeElement !== wInp) wInp.value = l.w || '';
 
-            if(config.smart === 'on' || (config.smart === 'auto' && l.smartActive)) {
-                document.getElementById(`card-${i}`).classList.add('smart-active');
+            if(config.smart === 'on' || (config.smart === 'auto' && l.smartActive)) { document.getElementById(`card-${i}`).classList.add('smart-active');
             } else { document.getElementById(`card-${i}`).classList.remove('smart-active'); }
         }
-        calculate(); renderHistoryTable();
+        calculate();
     }
 
     function loadStore() {
-        const s = localStorage.getItem('dsi_store_v11'); const h = localStorage.getItem('dsi_history_v11');
+        const s = localStorage.getItem('dsi_store_v11_1'); const h = localStorage.getItem('dsi_history_v11_1');
         if(s) store = JSON.parse(s); if(h) history = JSON.parse(h);
     }
 
-    function updateTargetFromSettings() {
-        const val = document.getElementById('setTarget').value;
-        store[getProfileKey()].target = val;
-        document.getElementById('displayTarget').innerText = `${T[config.lang].target}: ${val}g`;
-        calculate(); persist();
+    // Local Updates (No cloud sync until blur)
+    function updateTargetLocal() {
+        const val = document.getElementById('setTarget').value; store[getProfileKey()].target = val;
+        document.getElementById('displayTarget').innerText = `${T[config.lang].target}: ${val}g`; calculate(); 
     }
 
     function handleWeightInput(i) {
-        store[getProfileKey()].lanes[i-1].w = document.getElementById(`avgWt-${i}`).value;
-        calculate(); persist(); // Sends keystrokes to cloud
+        store[getProfileKey()].lanes[i-1].w = document.getElementById(`avgWt-${i}`).value; calculate();
     }
 
     function handleInput(i) {
-        store[getProfileKey()].lanes[i-1].d = document.getElementById(`currDens-${i}`).value;
-        calculate(); persist();
+        store[getProfileKey()].lanes[i-1].d = document.getElementById(`currDens-${i}`).value; calculate(); 
     }
 
+    // Sync to Cloud
     function lockOnBlur(idx) {
         setTimeout(() => {
             const el = document.getElementById(`currDens-${idx}`);
             el.readOnly = true; el.style.borderColor = 'var(--border)';
-            if(config.inputMode === 'button') {
-                document.getElementById(`lockDens-${idx}`).className = 'btn-icon locked'; document.getElementById(`lockDens-${idx}`).innerText = '🔒';
-            }
-            store[getProfileKey()].lanes[idx-1].d = el.value;
-            store[getProfileKey()].lanes[idx-1].locked = true;
+            if(config.inputMode === 'button') { document.getElementById(`lockDens-${idx}`).className = 'btn-icon locked'; document.getElementById(`lockDens-${idx}`).innerText = '🔒'; }
+            store[getProfileKey()].lanes[idx-1].d = el.value; store[getProfileKey()].lanes[idx-1].locked = true;
             persist();
         }, 200);
     }
@@ -593,8 +546,7 @@
         let weights = []; let count = 0;
 
         for(let i=1; i<=config.lanes; i++) {
-            const currD = parseFloat(document.getElementById(`currDens-${i}`).value);
-            const currW = parseFloat(document.getElementById(`avgWt-${i}`).value);
+            const currD = parseFloat(document.getElementById(`currDens-${i}`).value); const currW = parseFloat(document.getElementById(`avgWt-${i}`).value);
             const lane = p.lanes[i-1]; const resText = document.getElementById(`resText-${i}`);
             const hiddenVal = document.getElementById(`calcVal-${i}`); const card = document.getElementById(`card-${i}`);
 
@@ -604,9 +556,7 @@
                 if(isSmart && lane.lastD !== null && lane.lastW !== null) {
                     let dDelta = currD - lane.lastD; let wDelta = currW - lane.lastW;
                     if(Math.abs(wDelta) > 0.5 && Math.abs(dDelta) > 0.001) {
-                        let observedK = dDelta / wDelta;
-                        observedK = Math.max(baseK * 0.5, Math.min(observedK, baseK * 5));
-                        activeK = (observedK * 0.6) + (baseK * 0.4);
+                        let observedK = dDelta / wDelta; observedK = Math.max(baseK * 0.5, Math.min(observedK, baseK * 5)); activeK = (observedK * 0.6) + (baseK * 0.4);
                     }
                 }
                 const newD = currD + (diff * activeK);
@@ -634,9 +584,7 @@
     }
 
     function applyResult(idx) {
-        const val = document.getElementById(`calcVal-${idx}`).value;
-        const currD = parseFloat(document.getElementById(`currDens-${idx}`).value);
-        const currW = parseFloat(document.getElementById(`avgWt-${idx}`).value);
+        const val = document.getElementById(`calcVal-${idx}`).value; const currD = parseFloat(document.getElementById(`currDens-${idx}`).value); const currW = parseFloat(document.getElementById(`avgWt-${idx}`).value);
         const key = getProfileKey(); const lane = store[key].lanes[idx-1];
 
         if(val && !isNaN(currD)) {
@@ -681,8 +629,7 @@
              const wt = document.getElementById(`avgWt-${i}`).value; const calc = document.getElementById(`calcVal-${i}`).value; const dens = document.getElementById(`currDens-${i}`).value;
              row.lanes.push({ w: wt ? `${wt}g` : '--', d: calc || dens || '--' });
         }
-        history[key].unshift(row); localStorage.setItem('dsi_history_v11', JSON.stringify(history)); renderHistoryTable();
-        // Push History to Cloud
+        history[key].unshift(row); localStorage.setItem('dsi_history_v11_1', JSON.stringify(history)); renderHistoryTable();
         appRef.child('history').set(history);
     }
 
@@ -696,12 +643,11 @@
         }).join('');
     }
 
-    function clearHistory() { if(confirm("Clear history?")) { history[getProfileKey()] = []; localStorage.setItem('dsi_history_v11', JSON.stringify(history)); renderHistoryTable(); appRef.child('history').set(history); } }
-    function saveConfig() { localStorage.setItem('dsi_config_v11', JSON.stringify(config)); }
+    function clearHistory() { if(confirm("Clear history?")) { history[getProfileKey()] = []; localStorage.setItem('dsi_history_v11_1', JSON.stringify(history)); renderHistoryTable(); appRef.child('history').set(history); } }
+    function saveConfig() { localStorage.setItem('dsi_config_v11_1', JSON.stringify(config)); }
     
-    // PUSH STORE TO CLOUD
     function persist() { 
-        localStorage.setItem('dsi_store_v11', JSON.stringify(store)); 
+        localStorage.setItem('dsi_store_v11_1', JSON.stringify(store)); 
         appRef.child('store').set(store);
     }
 </script>
