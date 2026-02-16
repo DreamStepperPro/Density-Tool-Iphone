@@ -3,405 +3,719 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="mobile-web-app-capable" content="yes">
-    <title>JBT Density Tool v2</title>
+    <title>DSI Pro v10</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="apple-touch-icon" href="icon.png">
     <style>
-        :root { --red: #ff4d4d; --yellow: #ffdb4d; --green: #4dff88; --dark: #1a1a1a; --blue: #007bff; --grey: #f4f4f9; }
-        body { font-family: -apple-system, sans-serif; background: var(--grey); margin: 0; padding: 10px; -webkit-tap-highlight-color: transparent; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        
-        /* Icons */
-        .icon { width: 24px; height: 24px; fill: currentColor; vertical-align: middle; }
-        
-        /* Navigation */
-        .top-nav { display: flex; justify-content: space-between; margin-bottom: 15px; gap: 10px; }
-        .lang-btn { background: var(--blue); color: white; border: none; padding: 8px 12px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
-        .machine-toggle { display: flex; gap: 5px; flex-grow: 1; }
-        .m-btn { flex: 1; padding: 12px; font-weight: bold; border: 2px solid #ddd; border-radius: 8px; background: white; transition: 0.2s; }
-        .active-m { background: var(--dark); color: white; border-color: var(--dark); }
+        /* --- THEMES --- */
+        :root {
+            --bg: #f4f4f9; --card-bg: #ffffff; --text: #1a1a1a; --border: #ccc;
+            --input-bg: #ffffff; --nav-bg: #fff;
+            --blue: #007bff; --purple: #9d50bb; --red: #ff4d4d; --green: #28a745; --yellow: #ffc107; --perfect: #00d2ff;
+            --dark-grey: #333;
+        }
+        body.dark-mode {
+            --bg: #121212; --card-bg: #1e1e1e; --text: #e0e0e0; --border: #444;
+            --input-bg: #2d2d2d; --nav-bg: #1e1e1e;
+        }
 
-        /* Inputs & Locks */
-        .header-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; background: #f8f9fa; padding: 12px; border-radius: 8px; }
-        .input-group { position: relative; display: flex; align-items: center; }
-        .lock-btn { background: none; border: none; padding: 0 0 0 8px; cursor: pointer; color: #ccc; transition: 0.2s; }
-        .lock-btn.locked { color: var(--blue); }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; -webkit-tap-highlight-color: transparent; user-select: none; transition: 0.3s; }
         
-        label { font-size: 0.75rem; font-weight: bold; color: #555; display: block; margin-bottom: 4px; text-transform: uppercase; }
-        input, select { width: 100%; padding: 12px; font-size: 1.1rem; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        /* LAYOUT */
+        .container { max-width: 100%; margin: auto; padding-bottom: 80px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .header h1 { margin: 0; font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; }
+        .header-btns { display: flex; gap: 10px; align-items: center; }
         
-        /* Lane Cards */
-        .lane-card { border: 2px solid #ddd; padding: 12px; margin-bottom: 10px; border-radius: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; transition: 0.3s; }
-        .lane-header { grid-column: span 2; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 5px; margin-bottom: 5px;}
-        .lane-label { font-weight: 800; font-size: 1.1rem; }
-        
-        /* Result Box (Clickable) */
-        .result-box { grid-column: span 2; padding: 12px; font-weight: bold; text-align: center; border-radius: 8px; background: rgba(255,255,255,0.8); border: 2px dashed rgba(0,0,0,0.2); cursor: pointer; position: relative; user-select: none; }
-        .result-box:active { transform: scale(0.98); background: #fff; }
-        .tap-hint { display: block; font-size: 0.65rem; text-transform: uppercase; color: #555; margin-top: 2px; }
+        .gear-btn { font-size: 1.5rem; background: none; border: none; cursor: pointer; padding: 5px; color: var(--text); }
+        .lang-btn { background: var(--blue); color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
 
-        /* Footer Stats */
-        .stats-footer { background: var(--dark); color: white; padding: 12px; border-radius: 10px; display: flex; justify-content: space-around; align-items: center; margin-bottom: 15px; }
-        .stat-item { text-align: center; }
-        .stat-val { display: block; font-size: 1.4rem; font-weight: bold; }
-        .stat-lbl { font-size: 0.7rem; text-transform: uppercase; opacity: 0.8; }
+        /* NAV */
+        .machine-nav { display: flex; gap: 10px; margin-bottom: 15px; }
+        .m-btn { flex: 1; padding: 12px; font-weight: bold; border: 2px solid var(--border); border-radius: 8px; background: var(--card-bg); color: var(--text); transition: 0.2s; }
+        .m-active { background: var(--dark-grey); color: white; border-color: var(--dark-grey); }
+        .nav-hidden { display: none !important; }
 
-        /* Action Buttons */
-        .action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        button.action { border: none; padding: 16px; border-radius: 10px; font-weight: bold; font-size: 1rem; cursor: pointer; }
-        .save-btn { background: var(--blue); color: white; }
-        .reset-btn { background: var(--red); color: white; }
+        /* INFO BAR */
+        .info-bar { display: flex; justify-content: space-between; background: var(--card-bg); padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--border); font-size: 0.85rem; font-weight: bold; align-items: center; }
+        .info-pill { background: var(--blue); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; }
+
+        /* LANES */
+        .lane-card { background: var(--card-bg); border: 2px solid var(--border); padding: 12px; margin-bottom: 10px; border-radius: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; position: relative; }
+        .lane-header { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 5px; margin-bottom: 5px; font-weight: bold; }
         
-        /* History */
-        .history-section { margin-top: 25px; border-top: 2px solid #eee; padding-top: 15px; }
-        .scroll-box { overflow-x: auto; margin-top: 10px; border-radius: 8px; }
-        .history-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; background: #fff; }
-        .history-table th, .history-table td { border: 1px solid #ddd; padding: 8px; text-align: center; white-space: nowrap; }
-        .history-table th { background: #eee; }
-        .export-btn { background: #28a745; color: white; width: 100%; margin-top: 10px; border:none; padding: 12px; border-radius: 8px; font-weight: bold;}
+        /* SMART TAG */
+        .smart-tag { font-size: 0.7rem; background: var(--purple); color: white; padding: 2px 6px; border-radius: 10px; display: none; }
+        .smart-active .smart-tag { display: inline-block; }
+
+        /* INPUTS */
+        label { font-size: 0.7rem; font-weight: bold; display: block; margin-bottom: 2px; text-transform: uppercase; opacity: 0.7; }
+        .input-group { display: flex; gap: 5px; }
+        input { width: 100%; padding: 12px; font-size: 1.1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--text); font-weight: bold; }
         
-        small { font-weight: bold; color: #666; font-size: 0.7rem; text-transform: uppercase; }
+        /* Read Only Logic for Density */
+        input.density-input:read-only { background: rgba(128,128,128,0.1); color: var(--text); opacity: 0.8; pointer-events: auto; }
+        input.density-input:focus { background: var(--input-bg); border-color: var(--blue); outline: none; }
+
+        /* BUTTONS */
+        .btn-icon { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 0 12px; cursor: pointer; font-size: 1.2rem; color: var(--text); display: flex; align-items: center; justify-content: center; }
+        .btn-icon.locked { background: var(--dark-grey); color: white; border-color: var(--dark-grey); }
+        .btn-recheck { color: var(--yellow); border-color: var(--yellow); }
+        .btn-hidden { display: none; }
+
+        .result-box { grid-column: span 2; padding: 12px; text-align: center; border-radius: 8px; background: rgba(128,128,128,0.1); border: 2px dashed var(--border); font-weight: bold; cursor: pointer; }
+        .result-box span { display: block; }
+        .tap-hint { font-size: 0.7rem; opacity: 0.6; font-weight: normal; margin-top: 4px; }
+
+        /* FOOTER STATS */
+        .stats-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--dark-grey); color: white; padding: 10px; display: flex; justify-content: space-around; align-items: center; z-index: 10; border-top-left-radius: 15px; border-top-right-radius: 15px; box-shadow: 0 -2px 10px rgba(0,0,0,0.2); }
+        .stat-box { text-align: center; }
+        .stat-val { font-size: 1.2rem; font-weight: bold; display: block; }
+        .stat-lbl { font-size: 0.6rem; text-transform: uppercase; opacity: 0.8; }
+
+        /* MODALS */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 100; display: none; justify-content: center; align-items: center; padding: 20px; }
+        .modal { background: var(--card-bg); padding: 20px; border-radius: 12px; width: 100%; max-width: 400px; color: var(--text); max-height: 85vh; overflow-y: auto; }
+        .modal h2 { margin-top: 0; font-size: 1.2rem; }
+        .modal-opt { margin-bottom: 15px; }
+        .modal-btn { width: 100%; padding: 15px; background: var(--blue); color: white; border: none; border-radius: 8px; font-weight: bold; margin-top: 10px; font-size: 1rem; cursor: pointer; }
+        .modal-btn.secondary { background: var(--dark-grey); }
+        .modal-btn.danger { background: var(--red); margin-top: 20px; }
+        
+        .legal-text { font-size: 0.8rem; line-height: 1.4; color: #888; margin-bottom: 10px; text-align: justify; }
+        .legal-header { font-weight: bold; color: var(--text); margin-top: 10px; display: block; }
+
+        /* HISTORY */
+        .history-section { margin-top: 20px; padding-bottom: 60px; }
+        .history-table { width: 100%; border-collapse: collapse; font-size: 0.7rem; background: var(--card-bg); }
+        .history-table th, .history-table td { border: 1px solid var(--border); padding: 6px; text-align: center; }
+        .history-table th { background: rgba(128,128,128,0.1); }
+        .btn-clear { width: 100%; padding: 12px; background: #666; color: white; border: none; margin-top: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        
+        .cell-wt { font-weight: bold; font-size: 0.9rem; display: block; }
+        .cell-dens { font-size: 0.7rem; opacity: 0.8; display: block; }
+
+        /* COLORS */
+        .bg-blue { background-color: var(--perfect) !important; color: #000; border-color: var(--perfect); }
+        .bg-green { background-color: var(--green) !important; color: #fff; border-color: var(--green); }
+        .bg-yellow { background-color: var(--yellow) !important; color: #000; border-color: var(--yellow); }
+        .bg-red { background-color: var(--red) !important; color: #fff; border-color: var(--red); }
+
+        select { width: 100%; padding: 12px; border-radius: 6px; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); font-size: 1rem; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="top-nav">
-        <div class="machine-toggle">
-            <button id="m1Btn" class="m-btn active-m" onclick="switchMachine(1)">M1</button>
-            <button id="m2Btn" class="m-btn" onclick="switchMachine(2)">M2</button>
-        </div>
-        <button class="lang-btn" id="langToggle" onclick="toggleLanguage()">EN ⇄ ES</button>
+<div class="modal-overlay" id="disclaimerModal" style="display:none; z-index: 200;">
+    <div class="modal">
+        <h2 id="discTitle">⚠️ Unofficial App</h2>
+        <div class="legal-text" id="discText"></div>
+        <button class="modal-btn" onclick="acceptDisclaimer()" id="btnUnderstand">I UNDERSTAND</button>
+        <button class="modal-btn secondary" onclick="toggleLanguage()" id="btnDiscLang">Español</button>
     </div>
+</div>
 
-    <div class="header-controls">
-        <div>
-            <label id="lblProduct">Product</label>
-            <select id="mode" onchange="calculate()">
-                <option value="0.017" id="optBfast">Breakfast (0.017)</option>
-                <option value="0.01" id="optLunch">Lunch (0.01)</option>
+<div class="modal-overlay" id="setupWizard" style="display:none;">
+    <div class="modal">
+        <h2 id="setupTitle">Initial Setup</h2>
+        <div class="modal-opt">
+            <label id="lblSetMach">Number of Machines</label>
+            <select id="setupMachines">
+                <option value="1">1 Machine</option>
+                <option value="2" selected>2 Machines</option>
             </select>
         </div>
-        <div>
-            <label id="lblTarget">Target Weight</label>
-            <div class="input-group">
-                <input type="number" id="target" placeholder="101" oninput="calculate()" pattern="\d*">
-                <button class="lock-btn" id="lock-target" onclick="toggleLock('target')">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/></svg>
-                </button>
-            </div>
+        <div class="modal-opt">
+            <label id="lblSetLane">Lane Configuration</label>
+            <select id="setupLanes">
+                <option value="2">Dual Lane (2)</option>
+                <option value="4" selected>Quad Lane (4)</option>
+            </select>
+        </div>
+        <div class="modal-opt">
+            <label id="lblSetProd">Default Product</label>
+            <select id="setupProd">
+                <option value="lunch">Lunch (0.01)</option>
+                <option value="bfast">Breakfast (0.017)</option>
+            </select>
+        </div>
+        <button class="modal-btn" onclick="completeSetup()" id="btnStartApp">START APP</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="aboutModal">
+    <div class="modal">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h2 id="aboutTitle">About</h2>
+            <button onclick="closeAbout()" style="background:none; border:none; font-size:1.5rem; color:var(--text);">✕</button>
+        </div>
+        <div class="legal-text" id="aboutText"></div>
+        <button class="modal-btn secondary" onclick="closeAbout()" id="btnCloseAbout">CLOSE</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="settingsMenu">
+    <div class="modal">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2 id="menuTitle">Options</h2>
+            <button onclick="toggleSettings()" style="background:none; border:none; font-size:1.5rem; color:var(--text);">✕</button>
+        </div>
+        
+        <div class="modal-opt">
+            <label id="lblMenuTarget">Target Weight (g)</label>
+            <input type="number" id="setTarget" oninput="updateTargetFromSettings()" style="background:var(--input-bg);">
+        </div>
+
+        <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
+
+        <div class="modal-opt">
+            <label id="lblMenuInput">Unlock Method</label>
+            <select id="setInputMode" onchange="saveSettings()">
+                <option value="button">Lock Button (Default)</option>
+                <option value="longpress">Long Press (1s)</option>
+                <option value="doubletap">Double Tap</option>
+            </select>
+        </div>
+
+        <div class="modal-opt">
+            <label id="lblMenuMach">Machines</label>
+            <select id="setMachines" onchange="saveSettings()">
+                <option value="1">1 Machine</option>
+                <option value="2">2 Machines</option>
+            </select>
+        </div>
+
+        <div class="modal-opt">
+            <label id="lblMenuLane">Configuration</label>
+            <select id="setLanes" onchange="saveSettings()">
+                <option value="2">Dual Lane</option>
+                <option value="4">Quad Lane</option>
+            </select>
+        </div>
+
+        <div class="modal-opt">
+            <label id="lblMenuProd">Product Mode</label>
+            <select id="setProd" onchange="saveSettings()">
+                <option value="lunch">Lunch</option>
+                <option value="bfast">Breakfast</option>
+            </select>
+        </div>
+
+        <div class="modal-opt">
+            <label id="lblMenuSmart">Smart Mode (Adaptive)</label>
+            <select id="setSmart" onchange="saveSettings()">
+                <option value="off">Off (Fixed)</option>
+                <option value="on">On (Always)</option>
+                <option value="auto">Auto (Beta)</option>
+            </select>
+        </div>
+
+        <div class="modal-opt">
+            <label id="lblMenuTheme">Theme</label>
+            <select id="setTheme" onchange="toggleTheme()">
+                <option value="light">Light Mode</option>
+                <option value="dark">Dark Mode</option>
+            </select>
+        </div>
+
+        <button class="modal-btn secondary" onclick="openAbout()" id="btnMenuAbout">ABOUT / DISCLAIMER</button>
+        <button class="modal-btn danger" onclick="factoryReset()" id="btnMenuReset">FACTORY RESET</button>
+    </div>
+</div>
+
+<div class="container" id="appContent" style="filter:blur(5px);">
+    <div class="header">
+        <h1 id="appTitle">DSI Pro</h1>
+        <div class="header-btns">
+            <button class="lang-btn" onclick="toggleLanguage()" id="mainLangBtn">EN/ES</button>
+            <button class="gear-btn" onclick="toggleSettings()">⚙️</button>
         </div>
     </div>
 
-    <div id="lanesContainer">
-        </div>
+    <div class="machine-nav" id="machineNav"></div>
 
-    <div class="stats-footer">
-        <div class="stat-item">
-            <span class="stat-val" id="machAvg">--</span>
-            <span class="stat-lbl" id="lblMachAvg">Avg Weight</span>
-        </div>
-        <div style="width:1px; height:30px; background:rgba(255,255,255,0.3);"></div>
-        <div class="stat-item">
-            <span class="stat-val" id="stdDev">--</span>
-            <span class="stat-lbl" id="lblStdDev">Std Dev</span>
-        </div>
+    <div class="info-bar">
+        <span id="displayConfig">Quad Lane • Lunch</span>
+        <span id="displayTarget">Target: 102g</span>
     </div>
 
-    <div class="action-btns">
-        <button class="action save-btn" id="btnSave" onclick="saveToHistory()">SAVE</button>
-        <button class="action reset-btn" id="btnReset" onclick="resetMachine()">RESET</button>
-    </div>
+    <div id="lanesContainer"></div>
 
     <div class="history-section">
-        <h3 id="lblHistory">Shift History</h3>
-        <button class="export-btn" id="btnExport" onclick="exportToCSV()">EXPORT TO EXCEL (.CSV)</button>
-        <div class="scroll-box">
-            <table class="history-table" id="histTable">
+        <label id="lblHistory" style="font-size:0.9rem; margin-bottom:10px;">Shift History</label>
+        <div style="overflow-x:auto;">
+            <table class="history-table">
                 <thead>
-                    <tr>
-                        <th id="thTime">Time</th><th id="thMach">M#</th><th id="thProd">Prod</th>
-                        <th>Avg</th><th>SD</th>
-                        <th>L1</th><th>L2</th><th>L3</th><th>L4</th>
-                    </tr>
+                    <tr id="histHeader"></tr>
                 </thead>
                 <tbody id="histBody"></tbody>
             </table>
         </div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn-clear" onclick="saveToHistory()" style="background:var(--blue);" id="btnSaveCheck">SAVE CHECK</button>
+            <button class="btn-clear" onclick="clearHistory()" id="btnClearTable">CLEAR TABLE</button>
+        </div>
+    </div>
+</div>
+
+<div class="stats-bar">
+    <div class="stat-box">
+        <span class="stat-val" id="machAvg">--</span>
+        <span class="stat-lbl" id="lblAvg">AVG</span>
+    </div>
+    <div style="width:1px; height:30px; background:rgba(255,255,255,0.3);"></div>
+    <div class="stat-box">
+        <span class="stat-val" id="stdDev">--</span>
+        <span class="stat-lbl" id="lblSD">SD</span>
     </div>
 </div>
 
 <script>
-    let currentLang = 'en';
-    let currentMachine = 1;
-    let historyData = [];
-    
-    // Lock States
-    let locks = {
-        target: false,
-        l1: false, l2: false, l3: false, l4: false
+    // --- GLOBAL STATE ---
+    let config = {
+        machines: 2, lanes: 4, product: 'lunch', smart: 'auto', theme: 'light',
+        currentMachine: 1, acceptedDisclaimer: false, lang: 'en', inputMode: 'button' // 'button', 'longpress', 'doubletap'
     };
 
-    const translations = {
+    const FACTORS = { lunch: 0.01, bfast: 0.017 };
+    let store = {}; let history = {}; let pressTimer; let lastTap = 0;
+
+    // --- TRANSLATIONS ---
+    const T = {
         en: {
-            product: "Product", bfast: "Breakfast (0.017)", lunch: "Lunch (0.01)",
-            target: "Target Weight (g)", lane: "Lane", currDens: "Curr. Density", 
-            avgWt: "Avg Weight", newDens: "New", machAvg: "Avg Weight", stdDev: "Std Dev",
-            reset: "RESET", save: "SAVE", history: "Shift History", export: "EXPORT TO EXCEL",
-            thTime: "Time", thMach: "M#", thProd: "Prod", confirm: "Reset Machine?",
-            tapApply: "TAP TO APPLY"
+            title: "DSI Pro", target: "Target", newDens: "New Density", tapApply: "TAP TO APPLY", 
+            density: "DENSITY", weight: "AVG WEIGHT", smart: "SMART", 
+            avg: "AVG", sd: "SD", history: "Shift History", save: "SAVE CHECK", clear: "CLEAR TABLE",
+            setupTitle: "Initial Setup", numMach: "Number of Machines", laneConfig: "Lane Configuration", defProd: "Default Product", start: "START APP",
+            options: "Options", mach: "Machines", config: "Configuration", prod: "Product Mode", smartMode: "Smart Mode", theme: "Theme", inputMode: "Unlock Method",
+            about: "ABOUT / DISCLAIMER", reset: "FACTORY RESET", close: "CLOSE", understand: "I UNDERSTAND",
+            lane: "Lane", bfast: "Breakfast", lunch: "Lunch",
+            discTitle: "⚠️ Unofficial App",
+            discText: `<strong>Disclaimer:</strong> This is an unofficial, non-profit app created by a machine operator, for machine operators. It is not affiliated with, endorsed by, or connected to JBT Corporation. "DSI" and all related trademarks are the property of JBT Corporation. This tool is provided "as is" for informational purposes only.`,
+            aboutText: `<span class="legal-header">Unofficial App Disclaimer</span><span class="legal-header">No Affiliation:</span> This application is an independent, unofficial project. It is strictly not affiliated with, authorized, maintained, sponsored, or endorsed by JBT Corporation or any of its affiliates or subsidiaries.<span class="legal-header">Trademarks:</span> "DSI" and all associated names, marks, emblems, and images are registered trademarks of JBT Corporation.<span class="legal-header">Limitation of Liability:</span> This tool is provided "as is". The developer assumes no responsibility for any errors or issues that arise from using this app.`
         },
         es: {
-            product: "Producto", bfast: "Desayuno (0.017)", lunch: "Almuerzo (0.01)",
-            target: "Peso Meta (g)", lane: "Carril", currDens: "Densidad Act.", 
-            avgWt: "Peso Prom.", newDens: "Nueva", machAvg: "Peso Prom.", stdDev: "Desv. Est.",
-            reset: "REINICIAR", save: "GUARDAR", history: "Historial", export: "EXPORTAR A EXCEL",
-            thTime: "Hora", thMach: "M#", thProd: "Prod", confirm: "¿Reiniciar máquina?",
-            tapApply: "TOCAR PARA APLICAR"
+            title: "DSI Pro", target: "Meta", newDens: "Nueva Densidad", tapApply: "TOCA PARA APLICAR", 
+            density: "DENSIDAD", weight: "PESO PROM.", smart: "INTEL", 
+            avg: "PROM", sd: "DE", history: "Historial", save: "GUARDAR", clear: "BORRAR TABLA",
+            setupTitle: "Configuración Inicial", numMach: "Número de Máquinas", laneConfig: "Config. Carriles", defProd: "Producto", start: "INICIAR",
+            options: "Opciones", mach: "Máquinas", config: "Configuración", prod: "Modo Producto", smartMode: "Modo Inteligente", theme: "Tema", inputMode: "Método de Desbloqueo",
+            about: "ACERCA DE / LEGAL", reset: "REINICIO DE FÁBRICA", close: "CERRAR", understand: "ENTIENDO",
+            lane: "Carril", bfast: "Desayuno", lunch: "Almuerzo",
+            discTitle: "⚠️ App No Oficial",
+            discText: `<strong>Aviso Legal:</strong> Esta es una aplicación no oficial y sin fines de lucro creada por un operador para operadores. No está afiliada, respaldada ni conectada con JBT Corporation. "DSI" y todas las marcas relacionadas son propiedad de JBT Corporation. Esta herramienta se proporciona "tal cual" solo con fines informativos.`,
+            aboutText: `<span class="legal-header">Aviso de App No Oficial</span><span class="legal-header">Sin Afiliación:</span> Esta aplicación es un proyecto independiente. No está afiliada, autorizada ni respaldada por JBT Corporation.<span class="legal-header">Marcas Registradas:</span> "DSI" y las marcas asociadas son propiedad de JBT Corporation.<span class="legal-header">Limitación de Responsabilidad:</span> Esta herramienta se ofrece "tal cual". El desarrollador no asume responsabilidad por errores o problemas derivados de su uso.`
         }
     };
 
-    // Store data per machine
-    let data = {
-        1: { target: '', mode: '0.017', lanes: [ {d:'', w:''}, {d:'', w:''}, {d:'', w:''}, {d:'', w:''} ] },
-        2: { target: '', mode: '0.017', lanes: [ {d:'', w:''}, {d:'', w:''}, {d:'', w:''}, {d:'', w:''} ] }
+    window.onload = function() {
+        const savedConfig = localStorage.getItem('dsi_config_v10');
+        if (savedConfig) config = JSON.parse(savedConfig);
+
+        updateText();
+        
+        if(!config.acceptedDisclaimer) {
+            document.getElementById('disclaimerModal').style.display = 'flex';
+        } else {
+            const hasData = localStorage.getItem('dsi_store_v10');
+            if (!hasData) document.getElementById('setupWizard').style.display = 'flex';
+            else document.getElementById('appContent').style.filter = 'none';
+        }
+        
+        loadStore();
+        applyTheme();
+        renderInterface();
     };
 
-    // INITIALIZATION
-    function init() {
+    function toggleLanguage() { config.lang = config.lang === 'en' ? 'es' : 'en'; updateText(); renderInterface(); saveConfig(); }
+
+    function updateText() {
+        const txt = T[config.lang];
+        document.getElementById('discTitle').innerText = txt.discTitle;
+        document.getElementById('discText').innerHTML = txt.discText;
+        document.getElementById('btnUnderstand').innerText = txt.understand;
+        document.getElementById('setupTitle').innerText = txt.setupTitle;
+        document.getElementById('lblSetMach').innerText = txt.numMach;
+        document.getElementById('lblSetLane').innerText = txt.laneConfig;
+        document.getElementById('lblSetProd').innerText = txt.defProd;
+        document.getElementById('btnStartApp').innerText = txt.start;
+        document.getElementById('appTitle').innerText = txt.title;
+        document.getElementById('lblHistory').innerText = txt.history;
+        document.getElementById('btnSaveCheck').innerText = txt.save;
+        document.getElementById('btnClearTable').innerText = txt.clear;
+        document.getElementById('lblAvg').innerText = txt.avg;
+        document.getElementById('lblSD').innerText = txt.sd;
+        document.getElementById('menuTitle').innerText = txt.options;
+        document.getElementById('lblMenuTarget').innerText = `${txt.target} (g)`;
+        document.getElementById('lblMenuMach').innerText = txt.mach;
+        document.getElementById('lblMenuLane').innerText = txt.config;
+        document.getElementById('lblMenuProd').innerText = txt.prod;
+        document.getElementById('lblMenuSmart').innerText = txt.smartMode;
+        document.getElementById('lblMenuTheme').innerText = txt.theme;
+        document.getElementById('lblMenuInput').innerText = txt.inputMode;
+        document.getElementById('btnMenuAbout').innerText = txt.about;
+        document.getElementById('btnMenuReset').innerText = txt.reset;
+        document.getElementById('aboutTitle').innerText = txt.about;
+        document.getElementById('aboutText').innerHTML = txt.aboutText;
+        document.getElementById('btnCloseAbout').innerText = txt.close;
+    }
+
+    function acceptDisclaimer() {
+        config.acceptedDisclaimer = true;
+        saveConfig();
+        document.getElementById('disclaimerModal').style.display = 'none';
+        const hasData = localStorage.getItem('dsi_store_v10');
+        if (!hasData) document.getElementById('setupWizard').style.display = 'flex';
+        else document.getElementById('appContent').style.filter = 'none';
+    }
+
+    function completeSetup() {
+        config.machines = parseInt(document.getElementById('setupMachines').value);
+        config.lanes = parseInt(document.getElementById('setupLanes').value);
+        config.product = document.getElementById('setupProd').value;
+        saveConfig();
+        document.getElementById('setupWizard').style.display = 'none';
+        document.getElementById('appContent').style.filter = 'none';
+        renderInterface();
+    }
+
+    function renderInterface() {
+        const txt = T[config.lang];
+        const nav = document.getElementById('machineNav');
+        const title = document.getElementById('appTitle');
+
+        if (config.machines === 1) {
+            nav.className = 'machine-nav nav-hidden';
+            title.innerText = "DSI";
+            config.currentMachine = 1;
+        } else {
+            nav.className = 'machine-nav';
+            title.innerText = "DSI Pro";
+            nav.innerHTML = '';
+            for(let i=1; i<=config.machines; i++) {
+                const btn = document.createElement('button');
+                btn.className = `m-btn ${config.currentMachine === i ? 'm-active' : ''}`;
+                btn.innerText = `DSI ${i}`;
+                btn.onclick = () => switchMachine(i);
+                nav.appendChild(btn);
+            }
+        }
+
+        const prodName = config.product === 'lunch' ? txt.lunch : txt.bfast;
+        document.getElementById('displayConfig').innerText = `${config.lanes} ${txt.lane} • ${prodName}`;
+        
+        document.getElementById('setMachines').value = config.machines;
+        document.getElementById('setLanes').value = config.lanes;
+        document.getElementById('setProd').value = config.product;
+        document.getElementById('setSmart').value = config.smart;
+        document.getElementById('setTheme').value = config.theme;
+        document.getElementById('setInputMode').value = config.inputMode;
+
         const container = document.getElementById('lanesContainer');
-        let html = '';
-        for(let i=1; i<=4; i++) {
-            html += `
+        container.innerHTML = '';
+        for(let i=1; i<=config.lanes; i++) {
+            // Label Logic
+            let labelText = txt.density;
+            if(config.inputMode === 'longpress') labelText += " (HOLD)";
+            if(config.inputMode === 'doubletap') labelText += " (x2)";
+
+            // Button Logic
+            const btnHtml = config.inputMode === 'button' ? 
+                `<button class="btn-icon" id="lockDens-${i}" onclick="toggleLock(${i})">🔒</button>` : 
+                `<button class="btn-icon btn-hidden" id="lockDens-${i}">🔒</button>`;
+
+            container.innerHTML += `
                 <div class="lane-card" id="card-${i}">
-                    <div class="lane-header">
-                        <div class="lane-label" id="laneTitle-${i}">Lane ${i}</div>
-                        <button class="lock-btn" id="lock-l${i}" onclick="toggleLock('l${i}')">
-                            <svg class="icon" viewBox="0 0 24 24"><path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/></svg>
-                        </button>
-                    </div>
-                    <div class="input-group">
-                        <div style="width:100%">
-                            <small class="lblDensity">Curr. Density</small>
-                            <input type="number" id="currDens-${i}" step="0.001" oninput="calculate()" pattern="[0-9.]*">
+                    <div class="lane-header"><span>${txt.lane} ${i}</span><span class="smart-tag" id="tag-${i}">${txt.smart}</span></div>
+                    <div>
+                        <label>${labelText}</label>
+                        <div class="input-group">
+                            <input type="number" id="currDens-${i}" class="density-input" step="0.001" readonly oninput="handleInput(${i})" onblur="lockOnBlur(${i})" pattern="[0-9.]*">
+                            ${btnHtml}
                         </div>
                     </div>
                     <div>
-                        <small class="lblAvgWt">Avg Weight</small>
-                        <input type="number" id="avgWt-${i}" oninput="calculate()" pattern="\\d*">
+                        <label>${txt.weight}</label>
+                        <div class="input-group">
+                            <input type="number" id="avgWt-${i}" oninput="handleWeightInput(${i})" pattern="\\d*">
+                            <button class="btn-icon btn-recheck" onclick="recheckLane(${i})">↻</button>
+                        </div>
                     </div>
-                    <div class="result-box" id="resBox-${i}" onclick="applyDensity(${i})">
-                        <span id="resVal-${i}">--</span>
-                        <span class="tap-hint" id="tapHint-${i}">TAP TO APPLY</span>
+                    <div class="result-box" id="resBox-${i}" onclick="applyResult(${i})">
+                        <span id="resText-${i}">${txt.newDens}: --</span><span class="tap-hint">${txt.tapApply}</span>
                     </div>
+                    <input type="hidden" id="calcVal-${i}">
                 </div>
             `;
         }
-        container.innerHTML = html;
-        updateUI();
-    }
-
-    function toggleLock(key) {
-        locks[key] = !locks[key];
-        const btn = document.getElementById(`lock-${key}`);
-        if(locks[key]) {
-            btn.classList.add('locked');
-            // Change icon to locked
-             btn.innerHTML = `<svg class="icon" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>`;
-        } else {
-            btn.classList.remove('locked');
-             btn.innerHTML = `<svg class="icon" viewBox="0 0 24 24"><path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/></svg>`;
-        }
-    }
-
-    function applyDensity(i) {
-        const newValText = document.getElementById(`resVal-${i}`).innerText.split(": ")[1];
-        if(newValText && newValText !== "--") {
-            const newVal = parseFloat(newValText);
-            // Apply to density
-            document.getElementById(`currDens-${i}`).value = newVal;
-            // Clear weight
-            document.getElementById(`avgWt-${i}`).value = '';
-            // Recalc
-            calculate();
-        }
-    }
-
-    function toggleLanguage() {
-        currentLang = currentLang === 'en' ? 'es' : 'en';
-        updateUI();
-    }
-
-    function updateUI() {
-        const t = translations[currentLang];
-        document.getElementById('lblProduct').innerText = t.product;
-        document.getElementById('optBfast').innerText = t.bfast;
-        document.getElementById('optLunch').innerText = t.lunch;
-        document.getElementById('lblTarget').innerText = t.target;
-        document.getElementById('lblMachAvg').innerText = t.machAvg;
-        document.getElementById('lblStdDev').innerText = t.stdDev;
-        document.getElementById('btnReset').innerText = t.reset;
-        document.getElementById('btnSave').innerText = t.save;
-        document.getElementById('lblHistory').innerText = t.history;
-        document.getElementById('btnExport').innerText = t.export;
-        document.getElementById('thTime').innerText = t.thTime;
-        document.getElementById('thMach').innerText = t.thMach;
-        document.getElementById('thProd').innerText = t.thProd;
-
-        document.querySelectorAll('.lblDensity').forEach(el => el.innerText = t.currDens);
-        document.querySelectorAll('.lblAvgWt').forEach(el => el.innerText = t.avgWt);
-        document.querySelectorAll('.tap-hint').forEach(el => el.innerText = t.tapApply);
         
-        for(let i=1; i<=4; i++) document.getElementById(`laneTitle-${i}`).innerText = `${t.lane} ${i}`;
-        calculate();
-        renderHistory();
+        // Listeners for different modes
+        for(let i=1; i<=config.lanes; i++) {
+            const el = document.getElementById(`currDens-${i}`);
+            if(config.inputMode === 'longpress') {
+                el.addEventListener('touchstart', () => { pressTimer = setTimeout(() => { unlockAndFocus(i); }, 800); });
+                el.addEventListener('touchend', () => clearTimeout(pressTimer));
+                el.addEventListener('mousedown', () => { pressTimer = setTimeout(() => { unlockAndFocus(i); }, 800); });
+                el.addEventListener('mouseup', () => clearTimeout(pressTimer));
+            } else if (config.inputMode === 'doubletap') {
+                el.addEventListener('click', (e) => {
+                    const curTime = new Date().getTime();
+                    if (curTime - lastTap < 300) { unlockAndFocus(i); }
+                    lastTap = curTime;
+                });
+            }
+        }
+
+        loadProfileData();
     }
 
-    function switchMachine(m) {
-        saveData(); // Save current screen to memory
-        currentMachine = m;
-        document.getElementById('m1Btn').className = m === 1 ? 'm-btn active-m' : 'm-btn';
-        document.getElementById('m2Btn').className = m === 2 ? 'm-btn active-m' : 'm-btn';
-        loadData(); // Load new machine from memory
-    }
-
-    function saveData() {
-        data[currentMachine].target = document.getElementById('target').value;
-        data[currentMachine].mode = document.getElementById('mode').value;
-        for(let i=1; i<=4; i++) {
-            data[currentMachine].lanes[i-1].d = document.getElementById(`currDens-${i}`).value;
-            data[currentMachine].lanes[i-1].w = document.getElementById(`avgWt-${i}`).value;
+    function unlockAndFocus(i) {
+        const el = document.getElementById(`currDens-${i}`);
+        el.readOnly = false; el.focus(); el.style.borderColor = 'var(--blue)';
+        if(config.inputMode === 'button') {
+            document.getElementById(`lockDens-${i}`).className = 'btn-icon'; // Unlocked look
+            document.getElementById(`lockDens-${i}`).innerText = '🔓';
         }
     }
 
-    function loadData() {
-        const m = data[currentMachine];
-        document.getElementById('target').value = m.target;
-        document.getElementById('mode').value = m.mode;
-        for(let i=1; i<=4; i++) {
-            document.getElementById(`currDens-${i}`).value = m.lanes[i-1].d;
-            document.getElementById(`avgWt-${i}`).value = m.lanes[i-1].w;
+    function toggleLock(i) {
+        const key = getProfileKey();
+        const lane = store[key].lanes[i-1];
+        lane.locked = !lane.locked;
+        const btn = document.getElementById(`lockDens-${i}`);
+        const el = document.getElementById(`currDens-${i}`);
+        
+        if(!lane.locked) {
+            el.readOnly = false; el.focus(); el.style.borderColor = 'var(--blue)';
+            btn.className = 'btn-icon'; btn.innerText = '🔓';
+        } else {
+            el.readOnly = true; el.style.borderColor = 'var(--border)';
+            btn.className = 'btn-icon locked'; btn.innerText = '🔒';
         }
+    }
+
+    function getProfileKey() { return `M${config.currentMachine}_${config.product}_${config.lanes}L`; }
+
+    function loadProfileData() {
+        const key = getProfileKey();
+        if (!store[key]) {
+            const defaultTarget = config.product === 'bfast' ? '63' : '102';
+            store[key] = { target: defaultTarget, lanes: Array(config.lanes).fill().map(() => ({ d:'', w:'', attempts: 0, smartActive: false, lastD: null, lastW: null })) };
+        }
+        
+        const p = store[key];
+        const txt = T[config.lang];
+
+        document.getElementById('setTarget').value = p.target;
+        document.getElementById('displayTarget').innerText = `${txt.target}: ${p.target}g`;
+
+        for(let i=1; i<=config.lanes; i++) {
+            const l = p.lanes[i-1];
+            const dInp = document.getElementById(`currDens-${i}`);
+            dInp.value = l.d; dInp.readOnly = true; dInp.style.borderColor = 'var(--border)';
+            
+            // Restore Weight
+            document.getElementById(`avgWt-${i}`).value = l.w || '';
+
+            // Restore Lock Button State
+            if(config.inputMode === 'button') {
+                const btn = document.getElementById(`lockDens-${i}`);
+                btn.className = 'btn-icon locked'; btn.innerText = '🔒';
+            }
+
+            if(config.smart === 'on' || (config.smart === 'auto' && l.smartActive)) {
+                document.getElementById(`card-${i}`).classList.add('smart-active');
+            } else {
+                document.getElementById(`card-${i}`).classList.remove('smart-active');
+            }
+        }
+        calculate(); renderHistoryTable();
+    }
+
+    function updateTargetFromSettings() {
+        const val = document.getElementById('setTarget').value;
+        const key = getProfileKey();
+        store[key].target = val;
+        document.getElementById('displayTarget').innerText = `${T[config.lang].target}: ${val}g`;
+        calculate(); persist();
+    }
+
+    function handleWeightInput(i) {
+        const key = getProfileKey();
+        store[key].lanes[i-1].w = document.getElementById(`avgWt-${i}`).value;
         calculate();
     }
 
     function calculate() {
-        const target = parseFloat(document.getElementById('target').value);
-        const factor = parseFloat(document.getElementById('mode').value);
-        let weights = [];
-        let count = 0;
-        const t = translations[currentLang];
+        const key = getProfileKey();
+        const p = store[key];
+        const target = parseFloat(p.target);
+        const baseK = FACTORS[config.product];
+        const txt = T[config.lang];
+        let weights = []; let count = 0;
 
-        for(let i=1; i<=4; i++) {
+        for(let i=1; i<=config.lanes; i++) {
             const currD = parseFloat(document.getElementById(`currDens-${i}`).value);
-            const avgW = parseFloat(document.getElementById(`avgWt-${i}`).value);
-            const valSpan = document.getElementById(`resVal-${i}`);
+            const currW = parseFloat(document.getElementById(`avgWt-${i}`).value);
+            const lane = p.lanes[i-1];
+            const resText = document.getElementById(`resText-${i}`);
+            const hiddenVal = document.getElementById(`calcVal-${i}`);
             const card = document.getElementById(`card-${i}`);
 
-            if(!isNaN(target) && !isNaN(currD) && !isNaN(avgW)) {
-                const diff = avgW - target;
-                const newD = currD + (diff * factor);
-                valSpan.innerText = t.newDens + ": " + newD.toFixed(3);
-                
-                // NEW COLOR LOGIC: Round to nearest whole number
-                const roundedDiff = Math.round(Math.abs(diff));
-                
-                if(roundedDiff >= 4) card.style.backgroundColor = 'var(--red)';
-                else if(roundedDiff === 3) card.style.backgroundColor = 'var(--yellow)';
-                else if(roundedDiff <= 2) card.style.backgroundColor = 'var(--green)';
-                else card.style.backgroundColor = 'white';
-                
-                weights.push(avgW);
-                count++;
-            } else {
-                valSpan.innerText = t.newDens + ": --";
-                card.style.backgroundColor = 'white';
-            }
-        }
-        
-        // Calculate Mean and SD
-        if (count > 0) {
-            const mean = weights.reduce((a, b) => a + b, 0) / count;
-            document.getElementById('machAvg').innerText = mean.toFixed(1) + "g";
-            if (count > 1) {
-                const variance = weights.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / count;
-                document.getElementById('stdDev').innerText = Math.sqrt(variance).toFixed(2);
-            } else document.getElementById('stdDev').innerText = "--";
-        } else {
-            document.getElementById('machAvg').innerText = "--";
-            document.getElementById('stdDev').innerText = "--";
-        }
-    }
+            if(!isNaN(target) && !isNaN(currD) && !isNaN(currW)) {
+                const diff = currW - target;
+                let activeK = baseK;
 
-    function resetMachine() {
-        if(confirm(translations[currentLang].confirm)) {
-            // Only clear target if NOT locked
-            if(!locks.target) {
-                document.getElementById('target').value = '';
-            }
-
-            for(let i=1; i<=4; i++) {
-                // Only clear density if lane is NOT locked
-                if(!locks['l'+i]) {
-                    document.getElementById(`currDens-${i}`).value = '';
+                // SMART LOGIC: Continual Feedback
+                // It calculates a new 'activeK' every time based on the most recent delta.
+                const isSmart = config.smart === 'on' || (config.smart === 'auto' && lane.smartActive);
+                if(isSmart && lane.lastD !== null && lane.lastW !== null) {
+                    let dDelta = currD - lane.lastD;
+                    let wDelta = currW - lane.lastW;
+                    if(Math.abs(wDelta) > 0.5 && Math.abs(dDelta) > 0.001) {
+                        let observedK = dDelta / wDelta;
+                        observedK = Math.max(baseK * 0.5, Math.min(observedK, baseK * 5));
+                        activeK = (observedK * 0.6) + (baseK * 0.4);
+                    }
                 }
-                // Always clear weight on reset
-                document.getElementById(`avgWt-${i}`).value = '';
+
+                const newD = currD + (diff * activeK);
+                hiddenVal.value = newD.toFixed(3);
+                resText.innerText = `${txt.newDens}: ` + newD.toFixed(3);
+
+                const absDiff = Math.abs(diff);
+                card.className = "lane-card"; 
+                if(isSmart) card.classList.add('smart-active');
+                if (absDiff <= 0.5) card.classList.add('bg-blue');
+                else if (absDiff <= 2) card.classList.add('bg-green');
+                else if (absDiff <= 3) card.classList.add('bg-yellow');
+                else card.classList.add('bg-red');
+
+                weights.push(currW); count++;
+            } else {
+                resText.innerText = `${txt.newDens}: --`; hiddenVal.value = "";
+                card.className = "lane-card";
+                if(config.smart === 'on' || (config.smart === 'auto' && lane.smartActive)) card.classList.add('smart-active');
             }
-            calculate();
+        }
+
+        if(count > 0) {
+            const mean = weights.reduce((a, b) => a + b, 0) / count;
+            document.getElementById('machAvg').innerText = mean.toFixed(1);
+            if(count > 1) {
+                const v = weights.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / count;
+                document.getElementById('stdDev').innerText = Math.sqrt(v).toFixed(2);
+            } else { document.getElementById('stdDev').innerText = "--"; }
+        } else { document.getElementById('machAvg').innerText = "--"; document.getElementById('stdDev').innerText = "--"; }
+        persist();
+    }
+
+    function applyResult(idx) {
+        const val = document.getElementById(`calcVal-${idx}`).value;
+        const currD = parseFloat(document.getElementById(`currDens-${idx}`).value);
+        const currW = parseFloat(document.getElementById(`avgWt-${idx}`).value);
+        const key = getProfileKey();
+        const lane = store[key].lanes[idx-1];
+
+        if(val && !isNaN(currD)) {
+            lane.lastD = currD; lane.lastW = currW;
+            const target = parseFloat(store[key].target);
+            if (Math.abs(currW - target) > 2) {
+                lane.attempts++;
+                if(config.smart === 'auto' && lane.attempts >= 2) {
+                    lane.smartActive = true; document.getElementById(`card-${idx}`).classList.add('smart-active');
+                }
+            } else { lane.attempts = 0; }
+
+            document.getElementById(`currDens-${idx}`).value = val; lane.d = val;
+            document.getElementById(`avgWt-${idx}`).value = ''; lane.w = '';
+            
+            document.getElementById(`currDens-${idx}`).readOnly = true;
+            document.getElementById(`currDens-${idx}`).style.borderColor = 'var(--border)';
+            if(config.inputMode === 'button') {
+                document.getElementById(`lockDens-${idx}`).className = 'btn-icon locked';
+                document.getElementById(`lockDens-${idx}`).innerText = '🔒';
+            }
+            calculate(); persist();
         }
     }
+
+    function recheckLane(idx) {
+        const key = getProfileKey();
+        document.getElementById(`avgWt-${idx}`).value = '';
+        store[key].lanes[idx-1].w = '';
+        document.getElementById(`avgWt-${idx}`).focus();
+        calculate();
+    }
+
+    function handleInput(idx) {
+        const key = getProfileKey();
+        store[key].lanes[idx-1].d = document.getElementById(`currDens-${idx}`).value;
+        calculate();
+    }
+
+    function lockOnBlur(idx) {
+        setTimeout(() => {
+            const el = document.getElementById(`currDens-${idx}`);
+            el.readOnly = true; el.style.borderColor = 'var(--border)';
+            if(config.inputMode === 'button') {
+                document.getElementById(`lockDens-${idx}`).className = 'btn-icon locked';
+                document.getElementById(`lockDens-${idx}`).innerText = '🔒';
+            }
+            const key = getProfileKey();
+            store[key].lanes[idx-1].d = el.value;
+            persist();
+        }, 200);
+    }
+
+    function switchMachine(m) { config.currentMachine = m; saveConfig(); renderInterface(); }
+    function toggleSettings() { const m = document.getElementById('settingsMenu'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; }
+    function openAbout() { document.getElementById('settingsMenu').style.display = 'none'; document.getElementById('aboutModal').style.display = 'flex'; }
+    function closeAbout() { document.getElementById('aboutModal').style.display = 'none'; document.getElementById('settingsMenu').style.display = 'flex'; }
+    function saveSettings() {
+        config.machines = parseInt(document.getElementById('setMachines').value);
+        config.lanes = parseInt(document.getElementById('setLanes').value);
+        config.product = document.getElementById('setProd').value;
+        config.smart = document.getElementById('setSmart').value;
+        config.inputMode = document.getElementById('setInputMode').value;
+        saveConfig(); renderInterface();
+    }
+    function toggleTheme() { config.theme = document.getElementById('setTheme').value; applyTheme(); saveConfig(); }
+    function applyTheme() { if(config.theme === 'dark') document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); }
+    function factoryReset() { if(confirm("Erase EVERYTHING?")) { localStorage.clear(); location.reload(); } }
 
     function saveToHistory() {
-        const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        const prod = document.getElementById('mode').value == "0.017" ? "B-Fast" : "Lunch";
+        const key = getProfileKey(); if(!history[key]) history[key] = [];
+        const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
         const avg = document.getElementById('machAvg').innerText;
-        const sd = document.getElementById('stdDev').innerText;
-        
-        let densities = [];
-        for(let i=1; i<=4; i++) {
-            const val = document.getElementById(`resVal-${i}`).innerText.split(": ")[1];
-            densities.push(val || "N/A");
+        let row = { time, avg, lanes: [] };
+        for(let i=1; i<=config.lanes; i++) {
+             const wt = document.getElementById(`avgWt-${i}`).value;
+             const calc = document.getElementById(`calcVal-${i}`).value;
+             const dens = document.getElementById(`currDens-${i}`).value;
+             row.lanes.push({ w: wt ? `${wt}g` : '--', d: calc || dens || '--' });
         }
-
-        historyData.unshift({ 
-            time, mach: "M" + currentMachine, prod, avg, sd, 
-            d1: densities[0], d2: densities[1], d3: densities[2], d4: densities[3] 
-        });
-        renderHistory();
+        history[key].unshift(row); localStorage.setItem('dsi_history_v10', JSON.stringify(history)); renderHistoryTable();
     }
-
-    function renderHistory() {
-        const body = document.getElementById('histBody');
-        body.innerHTML = historyData.map(h => `
-            <tr>
-                <td>${h.time}</td><td>${h.mach}</td><td>${h.prod}</td>
-                <td style="font-weight:bold">${h.avg}</td><td style="font-weight:bold">${h.sd}</td>
-                <td>${h.d1}</td><td>${h.d2}</td><td>${h.d3}</td><td>${h.d4}</td>
-            </tr>
-        `).join('');
+    function renderHistoryTable() {
+        const key = getProfileKey(); const data = history[key] || []; const txt = T[config.lang];
+        let hHtml = `<th>${txt.thTime || 'Time'}</th><th>${txt.avg}</th>`;
+        for(let i=1; i<=config.lanes; i++) hHtml += `<th>L${i}</th>`;
+        document.getElementById('histHeader').innerHTML = hHtml;
+        document.getElementById('histBody').innerHTML = data.map(r => {
+            let cells = `<td>${r.time}</td><td>${r.avg}</td>`;
+            r.lanes.forEach(l => { cells += `<td><span class="cell-wt">${l.w}</span><span class="cell-dens">${l.d}</span></td>`; });
+            return `<tr>${cells}</tr>`;
+        }).join('');
     }
-
-    function exportToCSV() {
-        let csv = "Time,Machine,Product,AvgWeight,StdDev,Lane1_Dens,Lane2_Dens,Lane3_Dens,Lane4_Dens\n";
-        historyData.forEach(h => {
-            csv += `${h.time},${h.mach},${h.prod},${h.avg},${h.sd},${h.d1},${h.d2},${h.d3},${h.d4}\n`;
-        });
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.setAttribute('hidden', '');
-        a.setAttribute('href', url);
-        a.setAttribute('download', 'shift_report.csv');
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+    function clearHistory() { if(confirm("Clear history?")) { history[getProfileKey()] = []; localStorage.setItem('dsi_history_v10', JSON.stringify(history)); renderHistoryTable(); } }
+    function saveConfig() { localStorage.setItem('dsi_config_v10', JSON.stringify(config)); }
+    function persist() { localStorage.setItem('dsi_store_v10', JSON.stringify(store)); }
+    function loadStore() {
+        const s = localStorage.getItem('dsi_store_v10'); const h = localStorage.getItem('dsi_history_v10');
+        if(s) store = JSON.parse(s); if(h) history = JSON.parse(h);
     }
-
-    // Run startup
-    init();
 </script>
 </body>
 </html>
