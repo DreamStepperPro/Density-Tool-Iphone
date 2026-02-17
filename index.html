@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DSI Pro v10.1</title>
+    <title>DSI Pro v11 (Cloud)</title>
     <style>
         /* --- THEMES --- */
         :root {
@@ -27,6 +27,11 @@
         
         .gear-btn { font-size: 1.5rem; background: none; border: none; cursor: pointer; padding: 5px; color: var(--text); }
         .lang-btn { background: var(--blue); color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
+        
+        /* Connection Status */
+        .status-dot { width: 10px; height: 10px; background: #ccc; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .status-online { background: var(--green); box-shadow: 0 0 5px var(--green); }
+        .status-offline { background: var(--red); }
 
         /* NAV */
         .machine-nav { display: flex; gap: 10px; margin-bottom: 15px; }
@@ -42,18 +47,13 @@
         .lane-card { background: var(--card-bg); border: 2px solid var(--border); padding: 12px; margin-bottom: 10px; border-radius: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; position: relative; }
         .lane-header { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 5px; margin-bottom: 5px; font-weight: bold; }
         
-        /* SMART TAG */
         .smart-tag { font-size: 0.7rem; background: var(--purple); color: white; padding: 2px 6px; border-radius: 10px; display: none; }
         .smart-active .smart-tag { display: inline-block; }
 
         /* INPUTS */
         label { font-size: 0.7rem; font-weight: bold; display: block; margin-bottom: 2px; text-transform: uppercase; opacity: 0.7; }
         .input-group { display: flex; gap: 5px; }
-        
-        /* inputmode replaced pattern for iOS compatibility */
         input { width: 100%; padding: 12px; font-size: 1.1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--text); font-weight: bold; }
-        
-        /* Read Only Logic for Density */
         input.density-input:read-only { background: rgba(128,128,128,0.1); color: var(--text); opacity: 0.8; pointer-events: auto; }
         input.density-input:focus { background: var(--input-bg); border-color: var(--blue); outline: none; }
 
@@ -170,7 +170,7 @@
 
         <div class="modal-opt">
             <label id="lblMenuInput">Unlock Method</label>
-            <select id="setInputMode" onchange="saveSettings()">
+            <select id="setInputMode" onchange="saveLocalSettings()">
                 <option value="button">Lock Button (Default)</option>
                 <option value="longpress">Long Press (1s)</option>
                 <option value="doubletap">Double Tap</option>
@@ -179,7 +179,7 @@
 
         <div class="modal-opt">
             <label id="lblMenuMach">Machines</label>
-            <select id="setMachines" onchange="saveSettings()">
+            <select id="setMachines" onchange="saveLocalSettings()">
                 <option value="1">1 Machine</option>
                 <option value="2">2 Machines</option>
             </select>
@@ -187,7 +187,7 @@
 
         <div class="modal-opt">
             <label id="lblMenuLane">Configuration</label>
-            <select id="setLanes" onchange="saveSettings()">
+            <select id="setLanes" onchange="switchProfile()">
                 <option value="2">Dual Lane</option>
                 <option value="4">Quad Lane</option>
             </select>
@@ -195,7 +195,7 @@
 
         <div class="modal-opt">
             <label id="lblMenuProd">Product Mode</label>
-            <select id="setProd" onchange="saveSettings()">
+            <select id="setProd" onchange="switchProfile()">
                 <option value="lunch">Lunch</option>
                 <option value="bfast">Breakfast</option>
             </select>
@@ -203,7 +203,7 @@
 
         <div class="modal-opt">
             <label id="lblMenuSmart">Smart Mode (Adaptive)</label>
-            <select id="setSmart" onchange="saveSettings()">
+            <select id="setSmart" onchange="saveLocalSettings()">
                 <option value="off">Off (Fixed)</option>
                 <option value="on">On (Always)</option>
                 <option value="auto">Auto (Beta)</option>
@@ -219,13 +219,16 @@
         </div>
 
         <button class="modal-btn secondary" onclick="openAbout()" id="btnMenuAbout">ABOUT / DISCLAIMER</button>
-        <button class="modal-btn danger" onclick="factoryReset()" id="btnMenuReset">FACTORY RESET</button>
+        <button class="modal-btn danger" onclick="factoryReset()" id="btnMenuReset">FACTORY RESET (LOCAL)</button>
     </div>
 </div>
 
 <div class="container" id="appContent" style="filter:blur(5px);">
     <div class="header">
-        <h1 id="appTitle">DSI Pro</h1>
+        <div style="display:flex; align-items:center;">
+            <div id="statusDot" class="status-dot"></div>
+            <h1 id="appTitle">DSI Pro</h1>
+        </div>
         <div class="header-btns">
             <button class="lang-btn" onclick="toggleLanguage()" id="mainLangBtn">EN/ES</button>
             <button class="gear-btn" onclick="toggleSettings()">⚙️</button>
@@ -236,7 +239,7 @@
 
     <div class="info-bar">
         <span id="displayConfig">Quad Lane • Lunch</span>
-        <span id="displayTarget">Target: 102g</span>
+        <span id="displayTarget">Target: --g</span>
     </div>
 
     <div id="lanesContainer"></div>
@@ -270,17 +273,47 @@
     </div>
 </div>
 
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA84WGuDvVMTci0KTZHVxDCle8dbiE1XB4",
+      authDomain: "dsi-pro-bcb5c.firebaseapp.com",
+      databaseURL: "https://dsi-pro-bcb5c-default-rtdb.firebaseio.com",
+      projectId: "dsi-pro-bcb5c",
+      storageBucket: "dsi-pro-bcb5c.firebasestorage.app",
+      messagingSenderId: "545898401770",
+      appId: "1:545898401770:web:01928966d9415a9cc82c93"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    window.db = db; // Expose to global scope for non-module functions
+    window.ref = ref;
+    window.set = set;
+    window.onValue = onValue;
+    window.update = update;
+    
+    // Start App Logic after Firebase Loads
+    window.initApp();
+</script>
+
 <script>
     // --- GLOBAL STATE ---
+    // Config = Local Preferences (Not Synced)
     let config = {
         machines: 2, lanes: 4, product: 'lunch', smart: 'auto', theme: 'light',
         currentMachine: 1, acceptedDisclaimer: false, lang: 'en', inputMode: 'button'
     };
 
+    // Store = Cloud Data (Synced)
+    let store = {}; 
+    let history = {};
+    
     const FACTORS = { lunch: 0.01, bfast: 0.017 };
-    let store = {}; let history = {}; let pressTimer;
-    let lastAutoSaveCombo = ""; // Tracks the last combo of weights to prevent duplicate auto-saves
-
+    let pressTimer; let lastAutoSaveCombo = "";
+    
     // --- TRANSLATIONS ---
     const T = {
         en: {
@@ -309,8 +342,9 @@
         }
     };
 
-    window.onload = function() {
-        const savedConfig = localStorage.getItem('dsi_config_v10_1');
+    // Called by Module Script
+    window.initApp = function() {
+        const savedConfig = localStorage.getItem('dsi_config_v11');
         if (savedConfig) config = JSON.parse(savedConfig);
 
         updateText();
@@ -318,17 +352,116 @@
         if(!config.acceptedDisclaimer) {
             document.getElementById('disclaimerModal').style.display = 'flex';
         } else {
-            const hasData = localStorage.getItem('dsi_store_v10_1');
-            if (!hasData) document.getElementById('setupWizard').style.display = 'flex';
-            else document.getElementById('appContent').style.filter = 'none';
+            // First run check is less relevant with cloud, but we keep setup wizard for local preferences
+            const hasSetup = localStorage.getItem('dsi_setup_done');
+            if (!hasSetup) document.getElementById('setupWizard').style.display = 'flex';
+            else {
+                document.getElementById('appContent').style.filter = 'none';
+                startCloudSync(); // Connect to Cloud
+            }
         }
         
-        loadStore();
         applyTheme();
         renderInterface();
     };
 
-    function toggleLanguage() { config.lang = config.lang === 'en' ? 'es' : 'en'; updateText(); renderInterface(); saveConfig(); }
+    // --- CLOUD SYNC LOGIC ---
+    let dbRef_Store;
+    let dbRef_History;
+
+    function startCloudSync() {
+        if(!window.db) { setTimeout(startCloudSync, 500); return; } // Wait for SDK
+        
+        const pathKey = `M${config.currentMachine}/${config.product}_${config.lanes}L`;
+        const dot = document.getElementById('statusDot');
+        
+        // Unsubscribe previous listeners if any (simple hack: just overwrite ref)
+        dbRef_Store = window.ref(window.db, `stores/${pathKey}`);
+        dbRef_History = window.ref(window.db, `histories/${pathKey}`);
+
+        // Listen for Store Changes
+        window.onValue(dbRef_Store, (snapshot) => {
+            dot.className = "status-dot status-online";
+            const val = snapshot.val();
+            if(val) {
+                store = val;
+                // Update UI, but carefully
+                updateUIFromCloud();
+            } else {
+                // Initialize default if empty
+                if(!store.target) {
+                    const defaultTarget = config.product === 'bfast' ? '63' : '102';
+                    store = { target: defaultTarget, lanes: Array(config.lanes).fill().map(() => ({ d:'', w:'', attempts: 0, smartActive: false, lastD: null, lastW: null, locked: true })) };
+                    window.set(dbRef_Store, store);
+                }
+            }
+        }, (error) => {
+            dot.className = "status-dot status-offline";
+            console.error(error);
+        });
+
+        // Listen for History Changes
+        window.onValue(dbRef_History, (snapshot) => {
+            const val = snapshot.val();
+            history = val || [];
+            renderHistoryTable();
+        });
+    }
+
+    function updateUIFromCloud() {
+        const txt = T[config.lang];
+        
+        // Update Target
+        const tEl = document.getElementById('setTarget');
+        if(document.activeElement !== tEl) {
+            tEl.value = store.target;
+            document.getElementById('displayTarget').innerText = `${txt.target}: ${store.target}g`;
+        }
+
+        // Update Lanes
+        for(let i=1; i<=config.lanes; i++) {
+            const lane = store.lanes[i-1];
+            
+            // Update Density Input
+            const dEl = document.getElementById(`currDens-${i}`);
+            if(document.activeElement !== dEl) {
+                dEl.value = lane.d;
+                if(lane.locked) {
+                    dEl.readOnly = true; dEl.style.borderColor = 'var(--border)';
+                    if(config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon locked'; document.getElementById(`lockDens-${i}`).innerText = '🔒'; }
+                } else {
+                    dEl.readOnly = false; dEl.style.borderColor = 'var(--blue)';
+                    if(config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓'; }
+                }
+            }
+
+            // Update Weight Input
+            const wEl = document.getElementById(`avgWt-${i}`);
+            if(document.activeElement !== wEl) {
+                wEl.value = lane.w || '';
+            }
+
+            // Update Smart Tag
+            if(config.smart === 'on' || (config.smart === 'auto' && lane.smartActive)) {
+                document.getElementById(`card-${i}`).classList.add('smart-active');
+            } else {
+                document.getElementById(`card-${i}`).classList.remove('smart-active');
+            }
+        }
+        calculate(false); // Calc without writing back to cloud to avoid loops
+    }
+
+    function pushToCloud() {
+        if(dbRef_Store) window.set(dbRef_Store, store);
+    }
+
+    function pushHistoryToCloud() {
+        if(dbRef_History) window.set(dbRef_History, history);
+    }
+
+    // --- STANDARD APP LOGIC ---
+
+    function toggleLanguage() { config.lang = config.lang === 'en' ? 'es' : 'en'; updateText(); renderInterface(); saveLocalSettings(); }
 
     function updateText() {
         const txt = T[config.lang];
@@ -363,21 +496,28 @@
 
     function acceptDisclaimer() {
         config.acceptedDisclaimer = true;
-        saveConfig();
+        saveLocalSettings();
         document.getElementById('disclaimerModal').style.display = 'none';
-        const hasData = localStorage.getItem('dsi_store_v10_1');
-        if (!hasData) document.getElementById('setupWizard').style.display = 'flex';
-        else document.getElementById('appContent').style.filter = 'none';
+        
+        const hasSetup = localStorage.getItem('dsi_setup_done');
+        if (!hasSetup) document.getElementById('setupWizard').style.display = 'flex';
+        else {
+            document.getElementById('appContent').style.filter = 'none';
+            startCloudSync();
+        }
     }
 
     function completeSetup() {
         config.machines = parseInt(document.getElementById('setupMachines').value);
         config.lanes = parseInt(document.getElementById('setupLanes').value);
         config.product = document.getElementById('setupProd').value;
-        saveConfig();
+        localStorage.setItem('dsi_setup_done', 'true');
+        saveLocalSettings();
         document.getElementById('setupWizard').style.display = 'none';
         document.getElementById('appContent').style.filter = 'none';
+        
         renderInterface();
+        startCloudSync(); // Initialize cloud connection
     }
 
     function renderInterface() {
@@ -387,11 +527,9 @@
 
         if (config.machines === 1) {
             nav.className = 'machine-nav nav-hidden';
-            title.innerText = "DSI";
             config.currentMachine = 1;
         } else {
             nav.className = 'machine-nav';
-            title.innerText = "DSI Pro";
             nav.innerHTML = '';
             for(let i=1; i<=config.machines; i++) {
                 const btn = document.createElement('button');
@@ -405,6 +543,7 @@
         const prodName = config.product === 'lunch' ? txt.lunch : txt.bfast;
         document.getElementById('displayConfig').innerText = `${config.lanes} ${txt.lane} • ${prodName}`;
         
+        // Update Options
         document.getElementById('setMachines').value = config.machines;
         document.getElementById('setLanes').value = config.lanes;
         document.getElementById('setProd').value = config.product;
@@ -419,7 +558,6 @@
             if(config.inputMode === 'longpress') labelText += " (HOLD)";
             if(config.inputMode === 'doubletap') labelText += " (x2)";
 
-            // onmousedown prevents focus stealing bug on iOS
             const btnHtml = config.inputMode === 'button' ? 
                 `<button class="btn-icon" id="lockDens-${i}" onmousedown="event.preventDefault()" onclick="toggleLock(${i})">🔒</button>` : 
                 `<button class="btn-icon btn-hidden" id="lockDens-${i}">🔒</button>`;
@@ -449,7 +587,7 @@
             `;
         }
         
-        // Listeners for longpress and native double tap
+        // Listeners
         for(let i=1; i<=config.lanes; i++) {
             const el = document.getElementById(`currDens-${i}`);
             if(config.inputMode === 'longpress') {
@@ -458,12 +596,11 @@
                 el.addEventListener('mousedown', () => { pressTimer = setTimeout(() => { unlockAndFocus(i); }, 800); });
                 el.addEventListener('mouseup', () => clearTimeout(pressTimer));
             } else if (config.inputMode === 'doubletap') {
-                // Using standard HTML5 double click for native speed and keyboard allowance
                 el.ondblclick = function() { unlockAndFocus(i); };
             }
         }
-
-        loadProfileData();
+        
+        // Note: We don't call loadProfileData here because standard loading happens via Cloud callback
     }
 
     function unlockAndFocus(i) {
@@ -472,6 +609,9 @@
         el.focus(); 
         el.style.borderColor = 'var(--blue)';
         
+        store.lanes[i-1].locked = false; // Update local state
+        pushToCloud(); // Sync lock status
+
         if(config.inputMode === 'button') {
             document.getElementById(`lockDens-${i}`).className = 'btn-icon';
             document.getElementById(`lockDens-${i}`).innerText = '🔓';
@@ -479,113 +619,73 @@
     }
 
     function toggleLock(i) {
-        const key = getProfileKey();
-        const lane = store[key].lanes[i-1];
-        lane.locked = !lane.locked;
-        const btn = document.getElementById(`lockDens-${i}`);
-        const el = document.getElementById(`currDens-${i}`);
+        // Just toggle local state and push. UI update handles visual
+        store.lanes[i-1].locked = !store.lanes[i-1].locked;
         
-        if(!lane.locked) {
+        const el = document.getElementById(`currDens-${i}`);
+        if(!store.lanes[i-1].locked) {
             el.readOnly = false;
-            btn.className = 'btn-icon'; btn.innerText = '🔓';
-            // Slight delay ensures click event ends before focus begins, keeping keyboard up on iOS
             setTimeout(() => { el.focus(); el.style.borderColor = 'var(--blue)'; }, 50);
         } else {
             el.readOnly = true; el.style.borderColor = 'var(--border)';
-            btn.className = 'btn-icon locked'; btn.innerText = '🔒';
         }
-    }
-
-    function getProfileKey() { return `M${config.currentMachine}_${config.product}_${config.lanes}L`; }
-
-    function loadProfileData() {
-        const key = getProfileKey();
-        if (!store[key]) {
-            const defaultTarget = config.product === 'bfast' ? '63' : '102';
-            store[key] = { target: defaultTarget, lanes: Array(config.lanes).fill().map(() => ({ d:'', w:'', attempts: 0, smartActive: false, lastD: null, lastW: null, locked: true })) };
-        }
-        
-        const p = store[key];
-        const txt = T[config.lang];
-
-        document.getElementById('setTarget').value = p.target;
-        document.getElementById('displayTarget').innerText = `${txt.target}: ${p.target}g`;
-
-        for(let i=1; i<=config.lanes; i++) {
-            const l = p.lanes[i-1];
-            const dInp = document.getElementById(`currDens-${i}`);
-            dInp.value = l.d; 
-            
-            // Restore Locks
-            if(l.locked) {
-                dInp.readOnly = true; dInp.style.borderColor = 'var(--border)';
-                if(config.inputMode === 'button') {
-                    document.getElementById(`lockDens-${i}`).className = 'btn-icon locked';
-                    document.getElementById(`lockDens-${i}`).innerText = '🔒';
-                }
-            } else {
-                dInp.readOnly = false; dInp.style.borderColor = 'var(--blue)';
-                if(config.inputMode === 'button') {
-                    document.getElementById(`lockDens-${i}`).className = 'btn-icon';
-                    document.getElementById(`lockDens-${i}`).innerText = '🔓';
-                }
-            }
-            
-            document.getElementById(`avgWt-${i}`).value = l.w || '';
-
-            if(config.smart === 'on' || (config.smart === 'auto' && l.smartActive)) {
-                document.getElementById(`card-${i}`).classList.add('smart-active');
-            } else {
-                document.getElementById(`card-${i}`).classList.remove('smart-active');
-            }
-        }
-        calculate(); renderHistoryTable();
+        pushToCloud();
     }
 
     function updateTargetFromSettings() {
         const val = document.getElementById('setTarget').value;
-        const key = getProfileKey();
-        store[key].target = val;
+        store.target = val;
         document.getElementById('displayTarget').innerText = `${T[config.lang].target}: ${val}g`;
-        calculate(); persist();
+        calculate(true);
     }
 
     function handleWeightInput(i) {
-        const key = getProfileKey();
-        store[key].lanes[i-1].w = document.getElementById(`avgWt-${i}`).value;
-        calculate();
+        store.lanes[i-1].w = document.getElementById(`avgWt-${i}`).value;
+        calculate(true);
     }
 
-    // --- AUTO SAVE FEATURE ---
+    function handleInput(i) {
+        store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value;
+        calculate(true);
+    }
+
+    function lockOnBlur(i) {
+        setTimeout(() => {
+            const el = document.getElementById(`currDens-${i}`);
+            if(document.activeElement === el) return;
+            store.lanes[i-1].locked = true;
+            store.lanes[i-1].d = el.value;
+            pushToCloud();
+        }, 150);
+    }
+
+    // --- AUTO SAVE ---
     function checkAutoSave() {
         let currentCombo = "";
         let allFilled = true;
-        
         for(let i=1; i<=config.lanes; i++) {
             const w = document.getElementById(`avgWt-${i}`).value;
             if(!w) { allFilled = false; break; }
             currentCombo += w + ",";
         }
-        
-        // If all lanes have weights AND this exact combo hasn't been auto-saved yet
         if(allFilled && currentCombo !== lastAutoSaveCombo) {
             lastAutoSaveCombo = currentCombo;
             saveToHistory();
         }
     }
 
-    function calculate() {
-        const key = getProfileKey();
-        const p = store[key];
-        const target = parseFloat(p.target);
+    function calculate(writeToCloud) {
+        if(!store || !store.lanes) return; // Guard against empty store
+
+        const target = parseFloat(store.target);
         const baseK = FACTORS[config.product];
         const txt = T[config.lang];
         let weights = []; let count = 0;
 
         for(let i=1; i<=config.lanes; i++) {
-            const currD = parseFloat(document.getElementById(`currDens-${i}`).value);
-            const currW = parseFloat(document.getElementById(`avgWt-${i}`).value);
-            const lane = p.lanes[i-1];
+            const currD = parseFloat(store.lanes[i-1].d);
+            const currW = parseFloat(store.lanes[i-1].w);
+            const lane = store.lanes[i-1];
             const resText = document.getElementById(`resText-${i}`);
             const hiddenVal = document.getElementById(`calcVal-${i}`);
             const card = document.getElementById(`card-${i}`);
@@ -633,127 +733,89 @@
                 document.getElementById('stdDev').innerText = Math.sqrt(v).toFixed(2);
             } else { document.getElementById('stdDev').innerText = "--"; }
         } else { document.getElementById('machAvg').innerText = "--"; document.getElementById('stdDev').innerText = "--"; }
-        persist();
+        
+        if(writeToCloud) pushToCloud();
     }
 
     function applyResult(idx) {
         const val = document.getElementById(`calcVal-${idx}`).value;
-        const currD = parseFloat(document.getElementById(`currDens-${idx}`).value);
-        const currW = parseFloat(document.getElementById(`avgWt-${idx}`).value);
-        const key = getProfileKey();
-        const lane = store[key].lanes[idx-1];
+        const currD = parseFloat(store.lanes[idx-1].d);
+        const currW = parseFloat(store.lanes[idx-1].w);
+        const lane = store.lanes[idx-1];
 
         if(val && !isNaN(currD)) {
             lane.lastD = currD; lane.lastW = currW;
-            const target = parseFloat(store[key].target);
+            const target = parseFloat(store.target);
             if (Math.abs(currW - target) > 2) {
                 lane.attempts++;
                 if(config.smart === 'auto' && lane.attempts >= 2) {
-                    lane.smartActive = true; document.getElementById(`card-${idx}`).classList.add('smart-active');
+                    lane.smartActive = true; 
+                    document.getElementById(`card-${idx}`).classList.add('smart-active');
                 }
             } else { lane.attempts = 0; }
 
-            document.getElementById(`currDens-${idx}`).value = val; lane.d = val;
-            document.getElementById(`avgWt-${idx}`).value = ''; lane.w = '';
-            
-            // Relock
-            lane.locked = true;
-            document.getElementById(`currDens-${idx}`).readOnly = true;
-            document.getElementById(`currDens-${idx}`).style.borderColor = 'var(--border)';
-            if(config.inputMode === 'button') {
-                document.getElementById(`lockDens-${idx}`).className = 'btn-icon locked';
-                document.getElementById(`lockDens-${idx}`).innerText = '🔒';
-            }
-            
-            // Reset combo string so user can save the next check
+            lane.d = val;
+            lane.w = '';
+            lane.locked = true; // Auto lock on apply
+
             lastAutoSaveCombo = "";
-            calculate(); persist();
+            calculate(true); // Pushes new density/cleared weight/lock status
         }
     }
 
     function recheckLane(idx) {
-        const key = getProfileKey();
-        document.getElementById(`avgWt-${idx}`).value = '';
-        store[key].lanes[idx-1].w = '';
-        lastAutoSaveCombo = ""; // Allow new auto-save
+        store.lanes[idx-1].w = '';
+        lastAutoSaveCombo = ""; 
         document.getElementById(`avgWt-${idx}`).focus();
-        calculate();
+        calculate(true);
     }
 
-    function handleInput(idx) {
-        const key = getProfileKey();
-        store[key].lanes[idx-1].d = document.getElementById(`currDens-${idx}`).value;
-        calculate();
+    function switchMachine(m) { config.currentMachine = m; saveLocalSettings(); renderInterface(); startCloudSync(); }
+    function switchProfile() { 
+        config.lanes = parseInt(document.getElementById('setLanes').value);
+        config.product = document.getElementById('setProd').value;
+        saveLocalSettings(); renderInterface(); startCloudSync();
     }
-
-    function lockOnBlur(idx) {
-        // Prevent immediate relock if the user was just tapping unlock
-        setTimeout(() => {
-            const el = document.getElementById(`currDens-${idx}`);
-            // If the element is still focused, do nothing
-            if(document.activeElement === el) return;
-            
-            el.readOnly = true; el.style.borderColor = 'var(--border)';
-            const key = getProfileKey();
-            store[key].lanes[idx-1].locked = true;
-            
-            if(config.inputMode === 'button') {
-                document.getElementById(`lockDens-${idx}`).className = 'btn-icon locked';
-                document.getElementById(`lockDens-${idx}`).innerText = '🔒';
-            }
-            
-            store[key].lanes[idx-1].d = el.value;
-            persist();
-        }, 150);
-    }
-
-    function switchMachine(m) { config.currentMachine = m; saveConfig(); renderInterface(); }
     function toggleSettings() { const m = document.getElementById('settingsMenu'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; }
     function openAbout() { document.getElementById('settingsMenu').style.display = 'none'; document.getElementById('aboutModal').style.display = 'flex'; }
     function closeAbout() { document.getElementById('aboutModal').style.display = 'none'; document.getElementById('settingsMenu').style.display = 'flex'; }
-    function saveSettings() {
+    function saveLocalSettings() {
         config.machines = parseInt(document.getElementById('setMachines').value);
-        config.lanes = parseInt(document.getElementById('setLanes').value);
-        config.product = document.getElementById('setProd').value;
         config.smart = document.getElementById('setSmart').value;
         config.inputMode = document.getElementById('setInputMode').value;
-        saveConfig(); renderInterface();
+        localStorage.setItem('dsi_config_v11', JSON.stringify(config));
     }
-    function toggleTheme() { config.theme = document.getElementById('setTheme').value; applyTheme(); saveConfig(); }
+    function toggleTheme() { config.theme = document.getElementById('setTheme').value; applyTheme(); saveLocalSettings(); }
     function applyTheme() { if(config.theme === 'dark') document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); }
-    function factoryReset() { if(confirm("Erase EVERYTHING?")) { localStorage.clear(); location.reload(); } }
+    function factoryReset() { if(confirm("Erase LOCAL settings? Cloud data remains.")) { localStorage.clear(); location.reload(); } }
 
     function saveToHistory() {
-        const key = getProfileKey(); if(!history[key]) history[key] = [];
         const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
         const avg = document.getElementById('machAvg').innerText;
         let row = { time, avg, lanes: [] };
         for(let i=1; i<=config.lanes; i++) {
-             const wt = document.getElementById(`avgWt-${i}`).value;
+             const wt = store.lanes[i-1].w;
              const calc = document.getElementById(`calcVal-${i}`).value;
-             const dens = document.getElementById(`currDens-${i}`).value;
+             const dens = store.lanes[i-1].d;
              row.lanes.push({ w: wt ? `${wt}g` : '--', d: calc || dens || '--' });
         }
-        history[key].unshift(row); localStorage.setItem('dsi_history_v10_1', JSON.stringify(history)); renderHistoryTable();
+        history.unshift(row);
+        // Limit history to 50 items to save bandwidth/space
+        if(history.length > 50) history.pop();
+        pushHistoryToCloud();
     }
     function renderHistoryTable() {
-        const key = getProfileKey(); const data = history[key] || []; const txt = T[config.lang];
+        const txt = T[config.lang];
         let hHtml = `<th>${txt.thTime || 'Time'}</th><th>${txt.avg}</th>`;
         for(let i=1; i<=config.lanes; i++) hHtml += `<th>L${i}</th>`;
         document.getElementById('histHeader').innerHTML = hHtml;
-        document.getElementById('histBody').innerHTML = data.map(r => {
+        document.getElementById('histBody').innerHTML = history.map(r => {
             let cells = `<td>${r.time}</td><td>${r.avg}</td>`;
             r.lanes.forEach(l => { cells += `<td><span class="cell-wt">${l.w}</span><span class="cell-dens">${l.d}</span></td>`; });
             return `<tr>${cells}</tr>`;
         }).join('');
     }
-    function clearHistory() { if(confirm("Clear history?")) { history[getProfileKey()] = []; localStorage.setItem('dsi_history_v10_1', JSON.stringify(history)); renderHistoryTable(); } }
-    function saveConfig() { localStorage.setItem('dsi_config_v10_1', JSON.stringify(config)); }
-    function persist() { localStorage.setItem('dsi_store_v10_1', JSON.stringify(store)); }
-    function loadStore() {
-        const s = localStorage.getItem('dsi_store_v10_1'); const h = localStorage.getItem('dsi_history_v10_1');
-        if(s) store = JSON.parse(s); if(h) history = JSON.parse(h);
-    }
+    function clearHistory() { if(confirm("Clear history?")) { history = []; pushHistoryToCloud(); } }
 </script>
 </body>
 </html>
