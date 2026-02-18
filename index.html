@@ -368,6 +368,8 @@
     // --- CLOUD SYNC LOGIC ---
     let dbRef_Store;
     let dbRef_History;
+    let unsubStore = null;   // NEW: Tracks active store listener
+    let unsubHistory = null; // NEW: Tracks active history listener
 
     function startCloudSync() {
         if(!window.db) { setTimeout(startCloudSync, 500); return; } // Wait for SDK
@@ -375,12 +377,15 @@
         const pathKey = `M${config.currentMachine}/${config.product}_${config.lanes}L`;
         const dot = document.getElementById('statusDot');
         
-        // Unsubscribe previous listeners if any (simple hack: just overwrite ref)
+        // THE FIX: Officially "hang up" old listeners before switching machines
+        if (unsubStore) unsubStore();
+        if (unsubHistory) unsubHistory();
+
         dbRef_Store = window.ref(window.db, `stores/${pathKey}`);
         dbRef_History = window.ref(window.db, `histories/${pathKey}`);
 
-        // Listen for Store Changes
-        window.onValue(dbRef_Store, (snapshot) => {
+        // Listen for Store Changes (and save the hang-up function to unsubStore)
+        unsubStore = window.onValue(dbRef_Store, (snapshot) => {
             dot.className = "status-dot status-online";
             const val = snapshot.val();
             if(val) {
@@ -400,8 +405,8 @@
             console.error(error);
         });
 
-        // Listen for History Changes
-        window.onValue(dbRef_History, (snapshot) => {
+        // Listen for History Changes (and save the hang-up function to unsubHistory)
+        unsubHistory = window.onValue(dbRef_History, (snapshot) => {
             const val = snapshot.val();
             history = val || [];
             renderHistoryTable();
