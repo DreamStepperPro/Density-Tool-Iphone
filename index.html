@@ -769,9 +769,17 @@
     }
 
     function recheckLane(idx) {
+        // 1. Clear the data in the cloud store
         store.lanes[idx-1].w = '';
+        
+        // 2. THE FIX: Explicitly clear the physical screen before focusing
+        document.getElementById(`avgWt-${idx}`).value = '';
+        
+        // 3. Reset auto-save and put cursor back in the box
         lastAutoSaveCombo = ""; 
         document.getElementById(`avgWt-${idx}`).focus();
+        
+        // 4. Calculate and push the blank state to the cloud
         calculate(true);
     }
 
