@@ -276,6 +276,8 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    // NEW: Import the Authentication tools
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyA84WGuDvVMTci0KTZHVxDCle8dbiE1XB4",
@@ -289,14 +291,24 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    window.db = db; // Expose to global scope for non-module functions
+    const auth = getAuth(app); // NEW: Turn on the Auth engine
+
+    window.db = db; 
     window.ref = ref;
     window.set = set;
     window.onValue = onValue;
     window.update = update;
     
-    // Start App Logic after Firebase Loads
-    window.initApp();
+    // NEW: Perform the Invisible Login BEFORE starting the app
+    signInAnonymously(auth)
+      .then(() => {
+          console.log("Secure Connection Established.");
+          window.initApp(); // Start the app once logged in
+      })
+      .catch((error) => {
+          console.error("Security connection failed:", error.message);
+          window.initApp(); // Still let the app run locally if offline
+      });
 </script>
 
 <script>
@@ -749,6 +761,9 @@
         const lane = store.lanes[idx-1];
 
         if(val && !isNaN(currD)) {
+            // ---> THE FIX: Save the snapshot instantly BEFORE clearing the weight <---
+            saveToHistory();
+
             lane.lastD = currD; lane.lastW = currW;
             const target = parseFloat(store.target);
             if (Math.abs(currW - target) > 2) {
