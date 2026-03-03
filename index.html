@@ -113,7 +113,7 @@
 <div class="modal-overlay" id="accessDeniedOverlay" style="display:flex; z-index: 300; background: var(--bg);">
     <div class="modal" style="text-align: center;">
         <h2 style="color: var(--red);">🔒 Access Pending</h2>
-        <p style="font-size: 0.9rem; margin-bottom: 20px;">Your device is waiting for Supervisor approval.</p>
+        <p style="font-size: 0.9rem; margin-bottom: 20px;">Your device is waiting for Admin approval.</p>
         <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 5px;">Your Device ID:</p>
         <code id="userIdDisplay" style="background: var(--input-bg); padding: 10px; display: block; word-break: break-all; border-radius: 6px; border: 1px solid var(--border); font-weight: bold; margin-bottom: 20px;">Loading...</code>
         
@@ -360,7 +360,12 @@
         window.onValue(window.ref(window.db, `users/${currentUserUid}/approved`), (snap) => {
             const isApproved = snap.val() === true;
             if (isAdmin || isApproved) {
+                // Access Granted! Hide the waiting room
                 document.getElementById('accessDeniedOverlay').style.display = 'none';
+                
+                // THE FIX: Instantly force the dot to turn green for visual feedback
+                document.getElementById('statusDot').className = "status-dot status-online";
+
                 if (!appInitialized) {
                     appInitialized = true;
                     window.initApp(); 
@@ -368,15 +373,16 @@
                     // Live Unlock: Automatically connect to cloud if approved while working offline!
                     window.isOfflineMode = false;
                     window.startCloudSync();
+                } else {
+                    // Catch-all to make sure they sync if they just waited on the screen
+                    window.startCloudSync();
                 }
             } else {
+                // Access Denied! Show the waiting room
                 document.getElementById('accessDeniedOverlay').style.display = 'flex';
                 document.getElementById('userIdDisplay').innerText = currentUserUid;
             }
         });
-    }).catch((error) => {
-        console.error("Security connection failed:", error.message);
-    });
 </script>
 
 <script>
@@ -921,3 +927,4 @@
 </script>
 </body>
 </html>
+
