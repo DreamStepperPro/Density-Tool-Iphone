@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <title>DSI Pro v11.4 (Roles & Roster)</title>
+    <title>DSI Pro v11.5 (Supervisor)</title>
     <style>
         /* --- THEMES --- */
         :root {
@@ -105,6 +105,18 @@
         .bg-red { background-color: var(--red) !important; color: #fff; border-color: var(--red); }
 
         select { width: 100%; padding: 12px; border-radius: 6px; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); font-size: 1rem; box-sizing: border-box; }
+        
+        /* SUPERVISOR DASHBOARD STYLES */
+        .sup-card { background: var(--card-bg); border: 2px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        .sup-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-bottom: 10px; }
+        .sup-title { font-size: 1.2rem; font-weight: 800; margin: 0; }
+        .sup-meta { font-size: 0.75rem; color: gray; text-align: right; }
+        .sup-meta span { display: block; font-weight: bold; color: var(--text); font-size: 0.85rem; }
+        .sup-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .sup-lane { text-align: center; padding: 10px 5px; border-radius: 8px; border: 1px solid var(--border); font-weight: bold; }
+        .sup-lane-lbl { font-size: 0.6rem; text-transform: uppercase; opacity: 0.8; display: block; margin-bottom: 5px; }
+        .sup-lane-wt { font-size: 1.1rem; display: block; }
+        .sup-lane-dens { font-size: 0.7rem; opacity: 0.8; }
     </style>
 </head>
 <body>
@@ -255,7 +267,7 @@
     </div>
 </div>
 
-<div class="container" id="appContent" style="filter:blur(5px);">
+<div class="container" id="appContent" style="display:none; filter:blur(5px);">
     <div class="header">
         <div style="display:flex; align-items:center;">
             <div id="statusDot" class="status-dot"></div>
@@ -294,15 +306,31 @@
     </div>
 </div>
 
-<div class="stats-bar">
+<div class="container" id="supervisorDashboard" style="display:none; padding-bottom: 80px;">
+    <div class="header">
+        <div style="display:flex; align-items:center;">
+            <div id="supStatusDot" class="status-dot status-online"></div>
+            <h1 style="margin:0; font-size:1.4rem; font-weight:800; letter-spacing:-0.5px;">DSI Line <span style="font-size: 0.8rem; color: var(--purple); vertical-align: middle;">(OEE VIEW)</span></h1>
+        </div>
+        <div class="header-btns">
+            <button class="gear-btn btn-hidden" id="btnAdminSup" onclick="openAdmin()" style="color: var(--purple);">👑</button>
+            <button class="gear-btn" onclick="toggleSettings()">⚙️</button>
+        </div>
+    </div>
+    
+    <div id="supCardsContainer" style="margin-top: 15px;">
+        </div>
+</div>
+
+<div class="stats-bar" id="globalStatsBar" style="display:none;">
     <div class="stat-box">
         <span class="stat-val" id="machAvg">--</span>
-        <span class="stat-lbl" id="lblAvg">AVG</span>
+        <span class="stat-lbl" id="lblAvg">LINE AVG</span>
     </div>
     <div style="width:1px; height:30px; background:rgba(255,255,255,0.3);"></div>
     <div class="stat-box">
         <span class="stat-val" id="stdDev">--</span>
-        <span class="stat-lbl" id="lblSD">SD</span>
+        <span class="stat-lbl" id="lblSD">LINE SD</span>
     </div>
 </div>
 
@@ -339,6 +367,7 @@
     let isAdmin = false;
     let appInitialized = false; 
     window.isOfflineMode = false;
+    window.currentUserData = {}; // Stores name/role globally
 
     window.forceOfflineMode = function() {
         window.isOfflineMode = true;
@@ -351,30 +380,33 @@
 
     signInAnonymously(auth).then((result) => {
         currentUserUid = result.user.uid;
-        window.myUid = currentUserUid; // Expose globally so settings can use it
+        window.myUid = currentUserUid; 
         isAdmin = (currentUserUid === ADMIN_UID);
         
-        if(isAdmin) document.getElementById('btnAdmin').classList.remove('btn-hidden');
+        if(isAdmin) {
+            document.getElementById('btnAdmin').classList.remove('btn-hidden');
+            document.getElementById('btnAdminSup').classList.remove('btn-hidden');
+        }
 
-        // Check in
         const userRef = window.ref(window.db, `users/${currentUserUid}`);
-        window.update(userRef, { lastLogin: new Date().toLocaleString() }).catch(e => console.warn("Admin check-in ignored by rules", e));
+        window.update(userRef, { lastLogin: new Date().toLocaleString() }).catch(e => console.warn("Admin check-in ignored", e));
 
-        // Listen for Admin's decision
-        window.onValue(window.ref(window.db, `users/${currentUserUid}/approved`), (snap) => {
-            const isApproved = snap.val() === true;
+        // Listen to User Profile (to get Role and Admin Approval)
+        window.onValue(userRef, (snap) => {
+            window.currentUserData = snap.val() || {};
+            const isApproved = window.currentUserData.approved === true;
+            
             if (isAdmin || isApproved) {
                 document.getElementById('accessDeniedOverlay').style.display = 'none';
                 document.getElementById('statusDot').className = "status-dot status-online";
+                document.getElementById('supStatusDot').className = "status-dot status-online";
 
                 if (!appInitialized) {
                     appInitialized = true;
                     window.initApp(); 
-                } else if (window.isOfflineMode) {
-                    window.isOfflineMode = false;
-                    if(window.startCloudSync) window.startCloudSync();
                 } else {
-                    if(window.startCloudSync) window.startCloudSync();
+                    // If role changed live, re-route them!
+                    window.routeUserByRole();
                 }
             } else {
                 document.getElementById('accessDeniedOverlay').style.display = 'flex';
@@ -392,12 +424,11 @@
     let config = {
         machines: 2, lanes: 4, product: 'lunch', smart: 'auto', theme: 'light',
         currentMachine: 1, acceptedDisclaimer: false, lang: 'en', inputMode: 'button',
-        displayName: '' // NEW: Local save for user's chosen name
+        displayName: '' 
     };
 
     let store = {}; 
     let history = {};
-    
     const FACTORS = { lunch: 0.01, bfast: 0.017 };
     let pressTimer; let lastAutoSaveCombo = "";
     
@@ -405,27 +436,13 @@
     const T = {
         en: {
             title: "DSI Pro", target: "Target", newDens: "New Density", tapApply: "TAP TO APPLY", 
-            density: "DENSITY", weight: "AVG WEIGHT", smart: "SMART", 
-            avg: "AVG", sd: "SD", history: "Shift History", save: "SAVE CHECK", clear: "CLEAR TABLE",
-            setupTitle: "Initial Setup", numMach: "Number of Machines", laneConfig: "Lane Configuration", defProd: "Default Product", start: "START APP",
-            options: "Options", mach: "Machines", config: "Configuration", prod: "Product Mode", smartMode: "Smart Mode", theme: "Theme", inputMode: "Unlock Method",
-            about: "ABOUT / DISCLAIMER", reset: "FACTORY RESET", close: "CLOSE", understand: "I UNDERSTAND",
-            lane: "Lane", bfast: "Breakfast", lunch: "Lunch",
-            discTitle: "⚠️ Unofficial App",
-            discText: `<strong>Disclaimer:</strong> This is an unofficial, non-profit app created by a machine operator, for machine operators. It is not affiliated with, endorsed by, or connected to JBT Corporation. "DSI" and all related trademarks are the property of JBT Corporation. This tool is provided "as is" for informational purposes only.`,
-            aboutText: `<span class="legal-header">Unofficial App Disclaimer</span><span class="legal-header">No Affiliation:</span> This application is an independent, unofficial project. It is strictly not affiliated with, authorized, maintained, sponsored, or endorsed by JBT Corporation.<span class="legal-header">Trademarks:</span> "DSI" and all associated names, marks, emblems, and images are registered trademarks of JBT Corporation.<span class="legal-header">Limitation of Liability:</span> This tool is provided "as is". The developer assumes no responsibility for any errors or issues that arise from using this app.`
+            density: "DENSITY", weight: "AVG WEIGHT", smart: "SMART", avg: "AVG", sd: "SD",
+            lane: "Lane", bfast: "Breakfast", lunch: "Lunch"
         },
         es: {
             title: "DSI Pro", target: "Meta", newDens: "Nueva Densidad", tapApply: "TOCA PARA APLICAR", 
-            density: "DENSIDAD", weight: "PESO PROM.", smart: "INTEL", 
-            avg: "PROM", sd: "DE", history: "Historial", save: "GUARDAR", clear: "BORRAR TABLA",
-            setupTitle: "Configuración Inicial", numMach: "Número de Máquinas", laneConfig: "Config. Carriles", defProd: "Producto", start: "INICIAR",
-            options: "Opciones", mach: "Máquinas", config: "Configuración", prod: "Modo Producto", smartMode: "Modo Inteligente", theme: "Tema", inputMode: "Método de Desbloqueo",
-            about: "ACERCA DE / LEGAL", reset: "REINICIO DE FÁBRICA", close: "CERRAR", understand: "ENTIENDO",
-            lane: "Carril", bfast: "Desayuno", lunch: "Almuerzo",
-            discTitle: "⚠️ App No Oficial",
-            discText: `<strong>Aviso Legal:</strong> Esta es una aplicación no oficial y sin fines de lucro creada por un operador para operadores. No está afiliada, respaldada ni conectada con JBT Corporation. "DSI" y todas las marcas relacionadas son propiedad de JBT Corporation. Esta herramienta se proporciona "tal cual" solo con fines informativos.`,
-            aboutText: `<span class="legal-header">Aviso de App No Oficial</span><span class="legal-header">Sin Afiliación:</span> Esta aplicación es un proyecto independiente. No está afiliada, autorizada ni respaldada por JBT Corporation.<span class="legal-header">Marcas Registradas:</span> "DSI" y las marcas asociadas son propiedad de JBT Corporation.<span class="legal-header">Limitación de Responsabilidad:</span> Esta herramienta se ofrece "tal cual". El desarrollador no asume responsabilidad por errores o problemas derivados de su uso.`
+            density: "DENSIDAD", weight: "PESO PROM.", smart: "INTEL", avg: "PROM", sd: "DE",
+            lane: "Carril", bfast: "Desayuno", lunch: "Almuerzo"
         }
     };
 
@@ -433,30 +450,169 @@
         const savedConfig = localStorage.getItem('dsi_config_v11');
         if (savedConfig) config = JSON.parse(savedConfig);
 
-        updateText();
-        
         if(!config.acceptedDisclaimer) {
             document.getElementById('disclaimerModal').style.display = 'flex';
         } else {
             const hasSetup = localStorage.getItem('dsi_setup_done');
             if (!hasSetup) document.getElementById('setupWizard').style.display = 'flex';
             else {
-                document.getElementById('appContent').style.filter = 'none';
-                if (!window.isOfflineMode) {
-                    window.startCloudSync();
-                } else {
-                    document.getElementById('statusDot').className = "status-dot status-offline";
+                applyTheme();
+                window.routeUserByRole(); // Decides Operator vs Supervisor
+            }
+        }
+    };
+
+    // --- ROLE ROUTER ---
+    window.routeUserByRole = function() {
+        const role = window.currentUserData.role || 'operator';
+        document.getElementById('globalStatsBar').style.display = 'flex';
+        
+        if (role === 'supervisor') {
+            document.getElementById('appContent').style.display = 'none';
+            document.getElementById('supervisorDashboard').style.display = 'block';
+            if (!window.isOfflineMode) window.startSupervisorSync();
+        } else {
+            document.getElementById('supervisorDashboard').style.display = 'none';
+            document.getElementById('appContent').style.display = 'block';
+            document.getElementById('appContent').style.filter = 'none';
+            renderInterface();
+            if (!window.isOfflineMode) window.startCloudSync();
+        }
+    }
+
+    // ======================================================================
+    // SUPERVISOR ENGINE (PHASE 2)
+    // ======================================================================
+    let unsubSupHistories = null;
+
+    window.startSupervisorSync = function() {
+        if(!window.db) { setTimeout(window.startSupervisorSync, 500); return; }
+        if (unsubSupHistories) unsubSupHistories();
+
+        // Supervisor listens to ALL histories to find the absolute latest data globally
+        const dbRefHistories = window.ref(window.db, 'histories');
+        
+        unsubSupHistories = window.onValue(dbRefHistories, (snap) => {
+            const allHistories = snap.val() || {};
+            renderSupervisorDashboard(allHistories);
+        });
+    }
+
+    function renderSupervisorDashboard(allHistories) {
+        const m1Latest = getAbsoluteLatest(allHistories.M1);
+        const m2Latest = getAbsoluteLatest(allHistories.M2);
+        
+        const container = document.getElementById('supCardsContainer');
+        container.innerHTML = '';
+        
+        let allWeightsGlobal = [];
+
+        // Build DSI 1 Card
+        if (m1Latest) {
+            container.innerHTML += buildSupCard('DSI 1', m1Latest);
+            allWeightsGlobal = allWeightsGlobal.concat(extractWeights(m1Latest.entry));
+        } else {
+            container.innerHTML += `<div class="sup-card"><h3 style="color:gray;">DSI 1: No Data</h3></div>`;
+        }
+
+        // Build DSI 2 Card
+        if (m2Latest) {
+            container.innerHTML += buildSupCard('DSI 2', m2Latest);
+            allWeightsGlobal = allWeightsGlobal.concat(extractWeights(m2Latest.entry));
+        } else {
+            container.innerHTML += `<div class="sup-card"><h3 style="color:gray;">DSI 2: No Data</h3></div>`;
+        }
+
+        // Update Global Stats Bar
+        if(allWeightsGlobal.length > 0) {
+            const mean = allWeightsGlobal.reduce((a, b) => a + b, 0) / allWeightsGlobal.length;
+            document.getElementById('machAvg').innerText = mean.toFixed(1);
+            if(allWeightsGlobal.length > 1) {
+                const v = allWeightsGlobal.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / allWeightsGlobal.length;
+                document.getElementById('stdDev').innerText = Math.sqrt(v).toFixed(2);
+            } else { document.getElementById('stdDev').innerText = "--"; }
+        } else {
+            document.getElementById('machAvg').innerText = "--"; 
+            document.getElementById('stdDev').innerText = "--"; 
+        }
+    }
+
+    // Finds the single newest check across all products (Lunch vs Breakfast)
+    function getAbsoluteLatest(machineHistories) {
+        if(!machineHistories) return null;
+        let latestEntry = null;
+        let activeProduct = '';
+        
+        for(let prodKey in machineHistories) {
+            let histArray = machineHistories[prodKey];
+            if(histArray && histArray.length > 0) {
+                let entry = histArray[0];
+                if(!latestEntry || entry.timestamp > latestEntry.timestamp) {
+                    latestEntry = entry;
+                    activeProduct = prodKey.includes('lunch') ? 'Lunch' : 'Breakfast';
                 }
             }
         }
-        
-        applyTheme();
-        renderInterface();
-    };
+        return latestEntry ? { entry: latestEntry, product: activeProduct } : null;
+    }
 
-    // --- CLOUD SYNC LOGIC ---
-    let dbRef_Store;
-    let dbRef_History;
+    function extractWeights(entry) {
+        let wts = [];
+        entry.lanes.forEach(l => {
+            let val = parseFloat(l.w);
+            if(!isNaN(val)) wts.push(val);
+        });
+        return wts;
+    }
+
+    function buildSupCard(title, dataObj) {
+        const entry = dataObj.entry;
+        const target = entry.target || 0;
+        const opName = entry.operator || 'Unknown Operator';
+        
+        let lanesHtml = '';
+        entry.lanes.forEach((l, idx) => {
+            let weightVal = parseFloat(l.w);
+            let colorClass = '';
+            
+            // Maintain original operator color rules
+            if (!isNaN(weightVal) && target > 0) {
+                let diff = Math.abs(weightVal - target);
+                if(diff <= 0.5) colorClass = 'bg-blue';
+                else if(diff <= 2) colorClass = 'bg-green';
+                else if(diff <= 3) colorClass = 'bg-yellow';
+                else colorClass = 'bg-red';
+            }
+
+            lanesHtml += `
+            <div class="sup-lane ${colorClass}">
+                <span class="sup-lane-lbl">L${idx+1}</span>
+                <span class="sup-lane-wt">${l.w}</span>
+                <span class="sup-lane-dens">${l.d}</span>
+            </div>`;
+        });
+
+        return `
+        <div class="sup-card">
+            <div class="sup-header">
+                <h2 class="sup-title">${title} <span style="font-size:0.8rem; color:gray; font-weight:normal;">• ${dataObj.product}</span></h2>
+                <div class="sup-meta">
+                    Target: ${target}g
+                    <span>${entry.time}</span>
+                </div>
+            </div>
+            <div style="font-size:0.8rem; margin-bottom: 10px; color: var(--purple); font-weight: bold;">
+                Operated by: ${opName}
+            </div>
+            <div class="sup-grid">
+                ${lanesHtml}
+            </div>
+        </div>`;
+    }
+
+    // ======================================================================
+    // OPERATOR ENGINE (Remains isolated and safe)
+    // ======================================================================
     let unsubStore = null;   
     let unsubHistory = null; 
 
@@ -485,9 +641,6 @@
                     window.set(dbRef_Store, store);
                 }
             }
-        }, (error) => {
-            dot.className = "status-dot status-offline";
-            console.error(error);
         });
 
         unsubHistory = window.onValue(dbRef_History, (snapshot) => {
@@ -495,113 +648,6 @@
             history = val || [];
             renderHistoryTable();
         });
-    }
-
-    function updateUIFromCloud() {
-        const txt = T[config.lang];
-        
-        const tEl = document.getElementById('setTarget');
-        if(document.activeElement !== tEl) {
-            tEl.value = store.target;
-            document.getElementById('displayTarget').innerText = `${txt.target}: ${store.target}g`;
-        }
-
-        for(let i=1; i<=config.lanes; i++) {
-            const lane = store.lanes[i-1];
-            
-            const dEl = document.getElementById(`currDens-${i}`);
-            if(document.activeElement !== dEl) {
-                dEl.value = lane.d;
-                if(lane.locked) {
-                    dEl.readOnly = true; dEl.style.borderColor = 'var(--border)';
-                    if(config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon locked'; document.getElementById(`lockDens-${i}`).innerText = '🔒'; }
-                } else {
-                    dEl.readOnly = false; dEl.style.borderColor = 'var(--blue)';
-                    if(config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓'; }
-                }
-            }
-
-            const wEl = document.getElementById(`avgWt-${i}`);
-            if(document.activeElement !== wEl) {
-                wEl.value = lane.w || '';
-            }
-
-            if(config.smart === 'on' || (config.smart === 'auto' && lane.smartActive)) {
-                document.getElementById(`card-${i}`).classList.add('smart-active');
-            } else {
-                document.getElementById(`card-${i}`).classList.remove('smart-active');
-            }
-        }
-        calculate(false);
-    }
-
-    function pushToCloud() {
-        if(dbRef_Store) window.set(dbRef_Store, store);
-    }
-
-    function pushHistoryToCloud() {
-        if(dbRef_History) window.set(dbRef_History, history);
-    }
-
-    function toggleLanguage() { config.lang = config.lang === 'en' ? 'es' : 'en'; updateText(); renderInterface(); saveLocalSettings(); }
-
-    function updateText() {
-        const txt = T[config.lang];
-        document.getElementById('discTitle').innerText = txt.discTitle;
-        document.getElementById('discText').innerHTML = txt.discText;
-        document.getElementById('btnUnderstand').innerText = txt.understand;
-        document.getElementById('setupTitle').innerText = txt.setupTitle;
-        document.getElementById('lblSetMach').innerText = txt.numMach;
-        document.getElementById('lblSetLane').innerText = txt.laneConfig;
-        document.getElementById('lblSetProd').innerText = txt.defProd;
-        document.getElementById('btnStartApp').innerText = txt.start;
-        document.getElementById('appTitle').innerText = txt.title;
-        document.getElementById('lblHistory').innerText = txt.history;
-        document.getElementById('btnSaveCheck').innerText = txt.save;
-        document.getElementById('btnClearTable').innerText = txt.clear;
-        document.getElementById('lblAvg').innerText = txt.avg;
-        document.getElementById('lblSD').innerText = txt.sd;
-        document.getElementById('menuTitle').innerText = txt.options;
-        document.getElementById('lblMenuTarget').innerText = `${txt.target} (g)`;
-        document.getElementById('lblMenuMach').innerText = txt.mach;
-        document.getElementById('lblMenuLane').innerText = txt.config;
-        document.getElementById('lblMenuProd').innerText = txt.prod;
-        document.getElementById('lblMenuSmart').innerText = txt.smartMode;
-        document.getElementById('lblMenuTheme').innerText = txt.theme;
-        document.getElementById('lblMenuInput').innerText = txt.inputMode;
-        document.getElementById('btnMenuAbout').innerText = txt.about;
-        document.getElementById('btnMenuReset').innerText = txt.reset;
-        document.getElementById('aboutTitle').innerText = txt.about;
-        document.getElementById('aboutText').innerHTML = txt.aboutText;
-        document.getElementById('btnCloseAbout').innerText = txt.close;
-    }
-
-    function acceptDisclaimer() {
-        config.acceptedDisclaimer = true;
-        saveLocalSettings();
-        document.getElementById('disclaimerModal').style.display = 'none';
-        
-        const hasSetup = localStorage.getItem('dsi_setup_done');
-        if (!hasSetup) document.getElementById('setupWizard').style.display = 'flex';
-        else {
-            document.getElementById('appContent').style.filter = 'none';
-            if (!window.isOfflineMode) window.startCloudSync();
-            else document.getElementById('statusDot').className = "status-dot status-offline";
-        }
-    }
-
-    function completeSetup() {
-        config.machines = parseInt(document.getElementById('setupMachines').value);
-        config.lanes = parseInt(document.getElementById('setupLanes').value);
-        config.product = document.getElementById('setupProd').value;
-        localStorage.setItem('dsi_setup_done', 'true');
-        saveLocalSettings();
-        document.getElementById('setupWizard').style.display = 'none';
-        document.getElementById('appContent').style.filter = 'none';
-        
-        renderInterface();
-        if (!window.isOfflineMode) window.startCloudSync(); 
-        else document.getElementById('statusDot').className = "status-dot status-offline";
     }
 
     function renderInterface() {
@@ -629,21 +675,13 @@
         document.getElementById('setMachines').value = config.machines;
         document.getElementById('setLanes').value = config.lanes;
         document.getElementById('setProd').value = config.product;
-        document.getElementById('setSmart').value = config.smart;
-        document.getElementById('setTheme').value = config.theme;
-        document.getElementById('setInputMode').value = config.inputMode;
         document.getElementById('setDispName').value = config.displayName || '';
 
         const container = document.getElementById('lanesContainer');
         container.innerHTML = '';
         for(let i=1; i<=config.lanes; i++) {
             let labelText = txt.density;
-            if(config.inputMode === 'longpress') labelText += " (HOLD)";
-            if(config.inputMode === 'doubletap') labelText += " (x2)";
-
-            const btnHtml = config.inputMode === 'button' ? 
-                `<button class="btn-icon" id="lockDens-${i}" onmousedown="event.preventDefault()" onclick="toggleLock(${i})">🔒</button>` : 
-                `<button class="btn-icon btn-hidden" id="lockDens-${i}">🔒</button>`;
+            const btnHtml = `<button class="btn-icon" id="lockDens-${i}" onmousedown="event.preventDefault()" onclick="toggleLock(${i})">🔒</button>`;
 
             container.innerHTML += `
                 <div class="lane-card" id="card-${i}">
@@ -658,7 +696,7 @@
                     <div>
                         <label>${txt.weight}</label>
                         <div class="input-group">
-                            <input type="number" id="avgWt-${i}" inputmode="decimal" oninput="handleWeightInput(${i})" onblur="checkAutoSave()">
+                            <input type="number" id="avgWt-${i}" inputmode="decimal" oninput="handleWeightInput(${i})">
                             <button class="btn-icon btn-recheck" onclick="recheckLane(${i})">↻</button>
                         </div>
                     </div>
@@ -669,127 +707,55 @@
                 </div>
             `;
         }
-        
+    }
+
+    // --- MATH & SYNC ENGINE ---
+    function updateUIFromCloud() {
+        const tEl = document.getElementById('setTarget');
+        if(document.activeElement !== tEl) {
+            tEl.value = store.target;
+            document.getElementById('displayTarget').innerText = `Target: ${store.target}g`;
+        }
         for(let i=1; i<=config.lanes; i++) {
-            const el = document.getElementById(`currDens-${i}`);
-            if(config.inputMode === 'longpress') {
-                el.addEventListener('touchstart', () => { pressTimer = setTimeout(() => { unlockAndFocus(i); }, 800); });
-                el.addEventListener('touchend', () => clearTimeout(pressTimer));
-                el.addEventListener('mousedown', () => { pressTimer = setTimeout(() => { unlockAndFocus(i); }, 800); });
-                el.addEventListener('mouseup', () => clearTimeout(pressTimer));
-            } else if (config.inputMode === 'doubletap') {
-                el.ondblclick = function() { unlockAndFocus(i); };
+            const lane = store.lanes[i-1];
+            const dEl = document.getElementById(`currDens-${i}`);
+            if(document.activeElement !== dEl) {
+                dEl.value = lane.d;
+                if(lane.locked) {
+                    dEl.readOnly = true; dEl.style.borderColor = 'var(--border)';
+                    document.getElementById(`lockDens-${i}`).className = 'btn-icon locked'; document.getElementById(`lockDens-${i}`).innerText = '🔒';
+                } else {
+                    dEl.readOnly = false; dEl.style.borderColor = 'var(--blue)';
+                    document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓';
+                }
             }
+            const wEl = document.getElementById(`avgWt-${i}`);
+            if(document.activeElement !== wEl) wEl.value = lane.w || '';
         }
-    }
-
-    function unlockAndFocus(i) {
-        const el = document.getElementById(`currDens-${i}`);
-        el.readOnly = false;
-        el.focus(); 
-        el.style.borderColor = 'var(--blue)';
-        
-        store.lanes[i-1].locked = false; 
-        pushToCloud(); 
-
-        if(config.inputMode === 'button') {
-            document.getElementById(`lockDens-${i}`).className = 'btn-icon';
-            document.getElementById(`lockDens-${i}`).innerText = '🔓';
-        }
-    }
-
-    function toggleLock(i) {
-        store.lanes[i-1].locked = !store.lanes[i-1].locked;
-        
-        const el = document.getElementById(`currDens-${i}`);
-        if(!store.lanes[i-1].locked) {
-            el.readOnly = false;
-            setTimeout(() => { el.focus(); el.style.borderColor = 'var(--blue)'; }, 50);
-        } else {
-            el.readOnly = true; el.style.borderColor = 'var(--border)';
-        }
-        pushToCloud();
-    }
-
-    function updateTargetFromSettings() {
-        const val = document.getElementById('setTarget').value;
-        store.target = val;
-        document.getElementById('displayTarget').innerText = `${T[config.lang].target}: ${val}g`;
-        calculate(true);
-    }
-
-    function handleWeightInput(i) {
-        store.lanes[i-1].w = document.getElementById(`avgWt-${i}`).value;
-        calculate(true);
-    }
-
-    function handleInput(i) {
-        store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value;
-        calculate(true);
-    }
-
-    function lockOnBlur(i) {
-        setTimeout(() => {
-            const el = document.getElementById(`currDens-${i}`);
-            if(document.activeElement === el) return;
-            store.lanes[i-1].locked = true;
-            store.lanes[i-1].d = el.value;
-            pushToCloud();
-        }, 150);
-    }
-
-    function checkAutoSave() {
-        let currentCombo = "";
-        let allFilled = true;
-        for(let i=1; i<=config.lanes; i++) {
-            const w = document.getElementById(`avgWt-${i}`).value;
-            if(!w) { allFilled = false; break; }
-            currentCombo += w + ",";
-        }
-        if(allFilled && currentCombo !== lastAutoSaveCombo) {
-            lastAutoSaveCombo = currentCombo;
-            saveToHistory();
-        }
+        calculate(false);
     }
 
     function calculate(writeToCloud) {
         if(!store || !store.lanes) return; 
-
         const target = parseFloat(store.target);
         const baseK = FACTORS[config.product];
-        const txt = T[config.lang];
         let weights = []; let count = 0;
 
         for(let i=1; i<=config.lanes; i++) {
             const currD = parseFloat(store.lanes[i-1].d);
             const currW = parseFloat(store.lanes[i-1].w);
-            const lane = store.lanes[i-1];
             const resText = document.getElementById(`resText-${i}`);
             const hiddenVal = document.getElementById(`calcVal-${i}`);
             const card = document.getElementById(`card-${i}`);
 
             if(!isNaN(target) && !isNaN(currD) && !isNaN(currW)) {
                 const diff = currW - target;
-                let activeK = baseK;
-
-                const isSmart = config.smart === 'on' || (config.smart === 'auto' && lane.smartActive);
-                if(isSmart && lane.lastD !== null && lane.lastW !== null) {
-                    let dDelta = currD - lane.lastD;
-                    let wDelta = currW - lane.lastW;
-                    if(Math.abs(wDelta) > 0.5 && Math.abs(dDelta) > 0.001) {
-                        let observedK = dDelta / wDelta;
-                        observedK = Math.max(baseK * 0.5, Math.min(observedK, baseK * 5));
-                        activeK = (observedK * 0.6) + (baseK * 0.4);
-                    }
-                }
-
-                const newD = currD + (diff * activeK);
+                const newD = currD + (diff * baseK);
                 hiddenVal.value = newD.toFixed(3);
-                resText.innerText = `${txt.newDens}: ` + newD.toFixed(3);
+                resText.innerText = `New Density: ` + newD.toFixed(3);
 
                 const absDiff = Math.abs(diff);
                 card.className = "lane-card"; 
-                if(isSmart) card.classList.add('smart-active');
                 if (absDiff <= 0.5) card.classList.add('bg-blue');
                 else if (absDiff <= 2) card.classList.add('bg-green');
                 else if (absDiff <= 3) card.classList.add('bg-yellow');
@@ -797,9 +763,8 @@
 
                 weights.push(currW); count++;
             } else {
-                resText.innerText = `${txt.newDens}: --`; hiddenVal.value = "";
+                resText.innerText = `New Density: --`; hiddenVal.value = "";
                 card.className = "lane-card";
-                if(config.smart === 'on' || (config.smart === 'auto' && lane.smartActive)) card.classList.add('smart-active');
             }
         }
 
@@ -812,87 +777,19 @@
             } else { document.getElementById('stdDev').innerText = "--"; }
         } else { document.getElementById('machAvg').innerText = "--"; document.getElementById('stdDev').innerText = "--"; }
         
-        if(writeToCloud) pushToCloud();
+        if(writeToCloud) { if(dbRef_Store) window.set(dbRef_Store, store); }
     }
 
-    function applyResult(idx) {
-        const val = document.getElementById(`calcVal-${idx}`).value;
-        const currD = parseFloat(store.lanes[idx-1].d);
-        const currW = parseFloat(store.lanes[idx-1].w);
-        const lane = store.lanes[idx-1];
-
-        if(val && !isNaN(currD)) {
-            saveToHistory();
-
-            lane.lastD = currD; lane.lastW = currW;
-            const target = parseFloat(store.target);
-            if (Math.abs(currW - target) > 2) {
-                lane.attempts++;
-                if(config.smart === 'auto' && lane.attempts >= 2) {
-                    lane.smartActive = true; 
-                    document.getElementById(`card-${idx}`).classList.add('smart-active');
-                }
-            } else { lane.attempts = 0; }
-
-            lane.d = val;
-            lane.w = '';
-            lane.locked = true; 
-
-            lastAutoSaveCombo = "";
-            calculate(true); 
-        }
-    }
-
-    function recheckLane(idx) {
-        store.lanes[idx-1].w = '';
-        document.getElementById(`avgWt-${idx}`).value = '';
-        lastAutoSaveCombo = ""; 
-        document.getElementById(`avgWt-${idx}`).focus();
-        calculate(true);
-    }
-
-    function switchMachine(m) { config.currentMachine = m; saveLocalSettings(); renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); }
-    function switchProfile() { 
-        config.lanes = parseInt(document.getElementById('setLanes').value);
-        config.product = document.getElementById('setProd').value;
-        saveLocalSettings(); renderInterface(); if (!window.isOfflineMode) window.startCloudSync();
-    }
-    
-    // --- SETTINGS MENU ---
-    function toggleSettings() { 
-        const m = document.getElementById('settingsMenu'); 
-        m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; 
-        if (m.style.display === 'flex') {
-            document.getElementById('setDispName').value = config.displayName || '';
-        }
-    }
-    
-    // NEW: Save Display Name directly to cloud
-    window.saveDisplayName = function() {
-        const name = document.getElementById('setDispName').value;
-        config.displayName = name;
-        saveLocalSettings();
-        if (window.myUid && !window.isOfflineMode && window.update && window.db) {
-            window.update(window.ref(window.db, `users/${window.myUid}`), { displayName: name }).catch(e => console.log(e));
-        }
-    };
-
-    function openAbout() { document.getElementById('settingsMenu').style.display = 'none'; document.getElementById('aboutModal').style.display = 'flex'; }
-    function closeAbout() { document.getElementById('aboutModal').style.display = 'none'; document.getElementById('settingsMenu').style.display = 'flex'; }
-    function saveLocalSettings() {
-        config.machines = parseInt(document.getElementById('setMachines').value);
-        config.smart = document.getElementById('setSmart').value;
-        config.inputMode = document.getElementById('setInputMode').value;
-        localStorage.setItem('dsi_config_v11', JSON.stringify(config));
-    }
-    function toggleTheme() { config.theme = document.getElementById('setTheme').value; applyTheme(); saveLocalSettings(); }
-    function applyTheme() { if(config.theme === 'dark') document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); }
-    function factoryReset() { if(confirm("Erase LOCAL settings? Cloud data remains.")) { localStorage.clear(); location.reload(); } }
-
+    // --- SAVE CHECK UPDATED FOR SUPERVISOR TRACKING ---
     function saveToHistory() {
         const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        const timestamp = Date.now(); // Atomic stamp for Supervisor sorting
         const avg = document.getElementById('machAvg').innerText;
-        let row = { time, avg, lanes: [] };
+        
+        // Priority: Admin Set Name > Display Name > Default
+        const opName = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
+        
+        let row = { time, timestamp, avg, operator: opName, target: store.target, lanes: [] };
         for(let i=1; i<=config.lanes; i++) {
              const wt = store.lanes[i-1].w;
              const calc = document.getElementById(`calcVal-${i}`).value;
@@ -901,11 +798,46 @@
         }
         history.unshift(row);
         if(history.length > 50) history.pop();
-        if (!window.isOfflineMode) pushHistoryToCloud();
+        if (!window.isOfflineMode && dbRef_History) window.set(dbRef_History, history);
     }
+
+    // Interactive Functions
+    function applyResult(idx) {
+        const val = document.getElementById(`calcVal-${idx}`).value;
+        const currD = parseFloat(store.lanes[idx-1].d);
+        if(val && !isNaN(currD)) {
+            saveToHistory();
+            store.lanes[idx-1].d = val; store.lanes[idx-1].w = ''; store.lanes[idx-1].locked = true; 
+            calculate(true); 
+        }
+    }
+    window.unlockAndFocus = function(i) {
+        const el = document.getElementById(`currDens-${i}`); el.readOnly = false; el.focus(); el.style.borderColor = 'var(--blue)';
+        store.lanes[i-1].locked = false; if(dbRef_Store) window.set(dbRef_Store, store); 
+    }
+    window.toggleLock = function(i) {
+        store.lanes[i-1].locked = !store.lanes[i-1].locked;
+        const el = document.getElementById(`currDens-${i}`);
+        if(!store.lanes[i-1].locked) { el.readOnly = false; setTimeout(() => { el.focus(); el.style.borderColor = 'var(--blue)'; }, 50); } 
+        else { el.readOnly = true; el.style.borderColor = 'var(--border)'; }
+        if(dbRef_Store) window.set(dbRef_Store, store);
+    }
+    window.handleInput = function(i) { store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; calculate(true); }
+    window.handleWeightInput = function(i) { store.lanes[i-1].w = document.getElementById(`avgWt-${i}`).value; calculate(true); }
+    window.lockOnBlur = function(i) { setTimeout(() => { if(document.activeElement === document.getElementById(`currDens-${i}`)) return; store.lanes[i-1].locked = true; store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; if(dbRef_Store) window.set(dbRef_Store, store); }, 150); }
+    window.recheckLane = function(idx) { store.lanes[idx-1].w = ''; document.getElementById(`avgWt-${idx}`).value = ''; document.getElementById(`avgWt-${idx}`).focus(); calculate(true); }
+    window.updateTargetFromSettings = function() { store.target = document.getElementById('setTarget').value; calculate(true); }
+    function switchMachine(m) { config.currentMachine = m; saveLocalSettings(); renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); }
+    function switchProfile() { config.lanes = parseInt(document.getElementById('setLanes').value); config.product = document.getElementById('setProd').value; saveLocalSettings(); renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); }
+    
+    // --- UTILS ---
+    function toggleSettings() { const m = document.getElementById('settingsMenu'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; if (m.style.display === 'flex') document.getElementById('setDispName').value = config.displayName || ''; }
+    window.saveDisplayName = function() { const name = document.getElementById('setDispName').value; config.displayName = name; saveLocalSettings(); if (window.myUid && !window.isOfflineMode && window.update && window.db) { window.update(window.ref(window.db, `users/${window.myUid}`), { displayName: name }).catch(e=>console.log(e)); } };
+    function saveLocalSettings() { config.machines = parseInt(document.getElementById('setMachines').value); localStorage.setItem('dsi_config_v11', JSON.stringify(config)); }
+    function toggleLanguage() { config.lang = config.lang === 'en' ? 'es' : 'en'; renderInterface(); saveLocalSettings(); }
+    function applyTheme() { if(config.theme === 'dark') document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); }
     function renderHistoryTable() {
-        const txt = T[config.lang];
-        let hHtml = `<th>${txt.thTime || 'Time'}</th><th>${txt.avg}</th>`;
+        let hHtml = `<th>Time</th><th>AVG</th>`;
         for(let i=1; i<=config.lanes; i++) hHtml += `<th>L${i}</th>`;
         document.getElementById('histHeader').innerHTML = hHtml;
         document.getElementById('histBody').innerHTML = history.map(r => {
@@ -914,11 +846,11 @@
             return `<tr>${cells}</tr>`;
         }).join('');
     }
-    function clearHistory() { if(confirm("Clear history?")) { history = []; if (!window.isOfflineMode) pushHistoryToCloud(); renderHistoryTable(); } }
+    function clearHistory() { if(confirm("Clear history?")) { history = []; if (!window.isOfflineMode && dbRef_History) window.set(dbRef_History, history); renderHistoryTable(); } }
 
-    // --- ADMIN COMMAND CENTER (UPDATED WITH ROLES) ---
+    // --- ADMIN COMMAND CENTER ---
     let usersDbRef;
-    function openAdmin() {
+    window.openAdmin = function() {
         document.getElementById('adminModal').style.display = 'flex';
         if (!usersDbRef) {
             usersDbRef = window.ref(window.db, 'users');
@@ -930,12 +862,11 @@
                     const adminName = data.adminName || '';
                     const dispName = data.displayName || 'No Name Set';
                     const role = data.role || 'operator';
-                    
                     html += `
                     <div style="border:1px solid var(--border); padding:10px; margin-bottom:10px; border-radius:8px; background: rgba(128,128,128,0.05);">
                         <div style="font-size:0.65rem; color:gray; margin-bottom: 5px; word-break: break-all;">ID: ${key}</div>
                         <div style="font-size:0.8rem; margin-bottom: 5px;">Device Name: <strong>${dispName}</strong></div>
-                        <input type="text" placeholder="Admin Name (e.g., John Doe - Trainee)" value="${adminName}" onblur="updateAdminName('${key}', this.value)" style="margin-bottom:8px; padding: 8px; font-size: 0.9rem; width: 100%; box-sizing: border-box;">
+                        <input type="text" placeholder="Admin Name (e.g., John Doe)" value="${adminName}" onblur="updateAdminName('${key}', this.value)" style="margin-bottom:8px; padding: 8px; font-size: 0.9rem; width: 100%; box-sizing: border-box;">
                         
                         <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                             <select onchange="updateUserRole('${key}', this.value)" style="padding: 5px; font-size: 0.8rem; width: 48%; border-radius: 4px; border: 1px solid var(--border);">
@@ -954,7 +885,7 @@
             });
         }
     }
-    function closeAdmin() { document.getElementById('adminModal').style.display = 'none'; }
+    window.closeAdmin = function() { document.getElementById('adminModal').style.display = 'none'; }
     window.updateAdminName = function(uid, newName) { window.update(window.ref(window.db, `users/${uid}`), { adminName: newName }); }
     window.updateUserRole = function(uid, newRole) { window.update(window.ref(window.db, `users/${uid}`), { role: newRole }); }
     window.toggleUserApprove = function(uid, isAppr) { window.update(window.ref(window.db, `users/${uid}`), { approved: isAppr }); }
