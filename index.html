@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <title>DSI Pro v11.5.1 (Clean Patch)</title>
+    <title>DSI Pro v11.5.2 (Final Patch)</title>
     <style>
         /* --- THEMES --- */
         :root {
@@ -118,7 +118,7 @@
         <code id="userIdDisplay" style="background: var(--input-bg); padding: 10px; display: block; word-break: break-all; border-radius: 6px; border: 1px solid var(--border); font-weight: bold; margin-bottom: 20px;">Loading...</code>
         <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
         <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 10px;">Need to work right now?</p>
-        <button class="modal-btn secondary" onclick="forceOfflineMode()">WORK OFFLINE</button>
+        <button class="modal-btn secondary" onclick="window.forceOfflineMode()">WORK OFFLINE</button>
     </div>
 </div>
 
@@ -126,7 +126,7 @@
     <div class="modal">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
             <h2 style="color: var(--purple);">👑 Command Center</h2>
-            <button onclick="closeAdmin()" style="background:none; border:none; font-size:1.5rem; color:var(--text);">✕</button>
+            <button onclick="window.closeAdmin()" style="background:none; border:none; font-size:1.5rem; color:var(--text);">✕</button>
         </div>
         <div id="adminUserList" style="max-height: 60vh; overflow-y: auto;"></div>
     </div>
@@ -136,8 +136,8 @@
     <div class="modal">
         <h2 id="discTitle">⚠️ Unofficial App</h2>
         <div class="legal-text" id="discText"></div>
-        <button class="modal-btn" onclick="acceptDisclaimer()" id="btnUnderstand">I UNDERSTAND</button>
-        <button class="modal-btn secondary" onclick="toggleLanguage()" id="btnDiscLang">Español</button>
+        <button class="modal-btn" onclick="window.acceptDisclaimer()" id="btnUnderstand">I UNDERSTAND</button>
+        <button class="modal-btn secondary" onclick="window.toggleLanguage()" id="btnDiscLang">Español</button>
     </div>
 </div>
 
@@ -156,7 +156,7 @@
             <label id="lblSetProd">Default Product</label>
             <select id="setupProd"><option value="lunch">Lunch (0.01)</option><option value="bfast">Breakfast (0.017)</option></select>
         </div>
-        <button class="modal-btn" onclick="completeSetup()" id="btnStartApp">START APP</button>
+        <button class="modal-btn" onclick="window.completeSetup()" id="btnStartApp">START APP</button>
     </div>
 </div>
 
@@ -164,10 +164,10 @@
     <div class="modal">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h2 id="aboutTitle">About</h2>
-            <button onclick="closeAbout()" style="background:none; border:none; font-size:1.5rem; color:var(--text);">✕</button>
+            <button onclick="window.closeAbout()" style="background:none; border:none; font-size:1.5rem; color:var(--text);">✕</button>
         </div>
         <div class="legal-text" id="aboutText"></div>
-        <button class="modal-btn secondary" onclick="closeAbout()" id="btnCloseAbout">CLOSE</button>
+        <button class="modal-btn secondary" onclick="window.closeAbout()" id="btnCloseAbout">CLOSE</button>
     </div>
 </div>
 
@@ -175,20 +175,20 @@
     <div class="modal">
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <h2 id="menuTitle">Options</h2>
-            <button onclick="toggleSettings()" style="background:none; border:none; font-size:1.5rem; color:var(--text);">✕</button>
+            <button onclick="window.toggleSettings()" style="background:none; border:none; font-size:1.5rem; color:var(--text);">✕</button>
         </div>
         <div class="modal-opt">
             <label id="lblMenuName">Your Display Name</label>
-            <input type="text" id="setDispName" onblur="saveDisplayName()" placeholder="e.g., Big Mike" style="background:var(--input-bg); font-weight: normal;">
+            <input type="text" id="setDispName" onblur="window.saveDisplayName()" placeholder="e.g., Big Mike" style="background:var(--input-bg); font-weight: normal;">
         </div>
         <div class="modal-opt">
             <label id="lblMenuTarget">Target Weight (g)</label>
-            <input type="number" id="setTarget" inputmode="decimal" oninput="updateTargetFromSettings()" style="background:var(--input-bg);">
+            <input type="number" id="setTarget" inputmode="decimal" oninput="window.updateTargetFromSettings()" style="background:var(--input-bg);">
         </div>
         <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
         <div class="modal-opt">
             <label id="lblMenuInput">Unlock Method</label>
-            <select id="setInputMode" onchange="saveLocalSettings()">
+            <select id="setInputMode" onchange="window.saveLocalSettings()">
                 <option value="button">Lock Button (Default)</option>
                 <option value="longpress">Long Press (1s)</option>
                 <option value="doubletap">Double Tap</option>
@@ -196,26 +196,26 @@
         </div>
         <div class="modal-opt">
             <label id="lblMenuMach">Machines</label>
-            <select id="setMachines" onchange="saveLocalSettings()"><option value="1">1 Machine</option><option value="2">2 Machines</option></select>
+            <select id="setMachines" onchange="window.saveLocalSettings()"><option value="1">1 Machine</option><option value="2">2 Machines</option></select>
         </div>
         <div class="modal-opt">
             <label id="lblMenuLane">Configuration</label>
-            <select id="setLanes" onchange="switchProfile()"><option value="2">Dual Lane</option><option value="4">Quad Lane</option></select>
+            <select id="setLanes" onchange="window.switchProfile()"><option value="2">Dual Lane</option><option value="4">Quad Lane</option></select>
         </div>
         <div class="modal-opt">
             <label id="lblMenuProd">Product Mode</label>
-            <select id="setProd" onchange="switchProfile()"><option value="lunch">Lunch</option><option value="bfast">Breakfast</option></select>
+            <select id="setProd" onchange="window.switchProfile()"><option value="lunch">Lunch</option><option value="bfast">Breakfast</option></select>
         </div>
         <div class="modal-opt">
             <label id="lblMenuSmart">Smart Mode (Adaptive)</label>
-            <select id="setSmart" onchange="saveLocalSettings()"><option value="off">Off (Fixed)</option><option value="on">On (Always)</option><option value="auto">Auto (Beta)</option></select>
+            <select id="setSmart" onchange="window.saveLocalSettings()"><option value="off">Off (Fixed)</option><option value="on">On (Always)</option><option value="auto">Auto (Beta)</option></select>
         </div>
         <div class="modal-opt">
             <label id="lblMenuTheme">Theme</label>
-            <select id="setTheme" onchange="toggleTheme()"><option value="light">Light Mode</option><option value="dark">Dark Mode</option></select>
+            <select id="setTheme" onchange="window.toggleTheme()"><option value="light">Light Mode</option><option value="dark">Dark Mode</option></select>
         </div>
-        <button class="modal-btn secondary" onclick="openAbout()" id="btnMenuAbout">ABOUT / DISCLAIMER</button>
-        <button class="modal-btn danger" onclick="factoryReset()" id="btnMenuReset">FACTORY RESET (LOCAL)</button>
+        <button class="modal-btn secondary" onclick="window.openAbout()" id="btnMenuAbout">ABOUT / DISCLAIMER</button>
+        <button class="modal-btn danger" onclick="window.factoryReset()" id="btnMenuReset">FACTORY RESET (LOCAL)</button>
     </div>
 </div>
 
@@ -226,9 +226,9 @@
             <h1 id="appTitle">DSI Pro</h1>
         </div>
         <div class="header-btns">
-            <button class="gear-btn btn-hidden" id="btnAdmin" onclick="openAdmin()" style="color: var(--purple);">👑</button>
-            <button class="lang-btn" onclick="toggleLanguage()" id="mainLangBtn">EN/ES</button>
-            <button class="gear-btn" onclick="toggleSettings()">⚙️</button>
+            <button class="gear-btn btn-hidden" id="btnAdmin" onclick="window.openAdmin()" style="color: var(--purple);">👑</button>
+            <button class="lang-btn" onclick="window.toggleLanguage()" id="mainLangBtn">EN/ES</button>
+            <button class="gear-btn" onclick="window.toggleSettings()">⚙️</button>
         </div>
     </div>
     <div class="machine-nav" id="machineNav"></div>
@@ -246,8 +246,8 @@
             </table>
         </div>
         <div style="display:flex; gap:10px;">
-            <button class="btn-clear" onclick="saveToHistory()" style="background:var(--blue);" id="btnSaveCheck">SAVE CHECK</button>
-            <button class="btn-clear" onclick="clearHistory()" id="btnClearTable">CLEAR TABLE</button>
+            <button class="btn-clear" onclick="window.saveToHistory()" style="background:var(--blue);" id="btnSaveCheck">SAVE CHECK</button>
+            <button class="btn-clear" onclick="window.clearHistory()" id="btnClearTable">CLEAR TABLE</button>
         </div>
     </div>
 </div>
@@ -259,8 +259,8 @@
             <h1 style="margin:0; font-size:1.4rem; font-weight:800; letter-spacing:-0.5px;">DSI Line <span style="font-size: 0.8rem; color: var(--purple); vertical-align: middle;">(OEE VIEW)</span></h1>
         </div>
         <div class="header-btns">
-            <button class="gear-btn btn-hidden" id="btnAdminSup" onclick="openAdmin()" style="color: var(--purple);">👑</button>
-            <button class="gear-btn" onclick="toggleSettings()">⚙️</button>
+            <button class="gear-btn btn-hidden" id="btnAdminSup" onclick="window.openAdmin()" style="color: var(--purple);">👑</button>
+            <button class="gear-btn" onclick="window.toggleSettings()">⚙️</button>
         </div>
     </div>
     <div id="supCardsContainer" style="margin-top: 15px;"></div>
@@ -382,14 +382,24 @@
     window.initApp = function() {
         const savedConfig = localStorage.getItem('dsi_config_v11');
         if (savedConfig) {
-            config = { ...config, ...JSON.parse(savedConfig) }; // Preserves new defaults like smart='auto'
+            config = { ...config, ...JSON.parse(savedConfig) }; 
         }
         
         // Safety check for old memory
         if(!config.smart) config.smart = 'auto';
         if(!config.theme) config.theme = 'light';
+        if(!config.inputMode) config.inputMode = 'button';
 
-        updateText();
+        // THE AMNESIA FIX: Immediately sync the UI to prevent blank overwrites
+        if(document.getElementById('setMachines')) document.getElementById('setMachines').value = config.machines;
+        if(document.getElementById('setLanes')) document.getElementById('setLanes').value = config.lanes;
+        if(document.getElementById('setProd')) document.getElementById('setProd').value = config.product;
+        if(document.getElementById('setSmart')) document.getElementById('setSmart').value = config.smart;
+        if(document.getElementById('setInputMode')) document.getElementById('setInputMode').value = config.inputMode;
+        if(document.getElementById('setTheme')) document.getElementById('setTheme').value = config.theme;
+        if(document.getElementById('setDispName')) document.getElementById('setDispName').value = config.displayName || '';
+
+        window.updateText();
         
         if(!config.acceptedDisclaimer) {
             document.getElementById('disclaimerModal').style.display = 'flex';
@@ -415,7 +425,7 @@
             document.getElementById('supervisorDashboard').style.display = 'none';
             document.getElementById('appContent').style.display = 'block';
             document.getElementById('appContent').style.filter = 'none';
-            renderInterface();
+            window.renderInterface();
             if (!window.isOfflineMode) window.startCloudSync();
         }
     }
@@ -432,26 +442,26 @@
         const dbRefHistories = window.ref(window.db, 'histories');
         unsubSupHistories = window.onValue(dbRefHistories, (snap) => {
             const allHistories = snap.val() || {};
-            renderSupervisorDashboard(allHistories);
+            window.renderSupervisorDashboard(allHistories);
         });
     }
 
-    function renderSupervisorDashboard(allHistories) {
-        const m1Latest = getAbsoluteLatest(allHistories.M1);
-        const m2Latest = getAbsoluteLatest(allHistories.M2);
+    window.renderSupervisorDashboard = function(allHistories) {
+        const m1Latest = window.getAbsoluteLatest(allHistories.M1);
+        const m2Latest = window.getAbsoluteLatest(allHistories.M2);
         
         const container = document.getElementById('supCardsContainer');
         container.innerHTML = '';
         let allWeightsGlobal = [];
 
         if (m1Latest) {
-            container.innerHTML += buildSupCard('DSI 1', m1Latest);
-            allWeightsGlobal = allWeightsGlobal.concat(extractWeights(m1Latest.entry));
+            container.innerHTML += window.buildSupCard('DSI 1', m1Latest);
+            allWeightsGlobal = allWeightsGlobal.concat(window.extractWeights(m1Latest.entry));
         } else { container.innerHTML += `<div class="sup-card"><h3 style="color:gray;">DSI 1: No Data</h3></div>`; }
 
         if (m2Latest) {
-            container.innerHTML += buildSupCard('DSI 2', m2Latest);
-            allWeightsGlobal = allWeightsGlobal.concat(extractWeights(m2Latest.entry));
+            container.innerHTML += window.buildSupCard('DSI 2', m2Latest);
+            allWeightsGlobal = allWeightsGlobal.concat(window.extractWeights(m2Latest.entry));
         } else { container.innerHTML += `<div class="sup-card"><h3 style="color:gray;">DSI 2: No Data</h3></div>`; }
 
         if(allWeightsGlobal.length > 0) {
@@ -464,8 +474,7 @@
         } else { document.getElementById('machAvg').innerText = "--"; document.getElementById('stdDev').innerText = "--"; }
     }
 
-    // FIXED: Safely ignores old data without timestamps
-    function getAbsoluteLatest(machineHistories) {
+    window.getAbsoluteLatest = function(machineHistories) {
         if(!machineHistories) return null;
         let latestEntry = null;
         let activeProduct = '';
@@ -487,13 +496,13 @@
         return latestEntry ? { entry: latestEntry, product: activeProduct } : null;
     }
 
-    function extractWeights(entry) {
+    window.extractWeights = function(entry) {
         let wts = [];
         entry.lanes.forEach(l => { let val = parseFloat(l.w); if(!isNaN(val)) wts.push(val); });
         return wts;
     }
 
-    function buildSupCard(title, dataObj) {
+    window.buildSupCard = function(title, dataObj) {
         const entry = dataObj.entry;
         const target = entry.target || 0;
         const opName = entry.operator || 'Unknown Operator';
@@ -544,7 +553,7 @@
         unsubStore = window.onValue(dbRef_Store, (snapshot) => {
             dot.className = "status-dot status-online";
             const val = snapshot.val();
-            if(val) { store = val; updateUIFromCloud(); } 
+            if(val) { store = val; window.updateUIFromCloud(); } 
             else {
                 if(!store.target) {
                     const defaultTarget = config.product === 'bfast' ? '63' : '102';
@@ -557,11 +566,11 @@
         unsubHistory = window.onValue(dbRef_History, (snapshot) => {
             const val = snapshot.val();
             history = val || [];
-            renderHistoryTable();
+            window.renderHistoryTable();
         });
     }
 
-    function renderInterface() {
+    window.renderInterface = function() {
         const txt = T[config.lang];
         const nav = document.getElementById('machineNav');
 
@@ -583,14 +592,13 @@
         const prodName = config.product === 'lunch' ? txt.lunch : txt.bfast;
         document.getElementById('displayConfig').innerText = `${config.lanes} ${txt.lane} • ${prodName}`;
         
-        // Populate inputs from saved config
         if(document.getElementById('setMachines')) document.getElementById('setMachines').value = config.machines;
         if(document.getElementById('setLanes')) document.getElementById('setLanes').value = config.lanes;
         if(document.getElementById('setProd')) document.getElementById('setProd').value = config.product;
+        if(document.getElementById('setDispName')) document.getElementById('setDispName').value = config.displayName || '';
         if(document.getElementById('setSmart')) document.getElementById('setSmart').value = config.smart || 'auto';
         if(document.getElementById('setInputMode')) document.getElementById('setInputMode').value = config.inputMode || 'button';
         if(document.getElementById('setTheme')) document.getElementById('setTheme').value = config.theme || 'light';
-        if(document.getElementById('setDispName')) document.getElementById('setDispName').value = config.displayName || '';
 
         const container = document.getElementById('lanesContainer');
         container.innerHTML = '';
@@ -616,7 +624,7 @@
                     <div>
                         <label>${txt.weight}</label>
                         <div class="input-group">
-                            <input type="number" id="avgWt-${i}" inputmode="decimal" oninput="window.handleWeightInput(${i})" onblur="checkAutoSave()">
+                            <input type="number" id="avgWt-${i}" inputmode="decimal" oninput="window.handleWeightInput(${i})" onblur="window.checkAutoSave()">
                             <button class="btn-icon btn-recheck" onclick="window.recheckLane(${i})">↻</button>
                         </div>
                     </div>
@@ -639,7 +647,7 @@
         }
     }
 
-    function updateUIFromCloud() {
+    window.updateUIFromCloud = function() {
         const tEl = document.getElementById('setTarget');
         if(document.activeElement !== tEl) {
             tEl.value = store.target;
@@ -664,10 +672,10 @@
             if(config.smart === 'on' || (config.smart === 'auto' && lane.smartActive)) document.getElementById(`card-${i}`).classList.add('smart-active');
             else document.getElementById(`card-${i}`).classList.remove('smart-active');
         }
-        calculate(false);
+        window.calculate(false);
     }
 
-    function calculate(writeToCloud) {
+    window.calculate = function(writeToCloud) {
         if(!store || !store.lanes) return; 
         const target = parseFloat(store.target);
         const baseK = FACTORS[config.product];
@@ -728,7 +736,7 @@
         if(writeToCloud && dbRef_Store) window.set(dbRef_Store, store);
     }
 
-    function checkAutoSave() {
+    window.checkAutoSave = function() {
         let currentCombo = "";
         let allFilled = true;
         for(let i=1; i<=config.lanes; i++) {
@@ -777,19 +785,19 @@
 
             lane.d = val; lane.w = ''; lane.locked = true; 
             lastAutoSaveCombo = "";
-            calculate(true); 
+            window.calculate(true); 
         }
     }
 
     window.unlockAndFocus = function(i) { const el = document.getElementById(`currDens-${i}`); el.readOnly = false; el.focus(); el.style.borderColor = 'var(--blue)'; store.lanes[i-1].locked = false; if(dbRef_Store) window.set(dbRef_Store, store); if(config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓'; } }
     window.toggleLock = function(i) { store.lanes[i-1].locked = !store.lanes[i-1].locked; const el = document.getElementById(`currDens-${i}`); if(!store.lanes[i-1].locked) { el.readOnly = false; setTimeout(() => { el.focus(); el.style.borderColor = 'var(--blue)'; }, 50); } else { el.readOnly = true; el.style.borderColor = 'var(--border)'; } if(dbRef_Store) window.set(dbRef_Store, store); }
-    window.handleInput = function(i) { store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; calculate(true); }
-    window.handleWeightInput = function(i) { store.lanes[i-1].w = document.getElementById(`avgWt-${i}`).value; calculate(true); }
+    window.handleInput = function(i) { store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; window.calculate(true); }
+    window.handleWeightInput = function(i) { store.lanes[i-1].w = document.getElementById(`avgWt-${i}`).value; window.calculate(true); }
     window.lockOnBlur = function(i) { setTimeout(() => { if(document.activeElement === document.getElementById(`currDens-${i}`)) return; store.lanes[i-1].locked = true; store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; if(dbRef_Store) window.set(dbRef_Store, store); }, 150); }
-    window.recheckLane = function(idx) { store.lanes[idx-1].w = ''; document.getElementById(`avgWt-${idx}`).value = ''; lastAutoSaveCombo = ""; document.getElementById(`avgWt-${idx}`).focus(); calculate(true); }
-    window.updateTargetFromSettings = function() { store.target = document.getElementById('setTarget').value; calculate(true); }
-    window.switchMachine = function(m) { config.currentMachine = m; window.saveLocalSettings(); renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); }
-    window.switchProfile = function() { config.lanes = parseInt(document.getElementById('setLanes').value); config.product = document.getElementById('setProd').value; window.saveLocalSettings(); renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); }
+    window.recheckLane = function(idx) { store.lanes[idx-1].w = ''; document.getElementById(`avgWt-${idx}`).value = ''; lastAutoSaveCombo = ""; document.getElementById(`avgWt-${idx}`).focus(); window.calculate(true); }
+    window.updateTargetFromSettings = function() { store.target = document.getElementById('setTarget').value; window.calculate(true); }
+    window.switchMachine = function(m) { config.currentMachine = m; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); }
+    window.switchProfile = function() { config.lanes = parseInt(document.getElementById('setLanes').value); config.product = document.getElementById('setProd').value; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); }
     
     // --- UTILS (REPAIRED SETTINGS LOGIC) ---
     window.toggleSettings = function() { 
@@ -812,17 +820,24 @@
         localStorage.setItem('dsi_config_v11', JSON.stringify(config)); 
     }
     
-    window.saveDisplayName = function() { const name = document.getElementById('setDispName').value; config.displayName = name; window.saveLocalSettings(); if (window.myUid && !window.isOfflineMode && window.update && window.db) { window.update(window.ref(window.db, `users/${window.myUid}`), { displayName: name }).catch(e=>console.log(e)); } };
-    window.toggleLanguage = function() { config.lang = config.lang === 'en' ? 'es' : 'en'; renderInterface(); window.saveLocalSettings(); updateText(); }
-    window.applyTheme = function() { if(config.theme === 'dark') document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); }
-    function updateText() { const txt = T[config.lang]; document.getElementById('appTitle').innerText = txt.title; document.getElementById('lblMenuTarget').innerText = `${txt.target} (g)`; document.getElementById('menuTitle').innerText = txt.options; }
-    function acceptDisclaimer() { config.acceptedDisclaimer = true; window.saveLocalSettings(); document.getElementById('disclaimerModal').style.display = 'none'; const hasSetup = localStorage.getItem('dsi_setup_done'); if (!hasSetup) document.getElementById('setupWizard').style.display = 'flex'; else { window.applyTheme(); window.routeUserByRole(); } }
-    function completeSetup() { config.machines = parseInt(document.getElementById('setupMachines').value); config.lanes = parseInt(document.getElementById('setupLanes').value); config.product = document.getElementById('setupProd').value; localStorage.setItem('dsi_setup_done', 'true'); window.saveLocalSettings(); document.getElementById('setupWizard').style.display = 'none'; window.routeUserByRole(); }
-    function openAbout() { document.getElementById('settingsMenu').style.display = 'none'; document.getElementById('aboutModal').style.display = 'flex'; }
-    function closeAbout() { document.getElementById('aboutModal').style.display = 'none'; document.getElementById('settingsMenu').style.display = 'flex'; }
-    function factoryReset() { if(confirm("Erase LOCAL settings? Cloud data remains.")) { localStorage.clear(); location.reload(); } }
+    // THE MISSING THEME TOGGLE IS BACK
+    window.toggleTheme = function() { 
+        config.theme = document.getElementById('setTheme').value; 
+        window.applyTheme(); 
+        window.saveLocalSettings(); 
+    };
 
-    function renderHistoryTable() {
+    window.saveDisplayName = function() { const name = document.getElementById('setDispName').value; config.displayName = name; window.saveLocalSettings(); if (window.myUid && !window.isOfflineMode && window.update && window.db) { window.update(window.ref(window.db, `users/${window.myUid}`), { displayName: name }).catch(e=>console.log(e)); } };
+    window.toggleLanguage = function() { config.lang = config.lang === 'en' ? 'es' : 'en'; window.renderInterface(); window.saveLocalSettings(); window.updateText(); }
+    window.applyTheme = function() { if(config.theme === 'dark') document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); }
+    window.updateText = function() { const txt = T[config.lang]; document.getElementById('appTitle').innerText = txt.title; document.getElementById('lblMenuTarget').innerText = `${txt.target} (g)`; document.getElementById('menuTitle').innerText = txt.options; }
+    window.acceptDisclaimer = function() { config.acceptedDisclaimer = true; window.saveLocalSettings(); document.getElementById('disclaimerModal').style.display = 'none'; const hasSetup = localStorage.getItem('dsi_setup_done'); if (!hasSetup) document.getElementById('setupWizard').style.display = 'flex'; else { window.applyTheme(); window.routeUserByRole(); } }
+    window.completeSetup = function() { config.machines = parseInt(document.getElementById('setupMachines').value); config.lanes = parseInt(document.getElementById('setupLanes').value); config.product = document.getElementById('setupProd').value; localStorage.setItem('dsi_setup_done', 'true'); window.saveLocalSettings(); document.getElementById('setupWizard').style.display = 'none'; window.routeUserByRole(); }
+    window.openAbout = function() { document.getElementById('settingsMenu').style.display = 'none'; document.getElementById('aboutModal').style.display = 'flex'; }
+    window.closeAbout = function() { document.getElementById('aboutModal').style.display = 'none'; document.getElementById('settingsMenu').style.display = 'flex'; }
+    window.factoryReset = function() { if(confirm("Erase LOCAL settings? Cloud data remains.")) { localStorage.clear(); location.reload(); } }
+
+    window.renderHistoryTable = function() {
         let hHtml = `<th>Time</th><th>AVG</th>`;
         for(let i=1; i<=config.lanes; i++) hHtml += `<th>L${i}</th>`;
         document.getElementById('histHeader').innerHTML = hHtml;
@@ -832,7 +847,7 @@
             return `<tr>${cells}</tr>`;
         }).join('');
     }
-    window.clearHistory = function() { if(confirm("Clear history?")) { history = []; if (!window.isOfflineMode && dbRef_History) window.set(dbRef_History, history); renderHistoryTable(); } }
+    window.clearHistory = function() { if(confirm("Clear history?")) { history = []; if (!window.isOfflineMode && dbRef_History) window.set(dbRef_History, history); window.renderHistoryTable(); } }
 
     // --- ADMIN COMMAND CENTER ---
     let usersDbRef;
@@ -877,4 +892,3 @@
 </script>
 </body>
 </html>
-
