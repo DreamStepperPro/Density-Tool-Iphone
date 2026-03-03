@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <title>DSI Pro v11.3 (Command Center)</title>
+    <title>DSI Pro v11.4 (Roles & Roster)</title>
     <style>
         /* --- THEMES --- */
         :root {
@@ -45,7 +45,6 @@
 
         /* INFO BAR */
         .info-bar { display: flex; justify-content: space-between; background: var(--card-bg); padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--border); font-size: 0.85rem; font-weight: bold; align-items: center; }
-        .info-pill { background: var(--blue); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; }
 
         /* LANES */
         .lane-card { background: var(--card-bg); border: 2px solid var(--border); padding: 12px; margin-bottom: 10px; border-radius: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; position: relative; }
@@ -57,7 +56,7 @@
         /* INPUTS */
         label { font-size: 0.7rem; font-weight: bold; display: block; margin-bottom: 2px; text-transform: uppercase; opacity: 0.7; }
         .input-group { display: flex; gap: 5px; }
-        input { width: 100%; padding: 12px; font-size: 1.1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--text); font-weight: bold; }
+        input { width: 100%; padding: 12px; font-size: 1.1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--text); font-weight: bold; box-sizing: border-box; }
         input.density-input:read-only { background: rgba(128,128,128,0.1); color: var(--text); opacity: 0.8; pointer-events: auto; }
         input.density-input:focus { background: var(--input-bg); border-color: var(--blue); outline: none; }
 
@@ -105,7 +104,7 @@
         .bg-yellow { background-color: var(--yellow) !important; color: #000; border-color: var(--yellow); }
         .bg-red { background-color: var(--red) !important; color: #fff; border-color: var(--red); }
 
-        select { width: 100%; padding: 12px; border-radius: 6px; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); font-size: 1rem; }
+        select { width: 100%; padding: 12px; border-radius: 6px; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); font-size: 1rem; box-sizing: border-box; }
     </style>
 </head>
 <body>
@@ -187,6 +186,11 @@
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <h2 id="menuTitle">Options</h2>
             <button onclick="toggleSettings()" style="background:none; border:none; font-size:1.5rem; color:var(--text);">✕</button>
+        </div>
+
+        <div class="modal-opt">
+            <label id="lblMenuName">Your Display Name</label>
+            <input type="text" id="setDispName" onblur="saveDisplayName()" placeholder="e.g., Big Mike" style="background:var(--input-bg); font-weight: normal;">
         </div>
         
         <div class="modal-opt">
@@ -347,38 +351,32 @@
 
     signInAnonymously(auth).then((result) => {
         currentUserUid = result.user.uid;
+        window.myUid = currentUserUid; // Expose globally so settings can use it
         isAdmin = (currentUserUid === ADMIN_UID);
         
-        // 1. Show the Admin Crown button if it's you!
         if(isAdmin) document.getElementById('btnAdmin').classList.remove('btn-hidden');
 
-        // 2. Check in with the database so the Admin can see this device exists
+        // Check in
         const userRef = window.ref(window.db, `users/${currentUserUid}`);
         window.update(userRef, { lastLogin: new Date().toLocaleString() }).catch(e => console.warn("Admin check-in ignored by rules", e));
 
-        // 3. Listen for the Admin's decision
+        // Listen for Admin's decision
         window.onValue(window.ref(window.db, `users/${currentUserUid}/approved`), (snap) => {
             const isApproved = snap.val() === true;
             if (isAdmin || isApproved) {
-                // Access Granted! Hide the waiting room
                 document.getElementById('accessDeniedOverlay').style.display = 'none';
-                
-                // Instantly force the dot to turn green
                 document.getElementById('statusDot').className = "status-dot status-online";
 
                 if (!appInitialized) {
                     appInitialized = true;
                     window.initApp(); 
                 } else if (window.isOfflineMode) {
-                    // Live Unlock
                     window.isOfflineMode = false;
                     if(window.startCloudSync) window.startCloudSync();
                 } else {
-                    // Make sure it catches up if they were waiting
                     if(window.startCloudSync) window.startCloudSync();
                 }
             } else {
-                // Access Denied! Show the waiting room
                 document.getElementById('accessDeniedOverlay').style.display = 'flex';
                 document.getElementById('userIdDisplay').innerText = currentUserUid;
             }
@@ -393,7 +391,8 @@
     // --- GLOBAL STATE ---
     let config = {
         machines: 2, lanes: 4, product: 'lunch', smart: 'auto', theme: 'light',
-        currentMachine: 1, acceptedDisclaimer: false, lang: 'en', inputMode: 'button'
+        currentMachine: 1, acceptedDisclaimer: false, lang: 'en', inputMode: 'button',
+        displayName: '' // NEW: Local save for user's chosen name
     };
 
     let store = {}; 
@@ -414,7 +413,7 @@
             lane: "Lane", bfast: "Breakfast", lunch: "Lunch",
             discTitle: "⚠️ Unofficial App",
             discText: `<strong>Disclaimer:</strong> This is an unofficial, non-profit app created by a machine operator, for machine operators. It is not affiliated with, endorsed by, or connected to JBT Corporation. "DSI" and all related trademarks are the property of JBT Corporation. This tool is provided "as is" for informational purposes only.`,
-            aboutText: `<span class="legal-header">Unofficial App Disclaimer</span><span class="legal-header">No Affiliation:</span> This application is an independent, unofficial project. It is strictly not affiliated with, authorized, maintained, sponsored, or endorsed by JBT Corporation or any of its affiliates or subsidiaries.<span class="legal-header">Trademarks:</span> "DSI" and all associated names, marks, emblems, and images are registered trademarks of JBT Corporation.<span class="legal-header">Limitation of Liability:</span> This tool is provided "as is". The developer assumes no responsibility for any errors or issues that arise from using this app.`
+            aboutText: `<span class="legal-header">Unofficial App Disclaimer</span><span class="legal-header">No Affiliation:</span> This application is an independent, unofficial project. It is strictly not affiliated with, authorized, maintained, sponsored, or endorsed by JBT Corporation.<span class="legal-header">Trademarks:</span> "DSI" and all associated names, marks, emblems, and images are registered trademarks of JBT Corporation.<span class="legal-header">Limitation of Liability:</span> This tool is provided "as is". The developer assumes no responsibility for any errors or issues that arise from using this app.`
         },
         es: {
             title: "DSI Pro", target: "Meta", newDens: "Nueva Densidad", tapApply: "TOCA PARA APLICAR", 
@@ -608,7 +607,6 @@
     function renderInterface() {
         const txt = T[config.lang];
         const nav = document.getElementById('machineNav');
-        const title = document.getElementById('appTitle');
 
         if (config.machines === 1) {
             nav.className = 'machine-nav nav-hidden';
@@ -634,6 +632,7 @@
         document.getElementById('setSmart').value = config.smart;
         document.getElementById('setTheme').value = config.theme;
         document.getElementById('setInputMode').value = config.inputMode;
+        document.getElementById('setDispName').value = config.displayName || '';
 
         const container = document.getElementById('lanesContainer');
         container.innerHTML = '';
@@ -858,7 +857,26 @@
         config.product = document.getElementById('setProd').value;
         saveLocalSettings(); renderInterface(); if (!window.isOfflineMode) window.startCloudSync();
     }
-    function toggleSettings() { const m = document.getElementById('settingsMenu'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; }
+    
+    // --- SETTINGS MENU ---
+    function toggleSettings() { 
+        const m = document.getElementById('settingsMenu'); 
+        m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; 
+        if (m.style.display === 'flex') {
+            document.getElementById('setDispName').value = config.displayName || '';
+        }
+    }
+    
+    // NEW: Save Display Name directly to cloud
+    window.saveDisplayName = function() {
+        const name = document.getElementById('setDispName').value;
+        config.displayName = name;
+        saveLocalSettings();
+        if (window.myUid && !window.isOfflineMode && window.update && window.db) {
+            window.update(window.ref(window.db, `users/${window.myUid}`), { displayName: name }).catch(e => console.log(e));
+        }
+    };
+
     function openAbout() { document.getElementById('settingsMenu').style.display = 'none'; document.getElementById('aboutModal').style.display = 'flex'; }
     function closeAbout() { document.getElementById('aboutModal').style.display = 'none'; document.getElementById('settingsMenu').style.display = 'flex'; }
     function saveLocalSettings() {
@@ -898,7 +916,7 @@
     }
     function clearHistory() { if(confirm("Clear history?")) { history = []; if (!window.isOfflineMode) pushHistoryToCloud(); renderHistoryTable(); } }
 
-    // --- ADMIN COMMAND CENTER ---
+    // --- ADMIN COMMAND CENTER (UPDATED WITH ROLES) ---
     let usersDbRef;
     function openAdmin() {
         document.getElementById('adminModal').style.display = 'flex';
@@ -909,16 +927,27 @@
                 let html = '';
                 for (const [key, data] of Object.entries(users)) {
                     const isAppr = data.approved ? 'checked' : '';
-                    const name = data.name || '';
+                    const adminName = data.adminName || '';
+                    const dispName = data.displayName || 'No Name Set';
+                    const role = data.role || 'operator';
+                    
                     html += `
                     <div style="border:1px solid var(--border); padding:10px; margin-bottom:10px; border-radius:8px; background: rgba(128,128,128,0.05);">
                         <div style="font-size:0.65rem; color:gray; margin-bottom: 5px; word-break: break-all;">ID: ${key}</div>
-                        <input type="text" placeholder="Worker Name (e.g., Marcus)" value="${name}" onblur="updateUserName('${key}', this.value)" style="margin-bottom:8px; padding: 8px; font-size: 0.9rem;">
-                        <label style="display:flex; align-items:center; gap:10px; font-weight: bold;">
-                            <input type="checkbox" ${isAppr} onchange="toggleUserApprove('${key}', this.checked)" style="width:20px; height:20px;"> 
-                            Grant Access
-                        </label>
-                        <div style="font-size:0.65rem; color:gray; margin-top:5px;">Last Seen: ${data.lastLogin || 'Unknown'}</div>
+                        <div style="font-size:0.8rem; margin-bottom: 5px;">Device Name: <strong>${dispName}</strong></div>
+                        <input type="text" placeholder="Admin Name (e.g., John Doe - Trainee)" value="${adminName}" onblur="updateAdminName('${key}', this.value)" style="margin-bottom:8px; padding: 8px; font-size: 0.9rem; width: 100%; box-sizing: border-box;">
+                        
+                        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <select onchange="updateUserRole('${key}', this.value)" style="padding: 5px; font-size: 0.8rem; width: 48%; border-radius: 4px; border: 1px solid var(--border);">
+                                <option value="operator" ${role === 'operator' ? 'selected' : ''}>Operator</option>
+                                <option value="supervisor" ${role === 'supervisor' ? 'selected' : ''}>Supervisor</option>
+                            </select>
+                            <label style="display:flex; align-items:center; gap:5px; font-weight: bold; font-size: 0.9rem;">
+                                <input type="checkbox" ${isAppr} onchange="toggleUserApprove('${key}', this.checked)" style="width:18px; height:18px;"> 
+                                Approved
+                            </label>
+                        </div>
+                        <div style="font-size:0.65rem; color:gray;">Last Seen: ${data.lastLogin || 'Unknown'}</div>
                     </div>`;
                 }
                 document.getElementById('adminUserList').innerHTML = html;
@@ -926,10 +955,9 @@
         }
     }
     function closeAdmin() { document.getElementById('adminModal').style.display = 'none'; }
-    function updateUserName(uid, newName) { window.update(window.ref(window.db, `users/${uid}`), { name: newName }); }
-    function toggleUserApprove(uid, isAppr) { window.update(window.ref(window.db, `users/${uid}`), { approved: isAppr }); }
+    window.updateAdminName = function(uid, newName) { window.update(window.ref(window.db, `users/${uid}`), { adminName: newName }); }
+    window.updateUserRole = function(uid, newRole) { window.update(window.ref(window.db, `users/${uid}`), { role: newRole }); }
+    window.toggleUserApprove = function(uid, isAppr) { window.update(window.ref(window.db, `users/${uid}`), { approved: isAppr }); }
 </script>
 </body>
 </html>
-
-
