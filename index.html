@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <title>DSI Pro v11.5 (Supervisor)</title>
+    <title>DSI Pro v11.5.1 (Clean Patch)</title>
     <style>
         /* --- THEMES --- */
         :root {
@@ -23,7 +23,6 @@
 
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; -webkit-tap-highlight-color: transparent; user-select: none; transition: 0.3s; }
         
-        /* LAYOUT */
         .container { max-width: 100%; margin: auto; padding-bottom: 80px; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .header h1 { margin: 0; font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; }
@@ -32,35 +31,29 @@
         .gear-btn { font-size: 1.5rem; background: none; border: none; cursor: pointer; padding: 5px; color: var(--text); }
         .lang-btn { background: var(--blue); color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
         
-        /* Connection Status */
         .status-dot { width: 10px; height: 10px; background: #ccc; border-radius: 50%; display: inline-block; margin-right: 5px; }
         .status-online { background: var(--green); box-shadow: 0 0 5px var(--green); }
         .status-offline { background: var(--red); }
 
-        /* NAV */
         .machine-nav { display: flex; gap: 10px; margin-bottom: 15px; }
         .m-btn { flex: 1; padding: 12px; font-weight: bold; border: 2px solid var(--border); border-radius: 8px; background: var(--card-bg); color: var(--text); transition: 0.2s; }
         .m-active { background: var(--dark-grey); color: white; border-color: var(--dark-grey); }
         .nav-hidden { display: none !important; }
 
-        /* INFO BAR */
         .info-bar { display: flex; justify-content: space-between; background: var(--card-bg); padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--border); font-size: 0.85rem; font-weight: bold; align-items: center; }
 
-        /* LANES */
         .lane-card { background: var(--card-bg); border: 2px solid var(--border); padding: 12px; margin-bottom: 10px; border-radius: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; position: relative; }
         .lane-header { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 5px; margin-bottom: 5px; font-weight: bold; }
         
         .smart-tag { font-size: 0.7rem; background: var(--purple); color: white; padding: 2px 6px; border-radius: 10px; display: none; }
         .smart-active .smart-tag { display: inline-block; }
 
-        /* INPUTS */
         label { font-size: 0.7rem; font-weight: bold; display: block; margin-bottom: 2px; text-transform: uppercase; opacity: 0.7; }
         .input-group { display: flex; gap: 5px; }
         input { width: 100%; padding: 12px; font-size: 1.1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--text); font-weight: bold; box-sizing: border-box; }
         input.density-input:read-only { background: rgba(128,128,128,0.1); color: var(--text); opacity: 0.8; pointer-events: auto; }
         input.density-input:focus { background: var(--input-bg); border-color: var(--blue); outline: none; }
 
-        /* BUTTONS */
         .btn-icon { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 0 12px; cursor: pointer; font-size: 1.2rem; color: var(--text); display: flex; align-items: center; justify-content: center; }
         .btn-icon.locked { background: var(--dark-grey); color: white; border-color: var(--dark-grey); }
         .btn-recheck { color: var(--yellow); border-color: var(--yellow); }
@@ -70,13 +63,11 @@
         .result-box span { display: block; }
         .tap-hint { font-size: 0.7rem; opacity: 0.6; font-weight: normal; margin-top: 4px; }
 
-        /* FOOTER STATS */
         .stats-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--dark-grey); color: white; padding: 10px; display: flex; justify-content: space-around; align-items: center; z-index: 10; border-top-left-radius: 15px; border-top-right-radius: 15px; box-shadow: 0 -2px 10px rgba(0,0,0,0.2); }
         .stat-box { text-align: center; }
         .stat-val { font-size: 1.2rem; font-weight: bold; display: block; }
         .stat-lbl { font-size: 0.6rem; text-transform: uppercase; opacity: 0.8; }
 
-        /* MODALS */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 100; display: none; justify-content: center; align-items: center; padding: 20px; }
         .modal { background: var(--card-bg); padding: 20px; border-radius: 12px; width: 100%; max-width: 400px; color: var(--text); max-height: 85vh; overflow-y: auto; }
         .modal h2 { margin-top: 0; font-size: 1.2rem; }
@@ -88,7 +79,6 @@
         .legal-text { font-size: 0.8rem; line-height: 1.4; color: #888; margin-bottom: 10px; text-align: justify; }
         .legal-header { font-weight: bold; color: var(--text); margin-top: 10px; display: block; }
 
-        /* HISTORY */
         .history-section { margin-top: 20px; padding-bottom: 60px; }
         .history-table { width: 100%; border-collapse: collapse; font-size: 0.7rem; background: var(--card-bg); }
         .history-table th, .history-table td { border: 1px solid var(--border); padding: 6px; text-align: center; }
@@ -98,7 +88,6 @@
         .cell-wt { font-weight: bold; font-size: 0.9rem; display: block; }
         .cell-dens { font-size: 0.7rem; opacity: 0.8; display: block; }
 
-        /* COLORS */
         .bg-blue { background-color: var(--perfect) !important; color: #000; border-color: var(--perfect); }
         .bg-green { background-color: var(--green) !important; color: #fff; border-color: var(--green); }
         .bg-yellow { background-color: var(--yellow) !important; color: #000; border-color: var(--yellow); }
@@ -127,7 +116,6 @@
         <p style="font-size: 0.9rem; margin-bottom: 20px;">Your device is waiting for Admin approval.</p>
         <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 5px;">Your Device ID:</p>
         <code id="userIdDisplay" style="background: var(--input-bg); padding: 10px; display: block; word-break: break-all; border-radius: 6px; border: 1px solid var(--border); font-weight: bold; margin-bottom: 20px;">Loading...</code>
-        
         <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
         <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 10px;">Need to work right now?</p>
         <button class="modal-btn secondary" onclick="forceOfflineMode()">WORK OFFLINE</button>
@@ -140,8 +128,7 @@
             <h2 style="color: var(--purple);">👑 Command Center</h2>
             <button onclick="closeAdmin()" style="background:none; border:none; font-size:1.5rem; color:var(--text);">✕</button>
         </div>
-        <div id="adminUserList" style="max-height: 60vh; overflow-y: auto;">
-            </div>
+        <div id="adminUserList" style="max-height: 60vh; overflow-y: auto;"></div>
     </div>
 </div>
 
@@ -159,24 +146,15 @@
         <h2 id="setupTitle">Initial Setup</h2>
         <div class="modal-opt">
             <label id="lblSetMach">Number of Machines</label>
-            <select id="setupMachines">
-                <option value="1">1 Machine</option>
-                <option value="2" selected>2 Machines</option>
-            </select>
+            <select id="setupMachines"><option value="1">1 Machine</option><option value="2" selected>2 Machines</option></select>
         </div>
         <div class="modal-opt">
             <label id="lblSetLane">Lane Configuration</label>
-            <select id="setupLanes">
-                <option value="2">Dual Lane (2)</option>
-                <option value="4" selected>Quad Lane (4)</option>
-            </select>
+            <select id="setupLanes"><option value="2">Dual Lane (2)</option><option value="4" selected>Quad Lane (4)</option></select>
         </div>
         <div class="modal-opt">
             <label id="lblSetProd">Default Product</label>
-            <select id="setupProd">
-                <option value="lunch">Lunch (0.01)</option>
-                <option value="bfast">Breakfast (0.017)</option>
-            </select>
+            <select id="setupProd"><option value="lunch">Lunch (0.01)</option><option value="bfast">Breakfast (0.017)</option></select>
         </div>
         <button class="modal-btn" onclick="completeSetup()" id="btnStartApp">START APP</button>
     </div>
@@ -199,19 +177,15 @@
             <h2 id="menuTitle">Options</h2>
             <button onclick="toggleSettings()" style="background:none; border:none; font-size:1.5rem; color:var(--text);">✕</button>
         </div>
-
         <div class="modal-opt">
             <label id="lblMenuName">Your Display Name</label>
             <input type="text" id="setDispName" onblur="saveDisplayName()" placeholder="e.g., Big Mike" style="background:var(--input-bg); font-weight: normal;">
         </div>
-        
         <div class="modal-opt">
             <label id="lblMenuTarget">Target Weight (g)</label>
             <input type="number" id="setTarget" inputmode="decimal" oninput="updateTargetFromSettings()" style="background:var(--input-bg);">
         </div>
-
         <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
-
         <div class="modal-opt">
             <label id="lblMenuInput">Unlock Method</label>
             <select id="setInputMode" onchange="saveLocalSettings()">
@@ -220,48 +194,26 @@
                 <option value="doubletap">Double Tap</option>
             </select>
         </div>
-
         <div class="modal-opt">
             <label id="lblMenuMach">Machines</label>
-            <select id="setMachines" onchange="saveLocalSettings()">
-                <option value="1">1 Machine</option>
-                <option value="2">2 Machines</option>
-            </select>
+            <select id="setMachines" onchange="saveLocalSettings()"><option value="1">1 Machine</option><option value="2">2 Machines</option></select>
         </div>
-
         <div class="modal-opt">
             <label id="lblMenuLane">Configuration</label>
-            <select id="setLanes" onchange="switchProfile()">
-                <option value="2">Dual Lane</option>
-                <option value="4">Quad Lane</option>
-            </select>
+            <select id="setLanes" onchange="switchProfile()"><option value="2">Dual Lane</option><option value="4">Quad Lane</option></select>
         </div>
-
         <div class="modal-opt">
             <label id="lblMenuProd">Product Mode</label>
-            <select id="setProd" onchange="switchProfile()">
-                <option value="lunch">Lunch</option>
-                <option value="bfast">Breakfast</option>
-            </select>
+            <select id="setProd" onchange="switchProfile()"><option value="lunch">Lunch</option><option value="bfast">Breakfast</option></select>
         </div>
-
         <div class="modal-opt">
             <label id="lblMenuSmart">Smart Mode (Adaptive)</label>
-            <select id="setSmart" onchange="saveLocalSettings()">
-                <option value="off">Off (Fixed)</option>
-                <option value="on">On (Always)</option>
-                <option value="auto">Auto (Beta)</option>
-            </select>
+            <select id="setSmart" onchange="saveLocalSettings()"><option value="off">Off (Fixed)</option><option value="on">On (Always)</option><option value="auto">Auto (Beta)</option></select>
         </div>
-
         <div class="modal-opt">
             <label id="lblMenuTheme">Theme</label>
-            <select id="setTheme" onchange="toggleTheme()">
-                <option value="light">Light Mode</option>
-                <option value="dark">Dark Mode</option>
-            </select>
+            <select id="setTheme" onchange="toggleTheme()"><option value="light">Light Mode</option><option value="dark">Dark Mode</option></select>
         </div>
-
         <button class="modal-btn secondary" onclick="openAbout()" id="btnMenuAbout">ABOUT / DISCLAIMER</button>
         <button class="modal-btn danger" onclick="factoryReset()" id="btnMenuReset">FACTORY RESET (LOCAL)</button>
     </div>
@@ -279,23 +231,17 @@
             <button class="gear-btn" onclick="toggleSettings()">⚙️</button>
         </div>
     </div>
-
     <div class="machine-nav" id="machineNav"></div>
-
     <div class="info-bar">
         <span id="displayConfig">Quad Lane • Lunch</span>
         <span id="displayTarget">Target: --g</span>
     </div>
-
     <div id="lanesContainer"></div>
-
     <div class="history-section">
         <label id="lblHistory" style="font-size:0.9rem; margin-bottom:10px;">Shift History</label>
         <div style="overflow-x:auto;">
             <table class="history-table">
-                <thead>
-                    <tr id="histHeader"></tr>
-                </thead>
+                <thead><tr id="histHeader"></tr></thead>
                 <tbody id="histBody"></tbody>
             </table>
         </div>
@@ -317,9 +263,7 @@
             <button class="gear-btn" onclick="toggleSettings()">⚙️</button>
         </div>
     </div>
-    
-    <div id="supCardsContainer" style="margin-top: 15px;">
-        </div>
+    <div id="supCardsContainer" style="margin-top: 15px;"></div>
 </div>
 
 <div class="stats-bar" id="globalStatsBar" style="display:none;">
@@ -359,7 +303,6 @@
     window.onValue = onValue;
     window.update = update;
     
-    // --- ADMIN SETUP ---
     // ---> PASTE YOUR UID HERE <---
     const ADMIN_UID = 'm510406lBidDf7qCzqXEHmIKxBu2'; 
     
@@ -367,7 +310,7 @@
     let isAdmin = false;
     let appInitialized = false; 
     window.isOfflineMode = false;
-    window.currentUserData = {}; // Stores name/role globally
+    window.currentUserData = {}; 
 
     window.forceOfflineMode = function() {
         window.isOfflineMode = true;
@@ -391,7 +334,6 @@
         const userRef = window.ref(window.db, `users/${currentUserUid}`);
         window.update(userRef, { lastLogin: new Date().toLocaleString() }).catch(e => console.warn("Admin check-in ignored", e));
 
-        // Listen to User Profile (to get Role and Admin Approval)
         window.onValue(userRef, (snap) => {
             window.currentUserData = snap.val() || {};
             const isApproved = window.currentUserData.approved === true;
@@ -405,7 +347,6 @@
                     appInitialized = true;
                     window.initApp(); 
                 } else {
-                    // If role changed live, re-route them!
                     window.routeUserByRole();
                 }
             } else {
@@ -434,35 +375,34 @@
     
     // --- TRANSLATIONS ---
     const T = {
-        en: {
-            title: "DSI Pro", target: "Target", newDens: "New Density", tapApply: "TAP TO APPLY", 
-            density: "DENSITY", weight: "AVG WEIGHT", smart: "SMART", avg: "AVG", sd: "SD",
-            lane: "Lane", bfast: "Breakfast", lunch: "Lunch"
-        },
-        es: {
-            title: "DSI Pro", target: "Meta", newDens: "Nueva Densidad", tapApply: "TOCA PARA APLICAR", 
-            density: "DENSIDAD", weight: "PESO PROM.", smart: "INTEL", avg: "PROM", sd: "DE",
-            lane: "Carril", bfast: "Desayuno", lunch: "Almuerzo"
-        }
+        en: { title: "DSI Pro", target: "Target", newDens: "New Density", tapApply: "TAP TO APPLY", density: "DENSITY", weight: "AVG WEIGHT", smart: "SMART", avg: "AVG", sd: "SD", lane: "Lane", bfast: "Breakfast", lunch: "Lunch", options: "Options" },
+        es: { title: "DSI Pro", target: "Meta", newDens: "Nueva Densidad", tapApply: "TOCA PARA APLICAR", density: "DENSIDAD", weight: "PESO PROM.", smart: "INTEL", avg: "PROM", sd: "DE", lane: "Carril", bfast: "Desayuno", lunch: "Almuerzo", options: "Opciones" }
     };
 
     window.initApp = function() {
         const savedConfig = localStorage.getItem('dsi_config_v11');
-        if (savedConfig) config = JSON.parse(savedConfig);
+        if (savedConfig) {
+            config = { ...config, ...JSON.parse(savedConfig) }; // Preserves new defaults like smart='auto'
+        }
+        
+        // Safety check for old memory
+        if(!config.smart) config.smart = 'auto';
+        if(!config.theme) config.theme = 'light';
 
+        updateText();
+        
         if(!config.acceptedDisclaimer) {
             document.getElementById('disclaimerModal').style.display = 'flex';
         } else {
             const hasSetup = localStorage.getItem('dsi_setup_done');
             if (!hasSetup) document.getElementById('setupWizard').style.display = 'flex';
             else {
-                applyTheme();
-                window.routeUserByRole(); // Decides Operator vs Supervisor
+                window.applyTheme();
+                window.routeUserByRole(); 
             }
         }
     };
 
-    // --- ROLE ROUTER ---
     window.routeUserByRole = function() {
         const role = window.currentUserData.role || 'operator';
         document.getElementById('globalStatsBar').style.display = 'flex';
@@ -481,7 +421,7 @@
     }
 
     // ======================================================================
-    // SUPERVISOR ENGINE (PHASE 2)
+    // SUPERVISOR ENGINE
     // ======================================================================
     let unsubSupHistories = null;
 
@@ -489,9 +429,7 @@
         if(!window.db) { setTimeout(window.startSupervisorSync, 500); return; }
         if (unsubSupHistories) unsubSupHistories();
 
-        // Supervisor listens to ALL histories to find the absolute latest data globally
         const dbRefHistories = window.ref(window.db, 'histories');
-        
         unsubSupHistories = window.onValue(dbRefHistories, (snap) => {
             const allHistories = snap.val() || {};
             renderSupervisorDashboard(allHistories);
@@ -504,26 +442,18 @@
         
         const container = document.getElementById('supCardsContainer');
         container.innerHTML = '';
-        
         let allWeightsGlobal = [];
 
-        // Build DSI 1 Card
         if (m1Latest) {
             container.innerHTML += buildSupCard('DSI 1', m1Latest);
             allWeightsGlobal = allWeightsGlobal.concat(extractWeights(m1Latest.entry));
-        } else {
-            container.innerHTML += `<div class="sup-card"><h3 style="color:gray;">DSI 1: No Data</h3></div>`;
-        }
+        } else { container.innerHTML += `<div class="sup-card"><h3 style="color:gray;">DSI 1: No Data</h3></div>`; }
 
-        // Build DSI 2 Card
         if (m2Latest) {
             container.innerHTML += buildSupCard('DSI 2', m2Latest);
             allWeightsGlobal = allWeightsGlobal.concat(extractWeights(m2Latest.entry));
-        } else {
-            container.innerHTML += `<div class="sup-card"><h3 style="color:gray;">DSI 2: No Data</h3></div>`;
-        }
+        } else { container.innerHTML += `<div class="sup-card"><h3 style="color:gray;">DSI 2: No Data</h3></div>`; }
 
-        // Update Global Stats Bar
         if(allWeightsGlobal.length > 0) {
             const mean = allWeightsGlobal.reduce((a, b) => a + b, 0) / allWeightsGlobal.length;
             document.getElementById('machAvg').innerText = mean.toFixed(1);
@@ -531,13 +461,10 @@
                 const v = allWeightsGlobal.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / allWeightsGlobal.length;
                 document.getElementById('stdDev').innerText = Math.sqrt(v).toFixed(2);
             } else { document.getElementById('stdDev').innerText = "--"; }
-        } else {
-            document.getElementById('machAvg').innerText = "--"; 
-            document.getElementById('stdDev').innerText = "--"; 
-        }
+        } else { document.getElementById('machAvg').innerText = "--"; document.getElementById('stdDev').innerText = "--"; }
     }
 
-    // Finds the single newest check across all products (Lunch vs Breakfast)
+    // FIXED: Safely ignores old data without timestamps
     function getAbsoluteLatest(machineHistories) {
         if(!machineHistories) return null;
         let latestEntry = null;
@@ -545,9 +472,13 @@
         
         for(let prodKey in machineHistories) {
             let histArray = machineHistories[prodKey];
-            if(histArray && histArray.length > 0) {
-                let entry = histArray[0];
-                if(!latestEntry || entry.timestamp > latestEntry.timestamp) {
+            let entries = Array.isArray(histArray) ? histArray : Object.values(histArray);
+            if(entries && entries.length > 0) {
+                let entry = entries[0];
+                let entryTs = entry.timestamp || 0; 
+                let latestTs = latestEntry ? (latestEntry.timestamp || 0) : -1;
+                
+                if(!latestEntry || entryTs > latestTs) {
                     latestEntry = entry;
                     activeProduct = prodKey.includes('lunch') ? 'Lunch' : 'Breakfast';
                 }
@@ -558,10 +489,7 @@
 
     function extractWeights(entry) {
         let wts = [];
-        entry.lanes.forEach(l => {
-            let val = parseFloat(l.w);
-            if(!isNaN(val)) wts.push(val);
-        });
+        entry.lanes.forEach(l => { let val = parseFloat(l.w); if(!isNaN(val)) wts.push(val); });
         return wts;
     }
 
@@ -569,13 +497,11 @@
         const entry = dataObj.entry;
         const target = entry.target || 0;
         const opName = entry.operator || 'Unknown Operator';
-        
         let lanesHtml = '';
+        
         entry.lanes.forEach((l, idx) => {
             let weightVal = parseFloat(l.w);
             let colorClass = '';
-            
-            // Maintain original operator color rules
             if (!isNaN(weightVal) && target > 0) {
                 let diff = Math.abs(weightVal - target);
                 if(diff <= 0.5) colorClass = 'bg-blue';
@@ -583,35 +509,22 @@
                 else if(diff <= 3) colorClass = 'bg-yellow';
                 else colorClass = 'bg-red';
             }
-
-            lanesHtml += `
-            <div class="sup-lane ${colorClass}">
-                <span class="sup-lane-lbl">L${idx+1}</span>
-                <span class="sup-lane-wt">${l.w}</span>
-                <span class="sup-lane-dens">${l.d}</span>
-            </div>`;
+            lanesHtml += `<div class="sup-lane ${colorClass}"><span class="sup-lane-lbl">L${idx+1}</span><span class="sup-lane-wt">${l.w}</span><span class="sup-lane-dens">${l.d}</span></div>`;
         });
 
         return `
         <div class="sup-card">
             <div class="sup-header">
                 <h2 class="sup-title">${title} <span style="font-size:0.8rem; color:gray; font-weight:normal;">• ${dataObj.product}</span></h2>
-                <div class="sup-meta">
-                    Target: ${target}g
-                    <span>${entry.time}</span>
-                </div>
+                <div class="sup-meta">Target: ${target}g<span>${entry.time}</span></div>
             </div>
-            <div style="font-size:0.8rem; margin-bottom: 10px; color: var(--purple); font-weight: bold;">
-                Operated by: ${opName}
-            </div>
-            <div class="sup-grid">
-                ${lanesHtml}
-            </div>
+            <div style="font-size:0.8rem; margin-bottom: 10px; color: var(--purple); font-weight: bold;">Operated by: ${opName}</div>
+            <div class="sup-grid">${lanesHtml}</div>
         </div>`;
     }
 
     // ======================================================================
-    // OPERATOR ENGINE (Remains isolated and safe)
+    // OPERATOR ENGINE
     // ======================================================================
     let unsubStore = null;   
     let unsubHistory = null; 
@@ -631,10 +544,8 @@
         unsubStore = window.onValue(dbRef_Store, (snapshot) => {
             dot.className = "status-dot status-online";
             const val = snapshot.val();
-            if(val) {
-                store = val;
-                updateUIFromCloud();
-            } else {
+            if(val) { store = val; updateUIFromCloud(); } 
+            else {
                 if(!store.target) {
                     const defaultTarget = config.product === 'bfast' ? '63' : '102';
                     store = { target: defaultTarget, lanes: Array(config.lanes).fill().map(() => ({ d:'', w:'', attempts: 0, smartActive: false, lastD: null, lastW: null, locked: true })) };
@@ -664,7 +575,7 @@
                 const btn = document.createElement('button');
                 btn.className = `m-btn ${config.currentMachine === i ? 'm-active' : ''}`;
                 btn.innerText = `DSI ${i}`;
-                btn.onclick = () => switchMachine(i);
+                btn.onclick = () => window.switchMachine(i);
                 nav.appendChild(btn);
             }
         }
@@ -672,16 +583,25 @@
         const prodName = config.product === 'lunch' ? txt.lunch : txt.bfast;
         document.getElementById('displayConfig').innerText = `${config.lanes} ${txt.lane} • ${prodName}`;
         
-        document.getElementById('setMachines').value = config.machines;
-        document.getElementById('setLanes').value = config.lanes;
-        document.getElementById('setProd').value = config.product;
-        document.getElementById('setDispName').value = config.displayName || '';
+        // Populate inputs from saved config
+        if(document.getElementById('setMachines')) document.getElementById('setMachines').value = config.machines;
+        if(document.getElementById('setLanes')) document.getElementById('setLanes').value = config.lanes;
+        if(document.getElementById('setProd')) document.getElementById('setProd').value = config.product;
+        if(document.getElementById('setSmart')) document.getElementById('setSmart').value = config.smart || 'auto';
+        if(document.getElementById('setInputMode')) document.getElementById('setInputMode').value = config.inputMode || 'button';
+        if(document.getElementById('setTheme')) document.getElementById('setTheme').value = config.theme || 'light';
+        if(document.getElementById('setDispName')) document.getElementById('setDispName').value = config.displayName || '';
 
         const container = document.getElementById('lanesContainer');
         container.innerHTML = '';
         for(let i=1; i<=config.lanes; i++) {
             let labelText = txt.density;
-            const btnHtml = `<button class="btn-icon" id="lockDens-${i}" onmousedown="event.preventDefault()" onclick="toggleLock(${i})">🔒</button>`;
+            if(config.inputMode === 'longpress') labelText += " (HOLD)";
+            if(config.inputMode === 'doubletap') labelText += " (x2)";
+
+            const btnHtml = config.inputMode === 'button' ? 
+                `<button class="btn-icon" id="lockDens-${i}" onmousedown="event.preventDefault()" onclick="window.toggleLock(${i})">🔒</button>` : 
+                `<button class="btn-icon btn-hidden" id="lockDens-${i}">🔒</button>`;
 
             container.innerHTML += `
                 <div class="lane-card" id="card-${i}">
@@ -689,27 +609,36 @@
                     <div>
                         <label>${labelText}</label>
                         <div class="input-group">
-                            <input type="number" id="currDens-${i}" class="density-input" step="0.001" readonly inputmode="decimal" oninput="handleInput(${i})" onblur="lockOnBlur(${i})">
+                            <input type="number" id="currDens-${i}" class="density-input" step="0.001" readonly inputmode="decimal" oninput="window.handleInput(${i})" onblur="window.lockOnBlur(${i})">
                             ${btnHtml}
                         </div>
                     </div>
                     <div>
                         <label>${txt.weight}</label>
                         <div class="input-group">
-                            <input type="number" id="avgWt-${i}" inputmode="decimal" oninput="handleWeightInput(${i})">
-                            <button class="btn-icon btn-recheck" onclick="recheckLane(${i})">↻</button>
+                            <input type="number" id="avgWt-${i}" inputmode="decimal" oninput="window.handleWeightInput(${i})" onblur="checkAutoSave()">
+                            <button class="btn-icon btn-recheck" onclick="window.recheckLane(${i})">↻</button>
                         </div>
                     </div>
-                    <div class="result-box" id="resBox-${i}" onclick="applyResult(${i})">
+                    <div class="result-box" id="resBox-${i}" onclick="window.applyResult(${i})">
                         <span id="resText-${i}">${txt.newDens}: --</span><span class="tap-hint">${txt.tapApply}</span>
                     </div>
                     <input type="hidden" id="calcVal-${i}">
                 </div>
             `;
         }
+        
+        for(let i=1; i<=config.lanes; i++) {
+            const el = document.getElementById(`currDens-${i}`);
+            if(config.inputMode === 'longpress') {
+                el.addEventListener('touchstart', () => { pressTimer = setTimeout(() => { window.unlockAndFocus(i); }, 800); });
+                el.addEventListener('touchend', () => clearTimeout(pressTimer));
+                el.addEventListener('mousedown', () => { pressTimer = setTimeout(() => { window.unlockAndFocus(i); }, 800); });
+                el.addEventListener('mouseup', () => clearTimeout(pressTimer));
+            } else if (config.inputMode === 'doubletap') { el.ondblclick = function() { window.unlockAndFocus(i); }; }
+        }
     }
 
-    // --- MATH & SYNC ENGINE ---
     function updateUIFromCloud() {
         const tEl = document.getElementById('setTarget');
         if(document.activeElement !== tEl) {
@@ -723,14 +652,17 @@
                 dEl.value = lane.d;
                 if(lane.locked) {
                     dEl.readOnly = true; dEl.style.borderColor = 'var(--border)';
-                    document.getElementById(`lockDens-${i}`).className = 'btn-icon locked'; document.getElementById(`lockDens-${i}`).innerText = '🔒';
+                    if(config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon locked'; document.getElementById(`lockDens-${i}`).innerText = '🔒'; }
                 } else {
                     dEl.readOnly = false; dEl.style.borderColor = 'var(--blue)';
-                    document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓';
+                    if(config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓'; }
                 }
             }
             const wEl = document.getElementById(`avgWt-${i}`);
             if(document.activeElement !== wEl) wEl.value = lane.w || '';
+            
+            if(config.smart === 'on' || (config.smart === 'auto' && lane.smartActive)) document.getElementById(`card-${i}`).classList.add('smart-active');
+            else document.getElementById(`card-${i}`).classList.remove('smart-active');
         }
         calculate(false);
     }
@@ -744,18 +676,33 @@
         for(let i=1; i<=config.lanes; i++) {
             const currD = parseFloat(store.lanes[i-1].d);
             const currW = parseFloat(store.lanes[i-1].w);
+            const lane = store.lanes[i-1];
             const resText = document.getElementById(`resText-${i}`);
             const hiddenVal = document.getElementById(`calcVal-${i}`);
             const card = document.getElementById(`card-${i}`);
 
             if(!isNaN(target) && !isNaN(currD) && !isNaN(currW)) {
                 const diff = currW - target;
-                const newD = currD + (diff * baseK);
+                let activeK = baseK;
+
+                const isSmart = config.smart === 'on' || (config.smart === 'auto' && lane.smartActive);
+                if(isSmart && lane.lastD !== null && lane.lastW !== null) {
+                    let dDelta = currD - lane.lastD;
+                    let wDelta = currW - lane.lastW;
+                    if(Math.abs(wDelta) > 0.5 && Math.abs(dDelta) > 0.001) {
+                        let observedK = dDelta / wDelta;
+                        observedK = Math.max(baseK * 0.5, Math.min(observedK, baseK * 5));
+                        activeK = (observedK * 0.6) + (baseK * 0.4);
+                    }
+                }
+
+                const newD = currD + (diff * activeK);
                 hiddenVal.value = newD.toFixed(3);
                 resText.innerText = `New Density: ` + newD.toFixed(3);
 
                 const absDiff = Math.abs(diff);
                 card.className = "lane-card"; 
+                if(isSmart) card.classList.add('smart-active');
                 if (absDiff <= 0.5) card.classList.add('bg-blue');
                 else if (absDiff <= 2) card.classList.add('bg-green');
                 else if (absDiff <= 3) card.classList.add('bg-yellow');
@@ -765,6 +712,7 @@
             } else {
                 resText.innerText = `New Density: --`; hiddenVal.value = "";
                 card.className = "lane-card";
+                if(config.smart === 'on' || (config.smart === 'auto' && lane.smartActive)) card.classList.add('smart-active');
             }
         }
 
@@ -777,16 +725,27 @@
             } else { document.getElementById('stdDev').innerText = "--"; }
         } else { document.getElementById('machAvg').innerText = "--"; document.getElementById('stdDev').innerText = "--"; }
         
-        if(writeToCloud) { if(dbRef_Store) window.set(dbRef_Store, store); }
+        if(writeToCloud && dbRef_Store) window.set(dbRef_Store, store);
     }
 
-    // --- SAVE CHECK UPDATED FOR SUPERVISOR TRACKING ---
-    function saveToHistory() {
+    function checkAutoSave() {
+        let currentCombo = "";
+        let allFilled = true;
+        for(let i=1; i<=config.lanes; i++) {
+            const w = document.getElementById(`avgWt-${i}`).value;
+            if(!w) { allFilled = false; break; }
+            currentCombo += w + ",";
+        }
+        if(allFilled && currentCombo !== lastAutoSaveCombo) {
+            lastAutoSaveCombo = currentCombo;
+            window.saveToHistory();
+        }
+    }
+
+    window.saveToHistory = function() {
         const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-        const timestamp = Date.now(); // Atomic stamp for Supervisor sorting
+        const timestamp = Date.now(); 
         const avg = document.getElementById('machAvg').innerText;
-        
-        // Priority: Admin Set Name > Display Name > Default
         const opName = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
         
         let row = { time, timestamp, avg, operator: opName, target: store.target, lanes: [] };
@@ -801,41 +760,68 @@
         if (!window.isOfflineMode && dbRef_History) window.set(dbRef_History, history);
     }
 
-    // Interactive Functions
-    function applyResult(idx) {
+    window.applyResult = function(idx) {
         const val = document.getElementById(`calcVal-${idx}`).value;
         const currD = parseFloat(store.lanes[idx-1].d);
+        const currW = parseFloat(store.lanes[idx-1].w);
+        const lane = store.lanes[idx-1];
+
         if(val && !isNaN(currD)) {
-            saveToHistory();
-            store.lanes[idx-1].d = val; store.lanes[idx-1].w = ''; store.lanes[idx-1].locked = true; 
+            window.saveToHistory();
+            lane.lastD = currD; lane.lastW = currW;
+            const target = parseFloat(store.target);
+            if (Math.abs(currW - target) > 2) {
+                lane.attempts++;
+                if(config.smart === 'auto' && lane.attempts >= 2) lane.smartActive = true; 
+            } else { lane.attempts = 0; }
+
+            lane.d = val; lane.w = ''; lane.locked = true; 
+            lastAutoSaveCombo = "";
             calculate(true); 
         }
     }
-    window.unlockAndFocus = function(i) {
-        const el = document.getElementById(`currDens-${i}`); el.readOnly = false; el.focus(); el.style.borderColor = 'var(--blue)';
-        store.lanes[i-1].locked = false; if(dbRef_Store) window.set(dbRef_Store, store); 
-    }
-    window.toggleLock = function(i) {
-        store.lanes[i-1].locked = !store.lanes[i-1].locked;
-        const el = document.getElementById(`currDens-${i}`);
-        if(!store.lanes[i-1].locked) { el.readOnly = false; setTimeout(() => { el.focus(); el.style.borderColor = 'var(--blue)'; }, 50); } 
-        else { el.readOnly = true; el.style.borderColor = 'var(--border)'; }
-        if(dbRef_Store) window.set(dbRef_Store, store);
-    }
+
+    window.unlockAndFocus = function(i) { const el = document.getElementById(`currDens-${i}`); el.readOnly = false; el.focus(); el.style.borderColor = 'var(--blue)'; store.lanes[i-1].locked = false; if(dbRef_Store) window.set(dbRef_Store, store); if(config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓'; } }
+    window.toggleLock = function(i) { store.lanes[i-1].locked = !store.lanes[i-1].locked; const el = document.getElementById(`currDens-${i}`); if(!store.lanes[i-1].locked) { el.readOnly = false; setTimeout(() => { el.focus(); el.style.borderColor = 'var(--blue)'; }, 50); } else { el.readOnly = true; el.style.borderColor = 'var(--border)'; } if(dbRef_Store) window.set(dbRef_Store, store); }
     window.handleInput = function(i) { store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; calculate(true); }
     window.handleWeightInput = function(i) { store.lanes[i-1].w = document.getElementById(`avgWt-${i}`).value; calculate(true); }
     window.lockOnBlur = function(i) { setTimeout(() => { if(document.activeElement === document.getElementById(`currDens-${i}`)) return; store.lanes[i-1].locked = true; store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; if(dbRef_Store) window.set(dbRef_Store, store); }, 150); }
-    window.recheckLane = function(idx) { store.lanes[idx-1].w = ''; document.getElementById(`avgWt-${idx}`).value = ''; document.getElementById(`avgWt-${idx}`).focus(); calculate(true); }
+    window.recheckLane = function(idx) { store.lanes[idx-1].w = ''; document.getElementById(`avgWt-${idx}`).value = ''; lastAutoSaveCombo = ""; document.getElementById(`avgWt-${idx}`).focus(); calculate(true); }
     window.updateTargetFromSettings = function() { store.target = document.getElementById('setTarget').value; calculate(true); }
-    function switchMachine(m) { config.currentMachine = m; saveLocalSettings(); renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); }
-    function switchProfile() { config.lanes = parseInt(document.getElementById('setLanes').value); config.product = document.getElementById('setProd').value; saveLocalSettings(); renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); }
+    window.switchMachine = function(m) { config.currentMachine = m; window.saveLocalSettings(); renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); }
+    window.switchProfile = function() { config.lanes = parseInt(document.getElementById('setLanes').value); config.product = document.getElementById('setProd').value; window.saveLocalSettings(); renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); }
     
-    // --- UTILS ---
-    function toggleSettings() { const m = document.getElementById('settingsMenu'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; if (m.style.display === 'flex') document.getElementById('setDispName').value = config.displayName || ''; }
-    window.saveDisplayName = function() { const name = document.getElementById('setDispName').value; config.displayName = name; saveLocalSettings(); if (window.myUid && !window.isOfflineMode && window.update && window.db) { window.update(window.ref(window.db, `users/${window.myUid}`), { displayName: name }).catch(e=>console.log(e)); } };
-    function saveLocalSettings() { config.machines = parseInt(document.getElementById('setMachines').value); localStorage.setItem('dsi_config_v11', JSON.stringify(config)); }
-    function toggleLanguage() { config.lang = config.lang === 'en' ? 'es' : 'en'; renderInterface(); saveLocalSettings(); }
-    function applyTheme() { if(config.theme === 'dark') document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); }
+    // --- UTILS (REPAIRED SETTINGS LOGIC) ---
+    window.toggleSettings = function() { 
+        const m = document.getElementById('settingsMenu'); 
+        m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; 
+        if (m.style.display === 'flex') {
+            if(document.getElementById('setDispName')) document.getElementById('setDispName').value = config.displayName || '';
+            if(document.getElementById('setSmart')) document.getElementById('setSmart').value = config.smart || 'auto';
+            if(document.getElementById('setTheme')) document.getElementById('setTheme').value = config.theme || 'light';
+        } 
+    }
+    
+    window.saveLocalSettings = function() { 
+        if(document.getElementById('setMachines')) config.machines = parseInt(document.getElementById('setMachines').value); 
+        if(document.getElementById('setLanes')) config.lanes = parseInt(document.getElementById('setLanes').value); 
+        if(document.getElementById('setProd')) config.product = document.getElementById('setProd').value; 
+        if(document.getElementById('setSmart')) config.smart = document.getElementById('setSmart').value; 
+        if(document.getElementById('setInputMode')) config.inputMode = document.getElementById('setInputMode').value; 
+        if(document.getElementById('setTheme')) config.theme = document.getElementById('setTheme').value; 
+        localStorage.setItem('dsi_config_v11', JSON.stringify(config)); 
+    }
+    
+    window.saveDisplayName = function() { const name = document.getElementById('setDispName').value; config.displayName = name; window.saveLocalSettings(); if (window.myUid && !window.isOfflineMode && window.update && window.db) { window.update(window.ref(window.db, `users/${window.myUid}`), { displayName: name }).catch(e=>console.log(e)); } };
+    window.toggleLanguage = function() { config.lang = config.lang === 'en' ? 'es' : 'en'; renderInterface(); window.saveLocalSettings(); updateText(); }
+    window.applyTheme = function() { if(config.theme === 'dark') document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); }
+    function updateText() { const txt = T[config.lang]; document.getElementById('appTitle').innerText = txt.title; document.getElementById('lblMenuTarget').innerText = `${txt.target} (g)`; document.getElementById('menuTitle').innerText = txt.options; }
+    function acceptDisclaimer() { config.acceptedDisclaimer = true; window.saveLocalSettings(); document.getElementById('disclaimerModal').style.display = 'none'; const hasSetup = localStorage.getItem('dsi_setup_done'); if (!hasSetup) document.getElementById('setupWizard').style.display = 'flex'; else { window.applyTheme(); window.routeUserByRole(); } }
+    function completeSetup() { config.machines = parseInt(document.getElementById('setupMachines').value); config.lanes = parseInt(document.getElementById('setupLanes').value); config.product = document.getElementById('setupProd').value; localStorage.setItem('dsi_setup_done', 'true'); window.saveLocalSettings(); document.getElementById('setupWizard').style.display = 'none'; window.routeUserByRole(); }
+    function openAbout() { document.getElementById('settingsMenu').style.display = 'none'; document.getElementById('aboutModal').style.display = 'flex'; }
+    function closeAbout() { document.getElementById('aboutModal').style.display = 'none'; document.getElementById('settingsMenu').style.display = 'flex'; }
+    function factoryReset() { if(confirm("Erase LOCAL settings? Cloud data remains.")) { localStorage.clear(); location.reload(); } }
+
     function renderHistoryTable() {
         let hHtml = `<th>Time</th><th>AVG</th>`;
         for(let i=1; i<=config.lanes; i++) hHtml += `<th>L${i}</th>`;
@@ -846,7 +832,7 @@
             return `<tr>${cells}</tr>`;
         }).join('');
     }
-    function clearHistory() { if(confirm("Clear history?")) { history = []; if (!window.isOfflineMode && dbRef_History) window.set(dbRef_History, history); renderHistoryTable(); } }
+    window.clearHistory = function() { if(confirm("Clear history?")) { history = []; if (!window.isOfflineMode && dbRef_History) window.set(dbRef_History, history); renderHistoryTable(); } }
 
     // --- ADMIN COMMAND CENTER ---
     let usersDbRef;
@@ -866,15 +852,14 @@
                     <div style="border:1px solid var(--border); padding:10px; margin-bottom:10px; border-radius:8px; background: rgba(128,128,128,0.05);">
                         <div style="font-size:0.65rem; color:gray; margin-bottom: 5px; word-break: break-all;">ID: ${key}</div>
                         <div style="font-size:0.8rem; margin-bottom: 5px;">Device Name: <strong>${dispName}</strong></div>
-                        <input type="text" placeholder="Admin Name (e.g., John Doe)" value="${adminName}" onblur="updateAdminName('${key}', this.value)" style="margin-bottom:8px; padding: 8px; font-size: 0.9rem; width: 100%; box-sizing: border-box;">
-                        
+                        <input type="text" placeholder="Admin Name (e.g., John Doe)" value="${adminName}" onblur="window.updateAdminName('${key}', this.value)" style="margin-bottom:8px; padding: 8px; font-size: 0.9rem; width: 100%; box-sizing: border-box;">
                         <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <select onchange="updateUserRole('${key}', this.value)" style="padding: 5px; font-size: 0.8rem; width: 48%; border-radius: 4px; border: 1px solid var(--border);">
+                            <select onchange="window.updateUserRole('${key}', this.value)" style="padding: 5px; font-size: 0.8rem; width: 48%; border-radius: 4px; border: 1px solid var(--border);">
                                 <option value="operator" ${role === 'operator' ? 'selected' : ''}>Operator</option>
                                 <option value="supervisor" ${role === 'supervisor' ? 'selected' : ''}>Supervisor</option>
                             </select>
                             <label style="display:flex; align-items:center; gap:5px; font-weight: bold; font-size: 0.9rem;">
-                                <input type="checkbox" ${isAppr} onchange="toggleUserApprove('${key}', this.checked)" style="width:18px; height:18px;"> 
+                                <input type="checkbox" ${isAppr} onchange="window.toggleUserApprove('${key}', this.checked)" style="width:18px; height:18px;"> 
                                 Approved
                             </label>
                         </div>
