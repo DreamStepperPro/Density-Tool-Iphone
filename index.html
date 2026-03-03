@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DSI Pro v11 (Cloud)</title>
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
+    <title>DSI Pro v11.2 (Command Center)</title>
     <style>
         /* --- THEMES --- */
         :root {
@@ -65,7 +65,7 @@
         .btn-icon { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 0 12px; cursor: pointer; font-size: 1.2rem; color: var(--text); display: flex; align-items: center; justify-content: center; }
         .btn-icon.locked { background: var(--dark-grey); color: white; border-color: var(--dark-grey); }
         .btn-recheck { color: var(--yellow); border-color: var(--yellow); }
-        .btn-hidden { display: none; }
+        .btn-hidden { display: none !important; }
 
         .result-box { grid-column: span 2; padding: 12px; text-align: center; border-radius: 8px; background: rgba(128,128,128,0.1); border: 2px dashed var(--border); font-weight: bold; cursor: pointer; }
         .result-box span { display: block; }
@@ -109,6 +109,26 @@
     </style>
 </head>
 <body>
+
+<div class="modal-overlay" id="accessDeniedOverlay" style="display:flex; z-index: 300; background: var(--bg);">
+    <div class="modal" style="text-align: center;">
+        <h2 style="color: var(--red);">🔒 Access Pending</h2>
+        <p style="font-size: 0.9rem; margin-bottom: 20px;">Your device is waiting for Supervisor approval.</p>
+        <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 5px;">Your Device ID:</p>
+        <code id="userIdDisplay" style="background: var(--input-bg); padding: 10px; display: block; word-break: break-all; border-radius: 6px; border: 1px solid var(--border); font-weight: bold;">Loading...</code>
+    </div>
+</div>
+
+<div class="modal-overlay" id="adminModal" style="display:none; z-index: 250;">
+    <div class="modal">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+            <h2 style="color: var(--purple);">👑 Command Center</h2>
+            <button onclick="closeAdmin()" style="background:none; border:none; font-size:1.5rem; color:var(--text);">✕</button>
+        </div>
+        <div id="adminUserList" style="max-height: 60vh; overflow-y: auto;">
+            </div>
+    </div>
+</div>
 
 <div class="modal-overlay" id="disclaimerModal" style="display:none; z-index: 200;">
     <div class="modal">
@@ -234,6 +254,7 @@
             <h1 id="appTitle">DSI Pro</h1>
         </div>
         <div class="header-btns">
+            <button class="gear-btn btn-hidden" id="btnAdmin" onclick="openAdmin()" style="color: var(--purple);">👑</button>
             <button class="lang-btn" onclick="toggleLanguage()" id="mainLangBtn">EN/ES</button>
             <button class="gear-btn" onclick="toggleSettings()">⚙️</button>
         </div>
@@ -280,7 +301,6 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-    // NEW: Import the Authentication tools
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
     const firebaseConfig = {
@@ -295,7 +315,7 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const auth = getAuth(app); // NEW: Turn on the Auth engine
+    const auth = getAuth(app); 
 
     window.db = db; 
     window.ref = ref;
@@ -303,16 +323,40 @@
     window.onValue = onValue;
     window.update = update;
     
-    // NEW: Perform the Invisible Login BEFORE starting the app
-    signInAnonymously(auth)
-      .then(() => {
-          console.log("Secure Connection Established.");
-          window.initApp(); // Start the app once logged in
-      })
-      .catch((error) => {
-          console.error("Security connection failed:", error.message);
-          window.initApp(); // Still let the app run locally if offline
-      });
+    // --- ADMIN SETUP ---
+    // ---> PASTE YOUR UID HERE <---
+    const ADMIN_UID = 'gpBz6Wxu8tco78j3LzOfxteg9VQ2'; 
+    
+    let currentUserUid = null;
+    let isAdmin = false;
+
+    signInAnonymously(auth).then((result) => {
+        currentUserUid = result.user.uid;
+        isAdmin = (currentUserUid === ADMIN_UID);
+        
+        // 1. Show the Admin Crown button if it's you!
+        if(isAdmin) document.getElementById('btnAdmin').classList.remove('btn-hidden');
+
+        // 2. Check in with the database so the Admin can see this device exists
+        const userRef = window.ref(window.db, `users/${currentUserUid}`);
+        window.update(userRef, { lastLogin: new Date().toLocaleString() });
+
+        // 3. Listen for the Admin's decision
+        window.onValue(window.ref(window.db, `users/${currentUserUid}/approved`), (snap) => {
+            const isApproved = snap.val() === true;
+            if (isAdmin || isApproved) {
+                // Access Granted! Hide the waiting room and start the app
+                document.getElementById('accessDeniedOverlay').style.display = 'none';
+                window.initApp(); 
+            } else {
+                // Access Denied! Show the waiting room and their ID
+                document.getElementById('accessDeniedOverlay').style.display = 'flex';
+                document.getElementById('userIdDisplay').innerText = currentUserUid;
+            }
+        });
+    }).catch((error) => {
+        console.error("Security connection failed:", error.message);
+    });
 </script>
 
 <script>
@@ -358,7 +402,7 @@
         }
     };
 
-    // Called by Module Script
+    // Called by Module Script when Access is Granted
     window.initApp = function() {
         const savedConfig = localStorage.getItem('dsi_config_v11');
         if (savedConfig) config = JSON.parse(savedConfig);
@@ -368,7 +412,6 @@
         if(!config.acceptedDisclaimer) {
             document.getElementById('disclaimerModal').style.display = 'flex';
         } else {
-            // First run check is less relevant with cloud, but we keep setup wizard for local preferences
             const hasSetup = localStorage.getItem('dsi_setup_done');
             if (!hasSetup) document.getElementById('setupWizard').style.display = 'flex';
             else {
@@ -384,8 +427,8 @@
     // --- CLOUD SYNC LOGIC ---
     let dbRef_Store;
     let dbRef_History;
-    let unsubStore = null;   // NEW: Tracks active store listener
-    let unsubHistory = null; // NEW: Tracks active history listener
+    let unsubStore = null;   
+    let unsubHistory = null; 
 
     function startCloudSync() {
         if(!window.db) { setTimeout(startCloudSync, 500); return; } // Wait for SDK
@@ -393,23 +436,21 @@
         const pathKey = `M${config.currentMachine}/${config.product}_${config.lanes}L`;
         const dot = document.getElementById('statusDot');
         
-        // THE FIX: Officially "hang up" old listeners before switching machines
+        // Officially "hang up" old listeners before switching machines
         if (unsubStore) unsubStore();
         if (unsubHistory) unsubHistory();
 
         dbRef_Store = window.ref(window.db, `stores/${pathKey}`);
         dbRef_History = window.ref(window.db, `histories/${pathKey}`);
 
-        // Listen for Store Changes (and save the hang-up function to unsubStore)
+        // Listen for Store Changes
         unsubStore = window.onValue(dbRef_Store, (snapshot) => {
             dot.className = "status-dot status-online";
             const val = snapshot.val();
             if(val) {
                 store = val;
-                // Update UI, but carefully
                 updateUIFromCloud();
             } else {
-                // Initialize default if empty
                 if(!store.target) {
                     const defaultTarget = config.product === 'bfast' ? '63' : '102';
                     store = { target: defaultTarget, lanes: Array(config.lanes).fill().map(() => ({ d:'', w:'', attempts: 0, smartActive: false, lastD: null, lastW: null, locked: true })) };
@@ -421,7 +462,7 @@
             console.error(error);
         });
 
-        // Listen for History Changes (and save the hang-up function to unsubHistory)
+        // Listen for History Changes
         unsubHistory = window.onValue(dbRef_History, (snapshot) => {
             const val = snapshot.val();
             history = val || [];
@@ -538,7 +579,7 @@
         document.getElementById('appContent').style.filter = 'none';
         
         renderInterface();
-        startCloudSync(); // Initialize cloud connection
+        startCloudSync(); 
     }
 
     function renderInterface() {
@@ -620,8 +661,6 @@
                 el.ondblclick = function() { unlockAndFocus(i); };
             }
         }
-        
-        // Note: We don't call loadProfileData here because standard loading happens via Cloud callback
     }
 
     function unlockAndFocus(i) {
@@ -630,8 +669,8 @@
         el.focus(); 
         el.style.borderColor = 'var(--blue)';
         
-        store.lanes[i-1].locked = false; // Update local state
-        pushToCloud(); // Sync lock status
+        store.lanes[i-1].locked = false; 
+        pushToCloud(); 
 
         if(config.inputMode === 'button') {
             document.getElementById(`lockDens-${i}`).className = 'btn-icon';
@@ -640,7 +679,6 @@
     }
 
     function toggleLock(i) {
-        // Just toggle local state and push. UI update handles visual
         store.lanes[i-1].locked = !store.lanes[i-1].locked;
         
         const el = document.getElementById(`currDens-${i}`);
@@ -696,7 +734,7 @@
     }
 
     function calculate(writeToCloud) {
-        if(!store || !store.lanes) return; // Guard against empty store
+        if(!store || !store.lanes) return; 
 
         const target = parseFloat(store.target);
         const baseK = FACTORS[config.product];
@@ -765,7 +803,7 @@
         const lane = store.lanes[idx-1];
 
         if(val && !isNaN(currD)) {
-            // ---> THE FIX: Save the snapshot instantly BEFORE clearing the weight <---
+            // Save snapshot instantly BEFORE clearing weight
             saveToHistory();
 
             lane.lastD = currD; lane.lastW = currW;
@@ -780,25 +818,18 @@
 
             lane.d = val;
             lane.w = '';
-            lane.locked = true; // Auto lock on apply
+            lane.locked = true; 
 
             lastAutoSaveCombo = "";
-            calculate(true); // Pushes new density/cleared weight/lock status
+            calculate(true); 
         }
     }
 
     function recheckLane(idx) {
-        // 1. Clear the data in the cloud store
         store.lanes[idx-1].w = '';
-        
-        // 2. THE FIX: Explicitly clear the physical screen before focusing
         document.getElementById(`avgWt-${idx}`).value = '';
-        
-        // 3. Reset auto-save and put cursor back in the box
         lastAutoSaveCombo = ""; 
         document.getElementById(`avgWt-${idx}`).focus();
-        
-        // 4. Calculate and push the blank state to the cloud
         calculate(true);
     }
 
@@ -832,7 +863,6 @@
              row.lanes.push({ w: wt ? `${wt}g` : '--', d: calc || dens || '--' });
         }
         history.unshift(row);
-        // Limit history to 50 items to save bandwidth/space
         if(history.length > 50) history.pop();
         pushHistoryToCloud();
     }
@@ -848,7 +878,38 @@
         }).join('');
     }
     function clearHistory() { if(confirm("Clear history?")) { history = []; pushHistoryToCloud(); } }
+
+    // --- ADMIN COMMAND CENTER ---
+    let usersDbRef;
+    function openAdmin() {
+        document.getElementById('adminModal').style.display = 'flex';
+        // Only load the user list if the Admin opens the menu
+        if (!usersDbRef) {
+            usersDbRef = window.ref(window.db, 'users');
+            window.onValue(usersDbRef, (snap) => {
+                const users = snap.val() || {};
+                let html = '';
+                for (const [key, data] of Object.entries(users)) {
+                    const isAppr = data.approved ? 'checked' : '';
+                    const name = data.name || '';
+                    html += `
+                    <div style="border:1px solid var(--border); padding:10px; margin-bottom:10px; border-radius:8px; background: rgba(128,128,128,0.05);">
+                        <div style="font-size:0.65rem; color:gray; margin-bottom: 5px; word-break: break-all;">ID: ${key}</div>
+                        <input type="text" placeholder="Worker Name (e.g., Marcus)" value="${name}" onblur="updateUserName('${key}', this.value)" style="margin-bottom:8px; padding: 8px; font-size: 0.9rem;">
+                        <label style="display:flex; align-items:center; gap:10px; font-weight: bold;">
+                            <input type="checkbox" ${isAppr} onchange="toggleUserApprove('${key}', this.checked)" style="width:20px; height:20px;"> 
+                            Grant Access
+                        </label>
+                        <div style="font-size:0.65rem; color:gray; margin-top:5px;">Last Seen: ${data.lastLogin || 'Unknown'}</div>
+                    </div>`;
+                }
+                document.getElementById('adminUserList').innerHTML = html;
+            });
+        }
+    }
+    function closeAdmin() { document.getElementById('adminModal').style.display = 'none'; }
+    function updateUserName(uid, newName) { window.update(window.ref(window.db, `users/${uid}`), { name: newName }); }
+    function toggleUserApprove(uid, isAppr) { window.update(window.ref(window.db, `users/${uid}`), { approved: isAppr }); }
 </script>
 </body>
 </html>
-
