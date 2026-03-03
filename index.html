@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <title>DSI Pro v11.2 (Command Center)</title>
+    <title>DSI Pro v11.3 (Command Center)</title>
     <style>
         /* --- THEMES --- */
         :root {
@@ -115,7 +115,11 @@
         <h2 style="color: var(--red);">🔒 Access Pending</h2>
         <p style="font-size: 0.9rem; margin-bottom: 20px;">Your device is waiting for Supervisor approval.</p>
         <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 5px;">Your Device ID:</p>
-        <code id="userIdDisplay" style="background: var(--input-bg); padding: 10px; display: block; word-break: break-all; border-radius: 6px; border: 1px solid var(--border); font-weight: bold;">Loading...</code>
+        <code id="userIdDisplay" style="background: var(--input-bg); padding: 10px; display: block; word-break: break-all; border-radius: 6px; border: 1px solid var(--border); font-weight: bold; margin-bottom: 20px;">Loading...</code>
+        
+        <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
+        <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 10px;">Need to work right now?</p>
+        <button class="modal-btn secondary" onclick="forceOfflineMode()">WORK OFFLINE</button>
     </div>
 </div>
 
@@ -329,6 +333,17 @@
     
     let currentUserUid = null;
     let isAdmin = false;
+    let appInitialized = false; 
+    window.isOfflineMode = false;
+
+    window.forceOfflineMode = function() {
+        window.isOfflineMode = true;
+        document.getElementById('accessDeniedOverlay').style.display = 'none';
+        if (!appInitialized) {
+            appInitialized = true;
+            window.initApp();
+        }
+    };
 
     signInAnonymously(auth).then((result) => {
         currentUserUid = result.user.uid;
@@ -345,11 +360,16 @@
         window.onValue(window.ref(window.db, `users/${currentUserUid}/approved`), (snap) => {
             const isApproved = snap.val() === true;
             if (isAdmin || isApproved) {
-                // Access Granted! Hide the waiting room and start the app
                 document.getElementById('accessDeniedOverlay').style.display = 'none';
-                window.initApp(); 
+                if (!appInitialized) {
+                    appInitialized = true;
+                    window.initApp(); 
+                } else if (window.isOfflineMode) {
+                    // Live Unlock: Automatically connect to cloud if approved while working offline!
+                    window.isOfflineMode = false;
+                    window.startCloudSync();
+                }
             } else {
-                // Access Denied! Show the waiting room and their ID
                 document.getElementById('accessDeniedOverlay').style.display = 'flex';
                 document.getElementById('userIdDisplay').innerText = currentUserUid;
             }
@@ -361,13 +381,11 @@
 
 <script>
     // --- GLOBAL STATE ---
-    // Config = Local Preferences (Not Synced)
     let config = {
         machines: 2, lanes: 4, product: 'lunch', smart: 'auto', theme: 'light',
         currentMachine: 1, acceptedDisclaimer: false, lang: 'en', inputMode: 'button'
     };
 
-    // Store = Cloud Data (Synced)
     let store = {}; 
     let history = {};
     
@@ -402,7 +420,6 @@
         }
     };
 
-    // Called by Module Script when Access is Granted
     window.initApp = function() {
         const savedConfig = localStorage.getItem('dsi_config_v11');
         if (savedConfig) config = JSON.parse(savedConfig);
@@ -416,7 +433,11 @@
             if (!hasSetup) document.getElementById('setupWizard').style.display = 'flex';
             else {
                 document.getElementById('appContent').style.filter = 'none';
-                startCloudSync(); // Connect to Cloud
+                if (!window.isOfflineMode) {
+                    window.startCloudSync();
+                } else {
+                    document.getElementById('statusDot').className = "status-dot status-offline";
+                }
             }
         }
         
@@ -430,20 +451,18 @@
     let unsubStore = null;   
     let unsubHistory = null; 
 
-    function startCloudSync() {
-        if(!window.db) { setTimeout(startCloudSync, 500); return; } // Wait for SDK
+    window.startCloudSync = function() {
+        if(!window.db) { setTimeout(window.startCloudSync, 500); return; }
         
         const pathKey = `M${config.currentMachine}/${config.product}_${config.lanes}L`;
         const dot = document.getElementById('statusDot');
         
-        // Officially "hang up" old listeners before switching machines
         if (unsubStore) unsubStore();
         if (unsubHistory) unsubHistory();
 
         dbRef_Store = window.ref(window.db, `stores/${pathKey}`);
         dbRef_History = window.ref(window.db, `histories/${pathKey}`);
 
-        // Listen for Store Changes
         unsubStore = window.onValue(dbRef_Store, (snapshot) => {
             dot.className = "status-dot status-online";
             const val = snapshot.val();
@@ -462,7 +481,6 @@
             console.error(error);
         });
 
-        // Listen for History Changes
         unsubHistory = window.onValue(dbRef_History, (snapshot) => {
             const val = snapshot.val();
             history = val || [];
@@ -473,18 +491,15 @@
     function updateUIFromCloud() {
         const txt = T[config.lang];
         
-        // Update Target
         const tEl = document.getElementById('setTarget');
         if(document.activeElement !== tEl) {
             tEl.value = store.target;
             document.getElementById('displayTarget').innerText = `${txt.target}: ${store.target}g`;
         }
 
-        // Update Lanes
         for(let i=1; i<=config.lanes; i++) {
             const lane = store.lanes[i-1];
             
-            // Update Density Input
             const dEl = document.getElementById(`currDens-${i}`);
             if(document.activeElement !== dEl) {
                 dEl.value = lane.d;
@@ -497,20 +512,18 @@
                 }
             }
 
-            // Update Weight Input
             const wEl = document.getElementById(`avgWt-${i}`);
             if(document.activeElement !== wEl) {
                 wEl.value = lane.w || '';
             }
 
-            // Update Smart Tag
             if(config.smart === 'on' || (config.smart === 'auto' && lane.smartActive)) {
                 document.getElementById(`card-${i}`).classList.add('smart-active');
             } else {
                 document.getElementById(`card-${i}`).classList.remove('smart-active');
             }
         }
-        calculate(false); // Calc without writing back to cloud to avoid loops
+        calculate(false);
     }
 
     function pushToCloud() {
@@ -520,8 +533,6 @@
     function pushHistoryToCloud() {
         if(dbRef_History) window.set(dbRef_History, history);
     }
-
-    // --- STANDARD APP LOGIC ---
 
     function toggleLanguage() { config.lang = config.lang === 'en' ? 'es' : 'en'; updateText(); renderInterface(); saveLocalSettings(); }
 
@@ -565,7 +576,8 @@
         if (!hasSetup) document.getElementById('setupWizard').style.display = 'flex';
         else {
             document.getElementById('appContent').style.filter = 'none';
-            startCloudSync();
+            if (!window.isOfflineMode) window.startCloudSync();
+            else document.getElementById('statusDot').className = "status-dot status-offline";
         }
     }
 
@@ -579,7 +591,8 @@
         document.getElementById('appContent').style.filter = 'none';
         
         renderInterface();
-        startCloudSync(); 
+        if (!window.isOfflineMode) window.startCloudSync(); 
+        else document.getElementById('statusDot').className = "status-dot status-offline";
     }
 
     function renderInterface() {
@@ -605,7 +618,6 @@
         const prodName = config.product === 'lunch' ? txt.lunch : txt.bfast;
         document.getElementById('displayConfig').innerText = `${config.lanes} ${txt.lane} • ${prodName}`;
         
-        // Update Options
         document.getElementById('setMachines').value = config.machines;
         document.getElementById('setLanes').value = config.lanes;
         document.getElementById('setProd').value = config.product;
@@ -649,7 +661,6 @@
             `;
         }
         
-        // Listeners
         for(let i=1; i<=config.lanes; i++) {
             const el = document.getElementById(`currDens-${i}`);
             if(config.inputMode === 'longpress') {
@@ -718,7 +729,6 @@
         }, 150);
     }
 
-    // --- AUTO SAVE ---
     function checkAutoSave() {
         let currentCombo = "";
         let allFilled = true;
@@ -803,7 +813,6 @@
         const lane = store.lanes[idx-1];
 
         if(val && !isNaN(currD)) {
-            // Save snapshot instantly BEFORE clearing weight
             saveToHistory();
 
             lane.lastD = currD; lane.lastW = currW;
@@ -833,11 +842,11 @@
         calculate(true);
     }
 
-    function switchMachine(m) { config.currentMachine = m; saveLocalSettings(); renderInterface(); startCloudSync(); }
+    function switchMachine(m) { config.currentMachine = m; saveLocalSettings(); renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); }
     function switchProfile() { 
         config.lanes = parseInt(document.getElementById('setLanes').value);
         config.product = document.getElementById('setProd').value;
-        saveLocalSettings(); renderInterface(); startCloudSync();
+        saveLocalSettings(); renderInterface(); if (!window.isOfflineMode) window.startCloudSync();
     }
     function toggleSettings() { const m = document.getElementById('settingsMenu'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; }
     function openAbout() { document.getElementById('settingsMenu').style.display = 'none'; document.getElementById('aboutModal').style.display = 'flex'; }
@@ -864,7 +873,7 @@
         }
         history.unshift(row);
         if(history.length > 50) history.pop();
-        pushHistoryToCloud();
+        if (!window.isOfflineMode) pushHistoryToCloud();
     }
     function renderHistoryTable() {
         const txt = T[config.lang];
@@ -877,13 +886,12 @@
             return `<tr>${cells}</tr>`;
         }).join('');
     }
-    function clearHistory() { if(confirm("Clear history?")) { history = []; pushHistoryToCloud(); } }
+    function clearHistory() { if(confirm("Clear history?")) { history = []; if (!window.isOfflineMode) pushHistoryToCloud(); renderHistoryTable(); } }
 
     // --- ADMIN COMMAND CENTER ---
     let usersDbRef;
     function openAdmin() {
         document.getElementById('adminModal').style.display = 'flex';
-        // Only load the user list if the Admin opens the menu
         if (!usersDbRef) {
             usersDbRef = window.ref(window.db, 'users');
             window.onValue(usersDbRef, (snap) => {
@@ -913,4 +921,3 @@
 </script>
 </body>
 </html>
-
