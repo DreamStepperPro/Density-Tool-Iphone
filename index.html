@@ -7,14 +7,22 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <title>The Night Shift Advantage v11.6</title>
+    <title>The Night Shift Advantage v11.6.1</title>
     <style>
         /* --- THEMES --- */
         :root {
+            /* Raw Colors */
             --bg: #f4f4f9; --card-bg: #ffffff; --text: #1a1a1a; --border: #ccc;
             --input-bg: #ffffff; --nav-bg: #fff;
             --blue: #007bff; --purple: #9d50bb; --red: #ff4d4d; --green: #28a745; --yellow: #ffc107; --perfect: #00d2ff;
             --dark-grey: #333;
+            
+            /* Semantic Layer */
+            --success: var(--green);
+            --warning: var(--yellow);
+            --danger: var(--red);
+            --info: var(--blue);
+            --accent: var(--purple);
         }
         body.dark-mode {
             --bg: #121212; --card-bg: #1e1e1e; --text: #e0e0e0; --border: #444;
@@ -29,17 +37,17 @@
         .header-btns { display: flex; gap: 10px; align-items: center; }
         
         /* BRANDING: The Night Shift Advantage */
-        .brand-title { font-size: 1.5rem; font-weight: 900; background: -webkit-linear-gradient(45deg, #00d2ff, #9d50bb); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .brand-title { font-size: 1.5rem; font-weight: 900; background: -webkit-linear-gradient(45deg, var(--perfect), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .moon-icon { font-size: 1.2rem; margin-left: 5px; text-shadow: 0 0 5px rgba(157, 80, 187, 0.5); }
-        body.dark-mode .brand-title { background: -webkit-linear-gradient(45deg, #9d50bb, #e0e0e0); -webkit-background-clip: text; }
+        body.dark-mode .brand-title { background: -webkit-linear-gradient(45deg, var(--accent), #e0e0e0); -webkit-background-clip: text; }
 
         .gear-btn { font-size: 1.5rem; background: none; border: none; cursor: pointer; padding: 5px; color: var(--text); }
-        .lang-btn { background: var(--blue); color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
+        .lang-btn { background: var(--info); color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
         
         .status-dot { width: 10px; height: 10px; background: #ccc; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        .status-online { background: var(--green); box-shadow: 0 0 5px var(--green); }
-        .status-offline { background: var(--red); }
-        .status-syncing { background: var(--yellow); box-shadow: 0 0 5px var(--yellow); }
+        .status-online { background: var(--success); box-shadow: 0 0 5px var(--success); }
+        .status-offline { background: var(--danger); }
+        .status-syncing { background: var(--warning); box-shadow: 0 0 5px var(--warning); }
 
         .machine-nav { display: flex; gap: 10px; margin-bottom: 15px; }
         .m-btn { flex: 1; padding: 12px; font-weight: bold; border: 2px solid var(--border); border-radius: 8px; background: var(--card-bg); color: var(--text); transition: 0.2s; }
@@ -51,18 +59,18 @@
         .lane-card { background: var(--card-bg); border: 2px solid var(--border); padding: 12px; margin-bottom: 10px; border-radius: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; position: relative; }
         .lane-header { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 5px; margin-bottom: 5px; font-weight: bold; }
         
-        .smart-tag { font-size: 0.7rem; background: var(--purple); color: white; padding: 2px 6px; border-radius: 10px; display: none; }
+        .smart-tag { font-size: 0.7rem; background: var(--accent); color: white; padding: 2px 6px; border-radius: 10px; display: none; }
         .smart-active .smart-tag { display: inline-block; }
 
         label { font-size: 0.7rem; font-weight: bold; display: block; margin-bottom: 2px; text-transform: uppercase; opacity: 0.7; }
         .input-group { display: flex; gap: 5px; }
         input { width: 100%; padding: 12px; font-size: 1.1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--text); font-weight: bold; box-sizing: border-box; }
         input.density-input:read-only { background: rgba(128,128,128,0.1); color: var(--text); opacity: 0.8; pointer-events: auto; }
-        input.density-input:focus { background: var(--input-bg); border-color: var(--blue); outline: none; }
+        input.density-input:focus { background: var(--input-bg); border-color: var(--info); outline: none; }
 
         .btn-icon { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 0 12px; cursor: pointer; font-size: 1.2rem; color: var(--text); display: flex; align-items: center; justify-content: center; }
         .btn-icon.locked { background: var(--dark-grey); color: white; border-color: var(--dark-grey); }
-        .btn-recheck { color: var(--yellow); border-color: var(--yellow); }
+        .btn-recheck { color: var(--warning); border-color: var(--warning); }
         .btn-hidden { display: none !important; }
 
         .result-box { grid-column: span 2; padding: 12px; text-align: center; border-radius: 8px; background: rgba(128,128,128,0.1); border: 2px dashed var(--border); font-weight: bold; cursor: pointer; }
@@ -78,9 +86,9 @@
         .modal { background: var(--card-bg); padding: 20px; border-radius: 12px; width: 100%; max-width: 400px; color: var(--text); max-height: 85vh; overflow-y: auto; }
         .modal h2 { margin-top: 0; font-size: 1.2rem; }
         .modal-opt { margin-bottom: 15px; }
-        .modal-btn { width: 100%; padding: 15px; background: var(--blue); color: white; border: none; border-radius: 8px; font-weight: bold; margin-top: 10px; font-size: 1rem; cursor: pointer; }
+        .modal-btn { width: 100%; padding: 15px; background: var(--info); color: white; border: none; border-radius: 8px; font-weight: bold; margin-top: 10px; font-size: 1rem; cursor: pointer; }
         .modal-btn.secondary { background: var(--dark-grey); }
-        .modal-btn.danger { background: var(--red); margin-top: 20px; }
+        .modal-btn.danger { background: var(--danger); margin-top: 20px; }
         
         .legal-text { font-size: 0.8rem; line-height: 1.4; color: #888; margin-bottom: 10px; text-align: justify; }
 
@@ -93,10 +101,11 @@
         .cell-wt { font-weight: bold; font-size: 0.9rem; display: block; }
         .cell-dens { font-size: 0.7rem; opacity: 0.8; display: block; }
 
-        .bg-blue { background-color: var(--perfect) !important; color: #000; border-color: var(--perfect); }
-        .bg-green { background-color: var(--green) !important; color: #fff; border-color: var(--green); }
-        .bg-yellow { background-color: var(--yellow) !important; color: #000; border-color: var(--yellow); }
-        .bg-red { background-color: var(--red) !important; color: #fff; border-color: var(--red); }
+        /* Semantic Status Backgrounds */
+        .bg-perfect { background-color: var(--perfect) !important; color: #000; border-color: var(--perfect); }
+        .bg-success { background-color: var(--success) !important; color: #fff; border-color: var(--success); }
+        .bg-warning { background-color: var(--warning) !important; color: #000; border-color: var(--warning); }
+        .bg-danger { background-color: var(--danger) !important; color: #fff; border-color: var(--danger); }
 
         select { width: 100%; padding: 12px; border-radius: 6px; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); font-size: 1rem; box-sizing: border-box; }
         
@@ -117,7 +126,7 @@
 
 <div class="modal-overlay" id="accessDeniedOverlay" style="display:flex; z-index: 300; background: var(--bg);">
     <div class="modal" style="text-align: center;">
-        <h2 style="color: var(--red);">🔒 Access Pending</h2>
+        <h2 style="color: var(--danger);">🔒 Access Pending</h2>
         <p style="font-size: 0.9rem; margin-bottom: 20px;">Your device is waiting for Admin approval.</p>
         <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 5px;">Your Device ID:</p>
         <code id="userIdDisplay" style="background: var(--input-bg); padding: 10px; display: block; word-break: break-all; border-radius: 6px; border: 1px solid var(--border); font-weight: bold; margin-bottom: 20px;">Loading...</code>
@@ -130,7 +139,7 @@
 <div class="modal-overlay" id="adminModal" style="display:none; z-index: 250;">
     <div class="modal">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
-            <h2 style="color: var(--purple);">👑 Command Center</h2>
+            <h2 style="color: var(--accent);">👑 Command Center</h2>
             <button onclick="window.closeAdmin()" style="background:none; border:none; font-size:1.5rem; color:var(--text);">✕</button>
         </div>
         <div id="adminUserList" style="max-height: 60vh; overflow-y: auto;"></div>
@@ -210,7 +219,7 @@
             <h1 class="brand-title">The Advantage<span class="moon-icon">🌙</span></h1>
         </div>
         <div class="header-btns">
-            <button class="gear-btn btn-hidden" id="btnAdmin" onclick="window.openAdmin()" style="color: var(--purple);">👑</button>
+            <button class="gear-btn btn-hidden" id="btnAdmin" onclick="window.openAdmin()" style="color: var(--accent);">👑</button>
             <button class="gear-btn" onclick="window.toggleSettings()">⚙️</button>
         </div>
     </div>
@@ -229,7 +238,7 @@
             </table>
         </div>
         <div style="display:flex; gap:10px;">
-            <button class="btn-clear" onclick="window.saveToHistory()" style="background:var(--blue);" id="btnSaveCheck">SAVE CHECK</button>
+            <button class="btn-clear" onclick="window.saveToHistory()" style="background:var(--info);" id="btnSaveCheck">SAVE CHECK</button>
             <button class="btn-clear" onclick="window.clearHistory()" id="btnClearTable">CLEAR TABLE</button>
         </div>
     </div>
@@ -239,10 +248,10 @@
     <div class="header">
         <div style="display:flex; align-items:center;">
             <div id="supStatusDot" class="status-dot status-online"></div>
-            <h1 style="margin:0; font-size:1.4rem; font-weight:800; letter-spacing:-0.5px;">DSI Line <span style="font-size: 0.8rem; color: var(--purple); vertical-align: middle;">(OEE VIEW)</span></h1>
+            <h1 style="margin:0; font-size:1.4rem; font-weight:800; letter-spacing:-0.5px;">DSI Line <span style="font-size: 0.8rem; color: var(--accent); vertical-align: middle;">(OEE VIEW)</span></h1>
         </div>
         <div class="header-btns">
-            <button class="gear-btn btn-hidden" id="btnAdminSup" onclick="window.openAdmin()" style="color: var(--purple);">👑</button>
+            <button class="gear-btn btn-hidden" id="btnAdminSup" onclick="window.openAdmin()" style="color: var(--accent);">👑</button>
             <button class="gear-btn" onclick="window.toggleSettings()">⚙️</button>
         </div>
     </div>
@@ -479,17 +488,18 @@
         
         // CONNECTION STALE LOGIC (3 Minutes)
         let isStale = (Date.now() - (entry.timestamp || 0)) > 180000;
-        let staleWarning = isStale ? `<span style="color:var(--red); font-size:0.7rem; font-weight:bold;">⚠️ STALE DATA</span>` : '';
+        let staleWarning = isStale ? `<span style="color:var(--danger); font-size:0.7rem; font-weight:bold;">⚠️ STALE DATA</span>` : '';
 
         entry.lanes.forEach((l, idx) => {
             let weightVal = parseFloat(l.w);
             let colorClass = '';
             if (!isNaN(weightVal) && target > 0) {
                 let diff = Math.abs(weightVal - target);
-                if(diff <= 0.5) colorClass = 'bg-blue';
-                else if(diff <= 2) colorClass = 'bg-green';
-                else if(diff <= 3) colorClass = 'bg-yellow';
-                else colorClass = 'bg-red';
+                // SEMANTIC COLOR MAPPING
+                if(diff <= 0.5) colorClass = 'bg-perfect';
+                else if(diff <= 2) colorClass = 'bg-success';
+                else if(diff <= 3) colorClass = 'bg-warning';
+                else colorClass = 'bg-danger';
             }
             if(isStale) colorClass = ''; // Dim the colors if data is old
 
@@ -497,12 +507,12 @@
         });
 
         return `
-        <div class="sup-card" style="${isStale ? 'opacity: 0.6; border-color: var(--red);' : ''}">
+        <div class="sup-card" style="${isStale ? 'opacity: 0.6; border-color: var(--danger);' : ''}">
             <div class="sup-header">
                 <h2 class="sup-title">${title} <span style="font-size:0.8rem; color:gray; font-weight:normal;">• ${dataObj.product}</span></h2>
                 <div class="sup-meta">Target: ${target}g<span>${entry.time} ${staleWarning}</span></div>
             </div>
-            <div style="font-size:0.8rem; margin-bottom: 10px; color: var(--purple); font-weight: bold;">Operated by: ${opName}</div>
+            <div style="font-size:0.8rem; margin-bottom: 10px; color: var(--accent); font-weight: bold;">Operated by: ${opName}</div>
             <div class="sup-grid">${lanesHtml}</div>
         </div>`;
     }
@@ -554,7 +564,7 @@
         });
     }
 
-// --- THE ATOMIC SCALPEL UPDATE FUNCTIONS ---
+    // --- THE ATOMIC SCALPEL UPDATE FUNCTIONS ---
     window.pushLaneToCloud = function(idx) {
         if (!dbRef_Store || window.isOfflineMode) return;
         document.getElementById('statusDot').className = "status-dot status-syncing";
@@ -678,7 +688,7 @@
                     dEl.readOnly = true; dEl.style.borderColor = 'var(--border)';
                     if(config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon locked'; document.getElementById(`lockDens-${i}`).innerText = '🔒'; }
                 } else {
-                    dEl.readOnly = false; dEl.style.borderColor = 'var(--blue)';
+                    dEl.readOnly = false; dEl.style.borderColor = 'var(--info)';
                     if(config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓'; }
                 }
             }
@@ -729,10 +739,12 @@
                 const absDiff = Math.abs(diff);
                 card.className = "lane-card"; 
                 if(isSmart) card.classList.add('smart-active');
-                if (absDiff <= 0.5) card.classList.add('bg-blue');
-                else if (absDiff <= 2) card.classList.add('bg-green');
-                else if (absDiff <= 3) card.classList.add('bg-yellow');
-                else card.classList.add('bg-red');
+                
+                // SEMANTIC COLOR MAPPING
+                if (absDiff <= 0.5) card.classList.add('bg-perfect');
+                else if (absDiff <= 2) card.classList.add('bg-success');
+                else if (absDiff <= 3) card.classList.add('bg-warning');
+                else card.classList.add('bg-danger');
 
                 weights.push(currW); count++;
             } else {
@@ -806,8 +818,8 @@
         }
     }
 
-    window.unlockAndFocus = function(i) { const el = document.getElementById(`currDens-${i}`); el.readOnly = false; el.focus(); el.style.borderColor = 'var(--blue)'; store.lanes[i-1].locked = false; window.pushLaneToCloud(i); if(config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓'; } }
-    window.toggleLock = function(i) { store.lanes[i-1].locked = !store.lanes[i-1].locked; const el = document.getElementById(`currDens-${i}`); if(!store.lanes[i-1].locked) { el.readOnly = false; setTimeout(() => { el.focus(); el.style.borderColor = 'var(--blue)'; }, 50); } else { el.readOnly = true; el.style.borderColor = 'var(--border)'; } window.pushLaneToCloud(i); }
+    window.unlockAndFocus = function(i) { const el = document.getElementById(`currDens-${i}`); el.readOnly = false; el.focus(); el.style.borderColor = 'var(--info)'; store.lanes[i-1].locked = false; window.pushLaneToCloud(i); if(config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓'; } }
+    window.toggleLock = function(i) { store.lanes[i-1].locked = !store.lanes[i-1].locked; const el = document.getElementById(`currDens-${i}`); if(!store.lanes[i-1].locked) { el.readOnly = false; setTimeout(() => { el.focus(); el.style.borderColor = 'var(--info)'; }, 50); } else { el.readOnly = true; el.style.borderColor = 'var(--border)'; } window.pushLaneToCloud(i); }
     window.handleInput = function(i) { store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; window.calculateLocal(); }
     window.handleWeightInput = function(i) { store.lanes[i-1].w = document.getElementById(`avgWt-${i}`).value; window.calculateLocal(); window.pushLaneToCloud(i); }
     window.lockOnBlur = function(i) { setTimeout(() => { if(document.activeElement === document.getElementById(`currDens-${i}`)) return; store.lanes[i-1].locked = true; store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; window.pushLaneToCloud(i); }, 150); }
@@ -898,5 +910,3 @@
 </script>
 </body>
 </html>
-
-
