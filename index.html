@@ -554,34 +554,36 @@
         });
     }
 
-    // --- THE REPAIRED SCALPEL UPDATE FUNCTIONS ---
-window.pushLaneToCloud = function(idx) {
-    if (!dbRef_Store || window.isOfflineMode) return;
-    document.getElementById('statusDot').className = "status-dot status-syncing";
-    
-    const now = Date.now();
-    const laneRef = window.ref(window.db, `stores/${cloudPathKey}/lanes/${idx-1}`);
-    
-    // We add the timestamp DIRECTLY to the lane so the Bouncer can see it
-    const laneData = { ...store.lanes[idx-1], lastUpdated: now };
-    
-    window.update(laneRef, laneData).then(() => {
-        // Also update the top-level machine timestamp
-        window.update(dbRef_Store, { lastUpdated: now });
-        document.getElementById('statusDot').className = "status-dot status-online";
-    }).catch(e => {
-        console.error("Bouncer rejected the update:", e);
-        document.getElementById('statusDot').className = "status-dot status-offline";
-    });
-}
+// --- THE ATOMIC SCALPEL UPDATE FUNCTIONS ---
+    window.pushLaneToCloud = function(idx) {
+        if (!dbRef_Store || window.isOfflineMode) return;
+        document.getElementById('statusDot').className = "status-dot status-syncing";
+        
+        const now = Date.now();
+        
+        // We package the specific lane AND the top-level timestamp into ONE atomic envelope
+        const updates = {};
+        updates[`lanes/${idx-1}`] = { ...store.lanes[idx-1], lastUpdated: now };
+        updates[`lastUpdated`] = now;
+        
+        // Update the main machine path atomically
+        window.update(dbRef_Store, updates).then(() => {
+            document.getElementById('statusDot').className = "status-dot status-online";
+        }).catch(e => {
+            console.error("Bouncer rejected the update:", e);
+            document.getElementById('statusDot').className = "status-dot status-offline";
+        });
+    }
 
-window.pushTargetToCloud = function() {
-    if (!dbRef_Store || window.isOfflineMode) return;
-    window.update(dbRef_Store, { 
-        target: store.target, 
-        lastUpdated: Date.now() 
-    });
-}
+    window.pushTargetToCloud = function() {
+        if (!dbRef_Store || window.isOfflineMode) return;
+        window.update(dbRef_Store, { 
+            target: store.target, 
+            lastUpdated: Date.now() 
+        }).catch(e => {
+            console.error("Target update rejected:", e);
+        });
+    }
     // -------------------------------------
 
     window.renderInterface = function() {
@@ -896,4 +898,5 @@ window.pushTargetToCloud = function() {
 </script>
 </body>
 </html>
+
 
