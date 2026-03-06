@@ -554,22 +554,34 @@
         });
     }
 
-    // --- THE SCALPEL UPDATE FUNCTIONS ---
-    window.pushLaneToCloud = function(idx) {
-        if (!dbRef_Store || window.isOfflineMode) return;
-        document.getElementById('statusDot').className = "status-dot status-syncing";
-        
-        const laneRef = window.ref(window.db, `stores/${cloudPathKey}/lanes/${idx-1}`);
-        window.update(laneRef, store.lanes[idx-1]).then(() => {
-            window.update(dbRef_Store, { lastUpdated: Date.now() });
-            document.getElementById('statusDot').className = "status-dot status-online";
-        }).catch(e => console.error("Sync error", e));
-    }
+    // --- THE REPAIRED SCALPEL UPDATE FUNCTIONS ---
+window.pushLaneToCloud = function(idx) {
+    if (!dbRef_Store || window.isOfflineMode) return;
+    document.getElementById('statusDot').className = "status-dot status-syncing";
+    
+    const now = Date.now();
+    const laneRef = window.ref(window.db, `stores/${cloudPathKey}/lanes/${idx-1}`);
+    
+    // We add the timestamp DIRECTLY to the lane so the Bouncer can see it
+    const laneData = { ...store.lanes[idx-1], lastUpdated: now };
+    
+    window.update(laneRef, laneData).then(() => {
+        // Also update the top-level machine timestamp
+        window.update(dbRef_Store, { lastUpdated: now });
+        document.getElementById('statusDot').className = "status-dot status-online";
+    }).catch(e => {
+        console.error("Bouncer rejected the update:", e);
+        document.getElementById('statusDot').className = "status-dot status-offline";
+    });
+}
 
-    window.pushTargetToCloud = function() {
-        if (!dbRef_Store || window.isOfflineMode) return;
-        window.update(dbRef_Store, { target: store.target, lastUpdated: Date.now() });
-    }
+window.pushTargetToCloud = function() {
+    if (!dbRef_Store || window.isOfflineMode) return;
+    window.update(dbRef_Store, { 
+        target: store.target, 
+        lastUpdated: Date.now() 
+    });
+}
     // -------------------------------------
 
     window.renderInterface = function() {
@@ -884,3 +896,4 @@
 </script>
 </body>
 </html>
+
