@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <title>DSI Pro v11.5.2 (Final Patch)</title>
+    <title>The Night Shift Advantage v11.6</title>
     <style>
         /* --- THEMES --- */
         :root {
@@ -28,12 +28,18 @@
         .header h1 { margin: 0; font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; }
         .header-btns { display: flex; gap: 10px; align-items: center; }
         
+        /* BRANDING: The Night Shift Advantage */
+        .brand-title { font-size: 1.5rem; font-weight: 900; background: -webkit-linear-gradient(45deg, #00d2ff, #9d50bb); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .moon-icon { font-size: 1.2rem; margin-left: 5px; text-shadow: 0 0 5px rgba(157, 80, 187, 0.5); }
+        body.dark-mode .brand-title { background: -webkit-linear-gradient(45deg, #9d50bb, #e0e0e0); -webkit-background-clip: text; }
+
         .gear-btn { font-size: 1.5rem; background: none; border: none; cursor: pointer; padding: 5px; color: var(--text); }
         .lang-btn { background: var(--blue); color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
         
         .status-dot { width: 10px; height: 10px; background: #ccc; border-radius: 50%; display: inline-block; margin-right: 5px; }
         .status-online { background: var(--green); box-shadow: 0 0 5px var(--green); }
         .status-offline { background: var(--red); }
+        .status-syncing { background: var(--yellow); box-shadow: 0 0 5px var(--yellow); }
 
         .machine-nav { display: flex; gap: 10px; margin-bottom: 15px; }
         .m-btn { flex: 1; padding: 12px; font-weight: bold; border: 2px solid var(--border); border-radius: 8px; background: var(--card-bg); color: var(--text); transition: 0.2s; }
@@ -77,7 +83,6 @@
         .modal-btn.danger { background: var(--red); margin-top: 20px; }
         
         .legal-text { font-size: 0.8rem; line-height: 1.4; color: #888; margin-bottom: 10px; text-align: justify; }
-        .legal-header { font-weight: bold; color: var(--text); margin-top: 10px; display: block; }
 
         .history-section { margin-top: 20px; padding-bottom: 60px; }
         .history-table { width: 100%; border-collapse: collapse; font-size: 0.7rem; background: var(--card-bg); }
@@ -132,15 +137,6 @@
     </div>
 </div>
 
-<div class="modal-overlay" id="disclaimerModal" style="display:none; z-index: 200;">
-    <div class="modal">
-        <h2 id="discTitle">⚠️ Unofficial App</h2>
-        <div class="legal-text" id="discText"></div>
-        <button class="modal-btn" onclick="window.acceptDisclaimer()" id="btnUnderstand">I UNDERSTAND</button>
-        <button class="modal-btn secondary" onclick="window.toggleLanguage()" id="btnDiscLang">Español</button>
-    </div>
-</div>
-
 <div class="modal-overlay" id="setupWizard" style="display:none;">
     <div class="modal">
         <h2 id="setupTitle">Initial Setup</h2>
@@ -157,17 +153,6 @@
             <select id="setupProd"><option value="lunch">Lunch (0.01)</option><option value="bfast">Breakfast (0.017)</option></select>
         </div>
         <button class="modal-btn" onclick="window.completeSetup()" id="btnStartApp">START APP</button>
-    </div>
-</div>
-
-<div class="modal-overlay" id="aboutModal">
-    <div class="modal">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h2 id="aboutTitle">About</h2>
-            <button onclick="window.closeAbout()" style="background:none; border:none; font-size:1.5rem; color:var(--text);">✕</button>
-        </div>
-        <div class="legal-text" id="aboutText"></div>
-        <button class="modal-btn secondary" onclick="window.closeAbout()" id="btnCloseAbout">CLOSE</button>
     </div>
 </div>
 
@@ -214,7 +199,6 @@
             <label id="lblMenuTheme">Theme</label>
             <select id="setTheme" onchange="window.toggleTheme()"><option value="light">Light Mode</option><option value="dark">Dark Mode</option></select>
         </div>
-        <button class="modal-btn secondary" onclick="window.openAbout()" id="btnMenuAbout">ABOUT / DISCLAIMER</button>
         <button class="modal-btn danger" onclick="window.factoryReset()" id="btnMenuReset">FACTORY RESET (LOCAL)</button>
     </div>
 </div>
@@ -223,11 +207,10 @@
     <div class="header">
         <div style="display:flex; align-items:center;">
             <div id="statusDot" class="status-dot"></div>
-            <h1 id="appTitle">DSI Pro</h1>
+            <h1 class="brand-title">The Advantage<span class="moon-icon">🌙</span></h1>
         </div>
         <div class="header-btns">
             <button class="gear-btn btn-hidden" id="btnAdmin" onclick="window.openAdmin()" style="color: var(--purple);">👑</button>
-            <button class="lang-btn" onclick="window.toggleLanguage()" id="mainLangBtn">EN/ES</button>
             <button class="gear-btn" onclick="window.toggleSettings()">⚙️</button>
         </div>
     </div>
@@ -303,7 +286,7 @@
     window.onValue = onValue;
     window.update = update;
     
-    // ---> PASTE YOUR UID HERE <---
+    // THE HARDCODED ADMIN UID
     const ADMIN_UID = 'm510406lBidDf7qCzqXEHmIKxBu2'; 
     
     let currentUserUid = null;
@@ -364,20 +347,14 @@
     // --- GLOBAL STATE ---
     let config = {
         machines: 2, lanes: 4, product: 'lunch', smart: 'auto', theme: 'light',
-        currentMachine: 1, acceptedDisclaimer: false, lang: 'en', inputMode: 'button',
-        displayName: '' 
+        currentMachine: 1, lang: 'en', inputMode: 'button', displayName: '' 
     };
 
     let store = {}; 
     let history = {};
     const FACTORS = { lunch: 0.01, bfast: 0.017 };
     let pressTimer; let lastAutoSaveCombo = "";
-    
-    // --- TRANSLATIONS ---
-    const T = {
-        en: { title: "DSI Pro", target: "Target", newDens: "New Density", tapApply: "TAP TO APPLY", density: "DENSITY", weight: "AVG WEIGHT", smart: "SMART", avg: "AVG", sd: "SD", lane: "Lane", bfast: "Breakfast", lunch: "Lunch", options: "Options" },
-        es: { title: "DSI Pro", target: "Meta", newDens: "Nueva Densidad", tapApply: "TOCA PARA APLICAR", density: "DENSIDAD", weight: "PESO PROM.", smart: "INTEL", avg: "PROM", sd: "DE", lane: "Carril", bfast: "Desayuno", lunch: "Almuerzo", options: "Opciones" }
-    };
+    let cloudPathKey = "";
 
     window.initApp = function() {
         const savedConfig = localStorage.getItem('dsi_config_v11');
@@ -385,12 +362,10 @@
             config = { ...config, ...JSON.parse(savedConfig) }; 
         }
         
-        // Safety check for old memory
         if(!config.smart) config.smart = 'auto';
         if(!config.theme) config.theme = 'light';
         if(!config.inputMode) config.inputMode = 'button';
 
-        // THE AMNESIA FIX: Immediately sync the UI to prevent blank overwrites
         if(document.getElementById('setMachines')) document.getElementById('setMachines').value = config.machines;
         if(document.getElementById('setLanes')) document.getElementById('setLanes').value = config.lanes;
         if(document.getElementById('setProd')) document.getElementById('setProd').value = config.product;
@@ -399,17 +374,11 @@
         if(document.getElementById('setTheme')) document.getElementById('setTheme').value = config.theme;
         if(document.getElementById('setDispName')) document.getElementById('setDispName').value = config.displayName || '';
 
-        window.updateText();
-        
-        if(!config.acceptedDisclaimer) {
-            document.getElementById('disclaimerModal').style.display = 'flex';
-        } else {
-            const hasSetup = localStorage.getItem('dsi_setup_done');
-            if (!hasSetup) document.getElementById('setupWizard').style.display = 'flex';
-            else {
-                window.applyTheme();
-                window.routeUserByRole(); 
-            }
+        const hasSetup = localStorage.getItem('dsi_setup_done');
+        if (!hasSetup) document.getElementById('setupWizard').style.display = 'flex';
+        else {
+            window.applyTheme();
+            window.routeUserByRole(); 
         }
     };
 
@@ -508,6 +477,10 @@
         const opName = entry.operator || 'Unknown Operator';
         let lanesHtml = '';
         
+        // CONNECTION STALE LOGIC (3 Minutes)
+        let isStale = (Date.now() - (entry.timestamp || 0)) > 180000;
+        let staleWarning = isStale ? `<span style="color:var(--red); font-size:0.7rem; font-weight:bold;">⚠️ STALE DATA</span>` : '';
+
         entry.lanes.forEach((l, idx) => {
             let weightVal = parseFloat(l.w);
             let colorClass = '';
@@ -518,14 +491,16 @@
                 else if(diff <= 3) colorClass = 'bg-yellow';
                 else colorClass = 'bg-red';
             }
+            if(isStale) colorClass = ''; // Dim the colors if data is old
+
             lanesHtml += `<div class="sup-lane ${colorClass}"><span class="sup-lane-lbl">L${idx+1}</span><span class="sup-lane-wt">${l.w}</span><span class="sup-lane-dens">${l.d}</span></div>`;
         });
 
         return `
-        <div class="sup-card">
+        <div class="sup-card" style="${isStale ? 'opacity: 0.6; border-color: var(--red);' : ''}">
             <div class="sup-header">
                 <h2 class="sup-title">${title} <span style="font-size:0.8rem; color:gray; font-weight:normal;">• ${dataObj.product}</span></h2>
-                <div class="sup-meta">Target: ${target}g<span>${entry.time}</span></div>
+                <div class="sup-meta">Target: ${target}g<span>${entry.time} ${staleWarning}</span></div>
             </div>
             <div style="font-size:0.8rem; margin-bottom: 10px; color: var(--purple); font-weight: bold;">Operated by: ${opName}</div>
             <div class="sup-grid">${lanesHtml}</div>
@@ -533,31 +508,40 @@
     }
 
     // ======================================================================
-    // OPERATOR ENGINE
+    // OPERATOR ENGINE (THE SCALPEL FIX)
     // ======================================================================
     let unsubStore = null;   
     let unsubHistory = null; 
+    let dbRef_Store = null;
+    let dbRef_History = null;
 
     window.startCloudSync = function() {
         if(!window.db) { setTimeout(window.startCloudSync, 500); return; }
         
-        const pathKey = `M${config.currentMachine}/${config.product}_${config.lanes}L`;
+        cloudPathKey = `M${config.currentMachine}/${config.product}_${config.lanes}L`;
         const dot = document.getElementById('statusDot');
         
         if (unsubStore) unsubStore();
         if (unsubHistory) unsubHistory();
 
-        dbRef_Store = window.ref(window.db, `stores/${pathKey}`);
-        dbRef_History = window.ref(window.db, `histories/${pathKey}`);
+        dbRef_Store = window.ref(window.db, `stores/${cloudPathKey}`);
+        dbRef_History = window.ref(window.db, `histories/${cloudPathKey}`);
 
         unsubStore = window.onValue(dbRef_Store, (snapshot) => {
             dot.className = "status-dot status-online";
             const val = snapshot.val();
-            if(val) { store = val; window.updateUIFromCloud(); } 
+            if(val) { 
+                store = val; 
+                window.updateUIFromCloud(); 
+            } 
             else {
                 if(!store.target) {
                     const defaultTarget = config.product === 'bfast' ? '63' : '102';
-                    store = { target: defaultTarget, lanes: Array(config.lanes).fill().map(() => ({ d:'', w:'', attempts: 0, smartActive: false, lastD: null, lastW: null, locked: true })) };
+                    store = { 
+                        target: defaultTarget, 
+                        lastUpdated: Date.now(),
+                        lanes: Array(config.lanes).fill().map(() => ({ d:'', w:'', attempts: 0, smartActive: false, lastD: null, lastW: null, locked: true })) 
+                    };
                     window.set(dbRef_Store, store);
                 }
             }
@@ -570,10 +554,26 @@
         });
     }
 
-    window.renderInterface = function() {
-        const txt = T[config.lang];
-        const nav = document.getElementById('machineNav');
+    // --- THE SCALPEL UPDATE FUNCTIONS ---
+    window.pushLaneToCloud = function(idx) {
+        if (!dbRef_Store || window.isOfflineMode) return;
+        document.getElementById('statusDot').className = "status-dot status-syncing";
+        
+        const laneRef = window.ref(window.db, `stores/${cloudPathKey}/lanes/${idx-1}`);
+        window.update(laneRef, store.lanes[idx-1]).then(() => {
+            window.update(dbRef_Store, { lastUpdated: Date.now() });
+            document.getElementById('statusDot').className = "status-dot status-online";
+        }).catch(e => console.error("Sync error", e));
+    }
 
+    window.pushTargetToCloud = function() {
+        if (!dbRef_Store || window.isOfflineMode) return;
+        window.update(dbRef_Store, { target: store.target, lastUpdated: Date.now() });
+    }
+    // -------------------------------------
+
+    window.renderInterface = function() {
+        const nav = document.getElementById('machineNav');
         if (config.machines === 1) {
             nav.className = 'machine-nav nav-hidden';
             config.currentMachine = 1;
@@ -589,8 +589,8 @@
             }
         }
 
-        const prodName = config.product === 'lunch' ? txt.lunch : txt.bfast;
-        document.getElementById('displayConfig').innerText = `${config.lanes} ${txt.lane} • ${prodName}`;
+        const prodName = config.product === 'lunch' ? 'Lunch' : 'Breakfast';
+        document.getElementById('displayConfig').innerText = `${config.lanes} Lane • ${prodName}`;
         
         if(document.getElementById('setMachines')) document.getElementById('setMachines').value = config.machines;
         if(document.getElementById('setLanes')) document.getElementById('setLanes').value = config.lanes;
@@ -603,7 +603,7 @@
         const container = document.getElementById('lanesContainer');
         container.innerHTML = '';
         for(let i=1; i<=config.lanes; i++) {
-            let labelText = txt.density;
+            let labelText = "DENSITY";
             if(config.inputMode === 'longpress') labelText += " (HOLD)";
             if(config.inputMode === 'doubletap') labelText += " (x2)";
 
@@ -613,7 +613,7 @@
 
             container.innerHTML += `
                 <div class="lane-card" id="card-${i}">
-                    <div class="lane-header"><span>${txt.lane} ${i}</span><span class="smart-tag" id="tag-${i}">${txt.smart}</span></div>
+                    <div class="lane-header"><span>LANE ${i}</span><span class="smart-tag" id="tag-${i}">SMART</span></div>
                     <div>
                         <label>${labelText}</label>
                         <div class="input-group">
@@ -622,14 +622,14 @@
                         </div>
                     </div>
                     <div>
-                        <label>${txt.weight}</label>
+                        <label>AVG WEIGHT</label>
                         <div class="input-group">
                             <input type="number" id="avgWt-${i}" inputmode="decimal" oninput="window.handleWeightInput(${i})" onblur="window.checkAutoSave()">
                             <button class="btn-icon btn-recheck" onclick="window.recheckLane(${i})">↻</button>
                         </div>
                     </div>
                     <div class="result-box" id="resBox-${i}" onclick="window.applyResult(${i})">
-                        <span id="resText-${i}">${txt.newDens}: --</span><span class="tap-hint">${txt.tapApply}</span>
+                        <span id="resText-${i}">New Density: --</span><span class="tap-hint">TAP TO APPLY</span>
                     </div>
                     <input type="hidden" id="calcVal-${i}">
                 </div>
@@ -648,6 +648,7 @@
     }
 
     window.updateUIFromCloud = function() {
+        if(!store || !store.lanes) return;
         const tEl = document.getElementById('setTarget');
         if(document.activeElement !== tEl) {
             tEl.value = store.target;
@@ -655,6 +656,7 @@
         }
         for(let i=1; i<=config.lanes; i++) {
             const lane = store.lanes[i-1];
+            if(!lane) continue;
             const dEl = document.getElementById(`currDens-${i}`);
             if(document.activeElement !== dEl) {
                 dEl.value = lane.d;
@@ -672,16 +674,18 @@
             if(config.smart === 'on' || (config.smart === 'auto' && lane.smartActive)) document.getElementById(`card-${i}`).classList.add('smart-active');
             else document.getElementById(`card-${i}`).classList.remove('smart-active');
         }
-        window.calculate(false);
+        window.calculateLocal();
     }
 
-    window.calculate = function(writeToCloud) {
+    // Purely local calculation. Syncs are handled explicitly now.
+    window.calculateLocal = function() {
         if(!store || !store.lanes) return; 
         const target = parseFloat(store.target);
         const baseK = FACTORS[config.product];
         let weights = []; let count = 0;
 
         for(let i=1; i<=config.lanes; i++) {
+            if(!store.lanes[i-1]) continue;
             const currD = parseFloat(store.lanes[i-1].d);
             const currW = parseFloat(store.lanes[i-1].w);
             const lane = store.lanes[i-1];
@@ -732,8 +736,6 @@
                 document.getElementById('stdDev').innerText = Math.sqrt(v).toFixed(2);
             } else { document.getElementById('stdDev').innerText = "--"; }
         } else { document.getElementById('machAvg').innerText = "--"; document.getElementById('stdDev').innerText = "--"; }
-        
-        if(writeToCloud && dbRef_Store) window.set(dbRef_Store, store);
     }
 
     window.checkAutoSave = function() {
@@ -785,21 +787,22 @@
 
             lane.d = val; lane.w = ''; lane.locked = true; 
             lastAutoSaveCombo = "";
-            window.calculate(true); 
+            window.calculateLocal(); 
+            window.pushLaneToCloud(idx); // SCALPEL PUSH
         }
     }
 
-    window.unlockAndFocus = function(i) { const el = document.getElementById(`currDens-${i}`); el.readOnly = false; el.focus(); el.style.borderColor = 'var(--blue)'; store.lanes[i-1].locked = false; if(dbRef_Store) window.set(dbRef_Store, store); if(config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓'; } }
-    window.toggleLock = function(i) { store.lanes[i-1].locked = !store.lanes[i-1].locked; const el = document.getElementById(`currDens-${i}`); if(!store.lanes[i-1].locked) { el.readOnly = false; setTimeout(() => { el.focus(); el.style.borderColor = 'var(--blue)'; }, 50); } else { el.readOnly = true; el.style.borderColor = 'var(--border)'; } if(dbRef_Store) window.set(dbRef_Store, store); }
-    window.handleInput = function(i) { store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; window.calculate(true); }
-    window.handleWeightInput = function(i) { store.lanes[i-1].w = document.getElementById(`avgWt-${i}`).value; window.calculate(true); }
-    window.lockOnBlur = function(i) { setTimeout(() => { if(document.activeElement === document.getElementById(`currDens-${i}`)) return; store.lanes[i-1].locked = true; store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; if(dbRef_Store) window.set(dbRef_Store, store); }, 150); }
-    window.recheckLane = function(idx) { store.lanes[idx-1].w = ''; document.getElementById(`avgWt-${idx}`).value = ''; lastAutoSaveCombo = ""; document.getElementById(`avgWt-${idx}`).focus(); window.calculate(true); }
-    window.updateTargetFromSettings = function() { store.target = document.getElementById('setTarget').value; window.calculate(true); }
+    window.unlockAndFocus = function(i) { const el = document.getElementById(`currDens-${i}`); el.readOnly = false; el.focus(); el.style.borderColor = 'var(--blue)'; store.lanes[i-1].locked = false; window.pushLaneToCloud(i); if(config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓'; } }
+    window.toggleLock = function(i) { store.lanes[i-1].locked = !store.lanes[i-1].locked; const el = document.getElementById(`currDens-${i}`); if(!store.lanes[i-1].locked) { el.readOnly = false; setTimeout(() => { el.focus(); el.style.borderColor = 'var(--blue)'; }, 50); } else { el.readOnly = true; el.style.borderColor = 'var(--border)'; } window.pushLaneToCloud(i); }
+    window.handleInput = function(i) { store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; window.calculateLocal(); }
+    window.handleWeightInput = function(i) { store.lanes[i-1].w = document.getElementById(`avgWt-${i}`).value; window.calculateLocal(); window.pushLaneToCloud(i); }
+    window.lockOnBlur = function(i) { setTimeout(() => { if(document.activeElement === document.getElementById(`currDens-${i}`)) return; store.lanes[i-1].locked = true; store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; window.pushLaneToCloud(i); }, 150); }
+    window.recheckLane = function(idx) { store.lanes[idx-1].w = ''; document.getElementById(`avgWt-${idx}`).value = ''; lastAutoSaveCombo = ""; document.getElementById(`avgWt-${idx}`).focus(); window.calculateLocal(); window.pushLaneToCloud(idx); }
+    window.updateTargetFromSettings = function() { store.target = document.getElementById('setTarget').value; window.calculateLocal(); window.pushTargetToCloud(); }
     window.switchMachine = function(m) { config.currentMachine = m; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); }
     window.switchProfile = function() { config.lanes = parseInt(document.getElementById('setLanes').value); config.product = document.getElementById('setProd').value; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); }
     
-    // --- UTILS (REPAIRED SETTINGS LOGIC) ---
+    // --- UTILS ---
     window.toggleSettings = function() { 
         const m = document.getElementById('settingsMenu'); 
         m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; 
@@ -820,21 +823,10 @@
         localStorage.setItem('dsi_config_v11', JSON.stringify(config)); 
     }
     
-    // THE MISSING THEME TOGGLE IS BACK
-    window.toggleTheme = function() { 
-        config.theme = document.getElementById('setTheme').value; 
-        window.applyTheme(); 
-        window.saveLocalSettings(); 
-    };
-
+    window.toggleTheme = function() { config.theme = document.getElementById('setTheme').value; window.applyTheme(); window.saveLocalSettings(); };
     window.saveDisplayName = function() { const name = document.getElementById('setDispName').value; config.displayName = name; window.saveLocalSettings(); if (window.myUid && !window.isOfflineMode && window.update && window.db) { window.update(window.ref(window.db, `users/${window.myUid}`), { displayName: name }).catch(e=>console.log(e)); } };
-    window.toggleLanguage = function() { config.lang = config.lang === 'en' ? 'es' : 'en'; window.renderInterface(); window.saveLocalSettings(); window.updateText(); }
     window.applyTheme = function() { if(config.theme === 'dark') document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); }
-    window.updateText = function() { const txt = T[config.lang]; document.getElementById('appTitle').innerText = txt.title; document.getElementById('lblMenuTarget').innerText = `${txt.target} (g)`; document.getElementById('menuTitle').innerText = txt.options; }
-    window.acceptDisclaimer = function() { config.acceptedDisclaimer = true; window.saveLocalSettings(); document.getElementById('disclaimerModal').style.display = 'none'; const hasSetup = localStorage.getItem('dsi_setup_done'); if (!hasSetup) document.getElementById('setupWizard').style.display = 'flex'; else { window.applyTheme(); window.routeUserByRole(); } }
     window.completeSetup = function() { config.machines = parseInt(document.getElementById('setupMachines').value); config.lanes = parseInt(document.getElementById('setupLanes').value); config.product = document.getElementById('setupProd').value; localStorage.setItem('dsi_setup_done', 'true'); window.saveLocalSettings(); document.getElementById('setupWizard').style.display = 'none'; window.routeUserByRole(); }
-    window.openAbout = function() { document.getElementById('settingsMenu').style.display = 'none'; document.getElementById('aboutModal').style.display = 'flex'; }
-    window.closeAbout = function() { document.getElementById('aboutModal').style.display = 'none'; document.getElementById('settingsMenu').style.display = 'flex'; }
     window.factoryReset = function() { if(confirm("Erase LOCAL settings? Cloud data remains.")) { localStorage.clear(); location.reload(); } }
 
     window.renderHistoryTable = function() {
