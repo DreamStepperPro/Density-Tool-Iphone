@@ -7,264 +7,207 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <title>The Night Shift Advantage v12</title>
+    <title>The Night Shift Advantage v11.6.2</title>
     <style>
         /* --- THEMES --- */
         :root {
-            --bg: #f0f2f5; --card-bg: #ffffff; --text: #1a1a1a; --border: #dde1e7;
+            /* Raw Colors */
+            --bg: #f4f4f9; --card-bg: #ffffff; --text: #1a1a1a; --border: #ccc;
             --input-bg: #ffffff; --nav-bg: #fff;
-            --blue: #007bff; --purple: #9d50bb; --red: #ff4d4d; --green: #28a745; --yellow: #ffc107; --perfect: #00c6f0;
-            --dark-grey: #2a2a2a;
-            --success: var(--green); --warning: var(--yellow); --danger: var(--red); --info: var(--blue); --accent: var(--purple);
-            --shadow: 0 2px 8px rgba(0,0,0,0.07);
-            --shadow-lg: 0 4px 20px rgba(0,0,0,0.12);
+            --blue: #007bff; --purple: #9d50bb; --red: #ff4d4d; --green: #28a745; --yellow: #ffc107; --perfect: #00d2ff;
+            --dark-grey: #333;
+            --statsbar-bg: #2a2a2a;
+            --m-active-bg: #2a2a2a;
+            
+            /* Semantic Layer */
+            --success: var(--green);
+            --warning: var(--yellow);
+            --danger: var(--red);
+            --info: var(--blue);
+            --accent: var(--purple);
         }
         body.dark-mode {
-            --bg: #0f0f13; --card-bg: #1a1a22; --text: #e8e8f0; --border: #2e2e3e;
-            --input-bg: #24242e; --nav-bg: #1a1a22;
-            --dark-grey: #e8e8f0;
-            --shadow: 0 2px 8px rgba(0,0,0,0.3);
-            --shadow-lg: 0 4px 20px rgba(0,0,0,0.5);
+            --bg: #121212; --card-bg: #1e1e1e; --text: #e0e0e0; --border: #444;
+            --input-bg: #2d2d2d; --nav-bg: #1e1e1e;
+            /* Fix: stats bar and active machine button need dark backgrounds, not white */
+            --statsbar-bg: #111118;
+            --m-active-bg: #3a3a52;
         }
 
-        * { box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; -webkit-tap-highlight-color: transparent; user-select: none; transition: background 0.3s, color 0.3s; }
-
-        .container { max-width: 100%; margin: auto; padding-bottom: 90px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; -webkit-tap-highlight-color: transparent; user-select: none; transition: 0.3s; }
+        
+        .container { max-width: 100%; margin: auto; padding-bottom: 80px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .header h1 { margin: 0; font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; }
         .header-btns { display: flex; gap: 10px; align-items: center; }
-
-        .brand-title { font-size: 1.45rem; font-weight: 900; background: linear-gradient(45deg, var(--perfect), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .moon-icon { font-size: 1.1rem; margin-left: 4px; }
-        body.dark-mode .brand-title { background: linear-gradient(45deg, var(--accent), #c0c0e0); -webkit-background-clip: text; background-clip: text; }
+        
+        /* BRANDING: The Night Shift Advantage */
+        .brand-title { font-size: 1.5rem; font-weight: 900; background: -webkit-linear-gradient(45deg, var(--perfect), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .moon-icon { font-size: 1.2rem; margin-left: 5px; text-shadow: 0 0 5px rgba(157, 80, 187, 0.5); }
+        body.dark-mode .brand-title { background: -webkit-linear-gradient(45deg, var(--accent), #e0e0e0); -webkit-background-clip: text; }
 
         .gear-btn { font-size: 1.5rem; background: none; border: none; cursor: pointer; padding: 5px; color: var(--text); }
-
-        .status-dot { width: 9px; height: 9px; background: #ccc; border-radius: 50%; display: inline-block; margin-right: 6px; flex-shrink: 0; transition: background 0.3s, box-shadow 0.3s; }
-        .status-online { background: var(--success); box-shadow: 0 0 6px var(--success); }
+        .lang-btn { background: var(--info); color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
+        
+        .status-dot { width: 10px; height: 10px; background: #ccc; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .status-online { background: var(--success); box-shadow: 0 0 5px var(--success); }
         .status-offline { background: var(--danger); }
-        .status-syncing { background: var(--warning); box-shadow: 0 0 6px var(--warning); animation: pulse-dot 1s infinite; }
-        @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        .status-syncing { background: var(--warning); box-shadow: 0 0 5px var(--warning); }
 
-        .machine-nav { display: flex; gap: 8px; margin-bottom: 12px; }
-        .m-btn { flex: 1; padding: 11px; font-weight: bold; border: 2px solid var(--border); border-radius: 10px; background: var(--card-bg); color: var(--text); transition: 0.2s; font-size: 0.95rem; cursor: pointer; }
-        .m-active { background: var(--dark-grey); color: white; border-color: var(--dark-grey); }
+        .machine-nav { display: flex; gap: 10px; margin-bottom: 15px; }
+        .m-btn { flex: 1; padding: 12px; font-weight: bold; border: 2px solid var(--border); border-radius: 8px; background: var(--card-bg); color: var(--text); transition: 0.2s; }
+        .m-active { background: var(--m-active-bg, #2a2a2a); color: white; border-color: var(--m-active-bg, #2a2a2a); }
         .nav-hidden { display: none !important; }
 
-        .info-bar { display: flex; justify-content: space-between; background: var(--card-bg); padding: 11px 14px; border-radius: 10px; margin-bottom: 12px; border: 1px solid var(--border); font-size: 0.85rem; font-weight: bold; align-items: center; box-shadow: var(--shadow); }
+        .info-bar { display: flex; justify-content: space-between; background: var(--card-bg); padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--border); font-size: 0.85rem; font-weight: bold; align-items: center; }
 
-        /* LANE CARDS */
-        .lane-card { background: var(--card-bg); border: 2px solid var(--border); padding: 13px; margin-bottom: 10px; border-radius: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; position: relative; box-shadow: var(--shadow); transition: border-color 0.3s, background-color 0.3s, box-shadow 0.3s; }
-        .lane-header { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 4px; font-weight: bold; }
-        .lane-header-left { display: flex; align-items: center; gap: 8px; }
-        .lane-trend { font-size: 0.85rem; font-weight: bold; }
-
-        .smart-tag { font-size: 0.65rem; background: var(--accent); color: white; padding: 2px 7px; border-radius: 10px; display: none; letter-spacing: 0.5px; }
+        .lane-card { background: var(--card-bg); border: 2px solid var(--border); padding: 12px; margin-bottom: 10px; border-radius: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; position: relative; }
+        .lane-header { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 5px; margin-bottom: 5px; font-weight: bold; }
+        
+        .smart-tag { font-size: 0.7rem; background: var(--accent); color: white; padding: 2px 6px; border-radius: 10px; display: none; }
         .smart-active .smart-tag { display: inline-block; }
 
-        label { font-size: 0.68rem; font-weight: bold; display: block; margin-bottom: 3px; text-transform: uppercase; opacity: 0.65; letter-spacing: 0.5px; }
+        label { font-size: 0.7rem; font-weight: bold; display: block; margin-bottom: 2px; text-transform: uppercase; opacity: 0.7; }
         .input-group { display: flex; gap: 5px; }
-        input[type="number"], input[type="text"] { width: 100%; padding: 12px 10px; font-size: 1.1rem; border: 1.5px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text); font-weight: bold; transition: border-color 0.2s; }
-        input[type="number"]:focus, input[type="text"]:focus { outline: none; border-color: var(--info); }
-        input.density-input:read-only { background: rgba(128,128,128,0.08); opacity: 0.8; pointer-events: auto; }
-        input.density-input:focus { background: var(--input-bg); border-color: var(--info); }
+        input { width: 100%; padding: 12px; font-size: 1.1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--text); font-weight: bold; box-sizing: border-box; }
+        input.density-input:read-only { background: rgba(128,128,128,0.1); color: var(--text); opacity: 0.8; pointer-events: auto; }
+        input.density-input:focus { background: var(--input-bg); border-color: var(--info); outline: none; }
 
-        .btn-icon { background: none; border: 1.5px solid var(--border); border-radius: 8px; padding: 0 12px; cursor: pointer; font-size: 1.2rem; color: var(--text); display: flex; align-items: center; justify-content: center; min-width: 46px; transition: 0.15s; }
+        .btn-icon { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 0 12px; cursor: pointer; font-size: 1.2rem; color: var(--text); display: flex; align-items: center; justify-content: center; }
         .btn-icon.locked { background: var(--dark-grey); color: white; border-color: var(--dark-grey); }
         .btn-recheck { color: var(--warning); border-color: var(--warning); }
         .btn-hidden { display: none !important; }
 
-        /* RESULT BOX — pulsing when a new value is ready */
-        .result-box { grid-column: span 2; padding: 13px; text-align: center; border-radius: 10px; background: rgba(128,128,128,0.07); border: 2px dashed var(--border); font-weight: bold; cursor: pointer; transition: background 0.25s, border-color 0.25s, transform 0.15s; }
-        .result-box:active { transform: scale(0.98); }
+        .result-box { grid-column: span 2; padding: 12px; text-align: center; border-radius: 8px; background: rgba(128,128,128,0.1); border: 2px dashed var(--border); font-weight: bold; cursor: pointer; }
         .result-box span { display: block; }
-        .tap-hint { font-size: 0.68rem; opacity: 0.55; font-weight: normal; margin-top: 4px; }
-        .result-box.has-value { animation: gentle-pulse 1.8s ease-in-out infinite; }
-        @keyframes gentle-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(0,198,240,0.0)} 50%{box-shadow:0 0 0 5px rgba(0,198,240,0.25)} }
+        .tap-hint { font-size: 0.7rem; opacity: 0.6; font-weight: normal; margin-top: 4px; }
 
-        /* STATUS BAR */
-        .stats-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--dark-grey); color: white; padding: 10px 16px; display: flex; justify-content: space-around; align-items: center; z-index: 10; border-top-left-radius: 16px; border-top-right-radius: 16px; box-shadow: 0 -3px 15px rgba(0,0,0,0.25); }
+        .stats-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--statsbar-bg, #2a2a2a); color: white; padding: 10px; display: flex; justify-content: space-around; align-items: center; z-index: 10; border-top-left-radius: 15px; border-top-right-radius: 15px; box-shadow: 0 -2px 10px rgba(0,0,0,0.2); }
         .stat-box { text-align: center; }
         .stat-val { font-size: 1.2rem; font-weight: bold; display: block; }
-        .stat-lbl { font-size: 0.58rem; text-transform: uppercase; opacity: 0.75; letter-spacing: 0.5px; }
-        .stat-divider { width: 1px; height: 32px; background: rgba(255,255,255,0.2); }
+        .stat-lbl { font-size: 0.6rem; text-transform: uppercase; opacity: 0.8; }
 
-        /* Delta arrow in stats bar */
-        .stat-delta { font-size: 0.7rem; font-weight: bold; display: inline-block; margin-left: 4px; }
-        .delta-up { color: #ff7070; }
-        .delta-down { color: #70e070; }
-        .delta-flat { color: #aaa; }
-
-        /* MODALS */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.88); z-index: 100; display: none; justify-content: center; align-items: center; padding: 16px; }
-        .modal { background: var(--card-bg); padding: 20px; border-radius: 16px; width: 100%; max-width: 420px; color: var(--text); max-height: 88vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
-        .modal h2 { margin-top: 0; font-size: 1.15rem; }
-        .modal-opt { margin-bottom: 14px; }
-        .modal-btn { width: 100%; padding: 14px; background: var(--info); color: white; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px; font-size: 1rem; cursor: pointer; transition: opacity 0.2s; }
-        .modal-btn:active { opacity: 0.8; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 100; display: none; justify-content: center; align-items: center; padding: 20px; }
+        .modal { background: var(--card-bg); padding: 20px; border-radius: 12px; width: 100%; max-width: 400px; color: var(--text); max-height: 85vh; overflow-y: auto; }
+        .modal h2 { margin-top: 0; font-size: 1.2rem; }
+        .modal-opt { margin-bottom: 15px; }
+        .modal-btn { width: 100%; padding: 15px; background: var(--info); color: white; border: none; border-radius: 8px; font-weight: bold; margin-top: 10px; font-size: 1rem; cursor: pointer; }
         .modal-btn.secondary { background: var(--dark-grey); }
         .modal-btn.danger { background: var(--danger); margin-top: 20px; }
+        
+        .legal-text { font-size: 0.8rem; line-height: 1.4; color: #888; margin-bottom: 10px; text-align: justify; }
 
-        /* TARGET CHANGE CONFIRMATION */
-        .target-confirm { display:none; background: rgba(255,180,0,0.12); border: 1.5px solid var(--warning); border-radius: 8px; padding: 10px 12px; margin-top: 6px; font-size: 0.85rem; }
-        .target-confirm.show { display: block; }
-        .target-confirm-btns { display: flex; gap: 8px; margin-top: 8px; }
-        .target-confirm-btns button { flex:1; padding: 8px; border:none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
-        .btn-confirm-yes { background: var(--warning); color: #000; }
-        .btn-confirm-no { background: var(--border); color: var(--text); }
-
-        /* HISTORY CARDS */
         .history-section { margin-top: 20px; padding-bottom: 60px; }
-        .history-cards { display: flex; flex-direction: column; gap: 8px; }
-        .hist-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
-        .hist-card-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 13px; cursor: pointer; }
-        .hist-card-time { font-weight: bold; font-size: 0.95rem; }
-        .hist-card-avg { font-size: 0.85rem; opacity: 0.75; }
-        .hist-card-chevron { font-size: 0.9rem; transition: transform 0.25s; }
-        .hist-card.expanded .hist-card-chevron { transform: rotate(180deg); }
-        .hist-card-body { display: none; padding: 0 13px 12px; }
-        .hist-card.expanded .hist-card-body { display: block; }
-        .hist-lane-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(60px, 1fr)); gap: 6px; margin-top: 8px; }
-        .hist-lane-cell { background: rgba(128,128,128,0.07); border-radius: 8px; padding: 7px; text-align: center; border: 1px solid var(--border); }
-        .hist-lane-lbl { font-size: 0.6rem; text-transform: uppercase; opacity: 0.6; display: block; margin-bottom: 2px; }
-        .hist-lane-wt { font-weight: bold; font-size: 0.9rem; display: block; }
-        .hist-lane-dens { font-size: 0.68rem; opacity: 0.7; display: block; }
-        .btn-clear { width: 100%; padding: 12px; background: #666; color: white; border: none; margin-top: 10px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .history-table { width: 100%; border-collapse: collapse; font-size: 0.7rem; background: var(--card-bg); }
+        .history-table th, .history-table td { border: 1px solid var(--border); padding: 6px; text-align: center; }
+        .history-table th { background: rgba(128,128,128,0.1); }
+        .btn-clear { width: 100%; padding: 12px; background: #666; color: white; border: none; margin-top: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        
+        .cell-wt { font-weight: bold; font-size: 0.9rem; display: block; }
+        .cell-dens { font-size: 0.7rem; opacity: 0.8; display: block; }
 
         /* Semantic Status Backgrounds */
-        .bg-perfect { background-color: rgba(0,198,240,0.15) !important; border-color: var(--perfect) !important; }
-        .bg-perfect .result-box { border-color: var(--perfect); }
-        .bg-success { background-color: rgba(40,167,69,0.12) !important; border-color: var(--success) !important; }
-        .bg-warning { background-color: rgba(255,193,7,0.15) !important; border-color: var(--warning) !important; }
-        .bg-danger { background-color: rgba(255,77,77,0.15) !important; border-color: var(--danger) !important; }
+        .bg-perfect { background-color: var(--perfect) !important; color: #000; border-color: var(--perfect); }
+        .bg-success { background-color: var(--success) !important; color: #fff; border-color: var(--success); }
+        .bg-warning { background-color: var(--warning) !important; color: #000; border-color: var(--warning); }
+        .bg-danger { background-color: var(--danger) !important; color: #fff; border-color: var(--danger); }
 
-        select { width: 100%; padding: 11px; border-radius: 8px; background: var(--input-bg); color: var(--text); border: 1.5px solid var(--border); font-size: 1rem; }
+        select { width: 100%; padding: 12px; border-radius: 6px; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); font-size: 1rem; box-sizing: border-box; }
+        
+        /* SUPERVISOR DASHBOARD STYLES */
+        .sup-card { background: var(--card-bg); border: 2px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        .sup-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-bottom: 10px; }
+        .sup-title { font-size: 1.2rem; font-weight: 800; margin: 0; }
+        .sup-meta { font-size: 0.75rem; color: gray; text-align: right; }
+        .sup-meta span { display: block; font-weight: bold; color: var(--text); font-size: 0.85rem; }
+        .sup-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .sup-lane { text-align: center; padding: 10px 5px; border-radius: 8px; border: 1px solid var(--border); font-weight: bold; }
+        .sup-lane-lbl { font-size: 0.6rem; text-transform: uppercase; opacity: 0.8; display: block; margin-bottom: 5px; }
+        .sup-lane-wt { font-size: 1.1rem; display: block; }
+        .sup-lane-dens { font-size: 0.7rem; opacity: 0.8; }
 
-        /* SUPERVISOR DASHBOARD */
-        .sup-card { background: var(--card-bg); border: 2px solid var(--border); border-radius: 14px; padding: 15px; margin-bottom: 14px; box-shadow: var(--shadow); transition: opacity 0.3s, border-color 0.3s; }
-        .sup-card.stale { opacity: 0.55; border-color: var(--danger); }
-        .sup-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1.5px solid var(--border); padding-bottom: 10px; margin-bottom: 12px; }
-        .sup-title { font-size: 1.1rem; font-weight: 800; margin: 0; }
-        .sup-meta { font-size: 0.72rem; color: gray; text-align: right; line-height: 1.5; }
-        .sup-meta strong { color: var(--text); font-size: 0.85rem; display: block; }
-        .sup-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
-        .sup-lane { text-align: center; padding: 9px 4px; border-radius: 9px; border: 1.5px solid var(--border); font-weight: bold; transition: background 0.3s, border-color 0.3s; }
-        .sup-lane-lbl { font-size: 0.58rem; text-transform: uppercase; opacity: 0.75; display: block; margin-bottom: 4px; }
-        .sup-lane-wt { font-size: 1.05rem; display: block; }
-        .sup-lane-dens { font-size: 0.65rem; opacity: 0.75; }
-
-        /* Supervisor trend chips — last 3 checks */
-        .sup-trend { display: flex; gap: 4px; margin-top: 10px; align-items: center; }
-        .sup-trend-lbl { font-size: 0.62rem; opacity: 0.6; text-transform: uppercase; margin-right: 4px; }
-        .trend-chip { width: 22px; height: 22px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; border: 1px solid transparent; }
-        .trend-perfect { background: rgba(0,198,240,0.25); color: #00a8cc; border-color: var(--perfect); }
-        .trend-success { background: rgba(40,167,69,0.2); color: var(--success); border-color: var(--success); }
-        .trend-warning { background: rgba(255,193,7,0.25); color: #c98f00; border-color: var(--warning); }
-        .trend-danger { background: rgba(255,77,77,0.2); color: var(--danger); border-color: var(--danger); }
-        .trend-empty { background: rgba(128,128,128,0.1); color: #aaa; border-color: var(--border); }
-        .sup-operator { font-size: 0.78rem; color: var(--accent); font-weight: bold; margin-bottom: 10px; }
-
-        /* ADMIN TOAST */
-        #adminToast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-160px); background: var(--accent); color: white; padding: 14px 22px; border-radius: 30px; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.35); z-index: 9999; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 10px; cursor: pointer; white-space: nowrap; }
+        /* ADMIN TOAST NOTIFICATION */
+        #adminToast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-150px);
+            background: var(--accent); color: white; padding: 15px 25px; border-radius: 30px;
+            font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 9999;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; align-items: center; gap: 10px; cursor: pointer;
+        }
         #adminToast.show { transform: translateX(-50%) translateY(0); }
-
-        /* ADMIN MODAL — pending section */
-        .admin-pending-section { background: rgba(255,193,7,0.1); border: 1.5px solid var(--warning); border-radius: 10px; padding: 12px; margin-bottom: 14px; }
-        .admin-pending-title { font-size: 0.75rem; font-weight: bold; text-transform: uppercase; color: #c98f00; margin-bottom: 8px; letter-spacing: 0.5px; }
-        .admin-all-title { font-size: 0.75rem; font-weight: bold; text-transform: uppercase; opacity: 0.5; margin: 12px 0 8px; letter-spacing: 0.5px; }
-        .admin-user-card { border: 1px solid var(--border); padding: 10px; margin-bottom: 8px; border-radius: 10px; background: rgba(128,128,128,0.04); }
-        .admin-user-id { font-size: 0.62rem; color: gray; margin-bottom: 4px; word-break: break-all; }
-        .admin-user-name { font-size: 0.82rem; margin-bottom: 6px; }
-        .admin-user-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; gap: 8px; }
-        .admin-user-last { font-size: 0.62rem; color: gray; }
-
-        /* Apply flash animation */
-        @keyframes flash-apply { 0%{opacity:0.4; transform:scale(0.97)} 100%{opacity:1; transform:scale(1)} }
-        .apply-flash { animation: flash-apply 0.25s ease-out; }
     </style>
 </head>
 <body>
 
-<div class="modal-overlay" id="accessDeniedOverlay" style="display:flex; z-index:300; background:var(--bg);">
-    <div class="modal" style="text-align:center;">
-        <h2 style="color:var(--danger);">🔒 Access Pending</h2>
-        <p style="font-size:0.9rem; margin-bottom:20px;">Your device is waiting for Admin approval.</p>
-        <div id="requestForm" style="background:rgba(128,128,128,0.05); padding:15px; border-radius:10px; border:1px solid var(--border); margin-bottom:20px;">
-            <label style="text-align:left; margin-bottom:5px;">Identify Yourself to Admin</label>
-            <input type="text" id="reqName" placeholder="Enter your name / role..." style="margin-bottom:10px; font-weight:normal;">
-            <button class="modal-btn" onclick="window.pingAdmin()" style="margin-top:0; background:var(--accent);">PING ADMIN FOR ACCESS</button>
+<div class="modal-overlay" id="accessDeniedOverlay" style="display:flex; z-index: 300; background: var(--bg);">
+    <div class="modal" style="text-align: center;">
+        <h2 style="color: var(--danger);">🔒 Access Pending</h2>
+        <p style="font-size: 0.9rem; margin-bottom: 20px;">Your device is waiting for Admin approval.</p>
+        
+        <div id="requestForm" style="background: rgba(128,128,128,0.05); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 20px;">
+            <label style="text-align: left; margin-bottom: 5px;">Identify Yourself to Admin</label>
+            <input type="text" id="reqName" placeholder="Enter your name / role..." style="margin-bottom: 10px; font-weight: normal;">
+            <button class="modal-btn" onclick="window.pingAdmin()" style="margin-top: 0; background: var(--accent);">PING ADMIN FOR ACCESS</button>
         </div>
-        <p style="font-size:0.8rem; opacity:0.8; margin-bottom:5px;">Your Device ID:</p>
-        <code id="userIdDisplay" style="background:var(--input-bg); padding:10px; display:block; word-break:break-all; border-radius:8px; border:1px solid var(--border); font-weight:bold; margin-bottom:20px;">Loading...</code>
+
+        <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 5px;">Your Device ID:</p>
+        <code id="userIdDisplay" style="background: var(--input-bg); padding: 10px; display: block; word-break: break-all; border-radius: 6px; border: 1px solid var(--border); font-weight: bold; margin-bottom: 20px;">Loading...</code>
         <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
         <button class="modal-btn secondary" onclick="window.forceOfflineMode()">WORK OFFLINE</button>
     </div>
 </div>
 
 <div id="adminToast" onclick="window.openAdmin()">
-    <span style="font-size:1.4rem;">🚨</span>
+    <span style="font-size: 1.5rem;">🚨</span>
     <span id="toastMsg">New Access Request!</span>
 </div>
 
-<div class="modal-overlay" id="adminModal" style="display:none; z-index:250;">
+<div class="modal-overlay" id="adminModal" style="display:none; z-index: 250;">
     <div class="modal">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h2 style="color:var(--accent); margin:0;">👑 Command Center</h2>
-            <button onclick="window.closeAdmin()" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+            <h2 style="color: var(--accent);">👑 Command Center</h2>
+            <button onclick="window.closeAdmin()" style="background:none; border:none; font-size:1.5rem; color:var(--text);">✕</button>
         </div>
-        <div id="adminPendingSection" style="display:none;" class="admin-pending-section">
-            <div class="admin-pending-title">⏳ Pending Approvals</div>
-            <div id="adminPendingList"></div>
-        </div>
-        <div class="admin-all-title">All Users</div>
-        <div id="adminUserList" style="max-height:55vh; overflow-y:auto;"></div>
+        <div id="adminUserList" style="max-height: 60vh; overflow-y: auto;"></div>
     </div>
 </div>
 
 <div class="modal-overlay" id="setupWizard" style="display:none;">
     <div class="modal">
-        <h2>Initial Setup</h2>
+        <h2 id="setupTitle">Initial Setup</h2>
         <div class="modal-opt">
-            <label>Number of Machines</label>
+            <label id="lblSetMach">Number of Machines</label>
             <select id="setupMachines"><option value="1">1 Machine</option><option value="2" selected>2 Machines</option></select>
         </div>
         <div class="modal-opt">
-            <label>Lane Configuration</label>
+            <label id="lblSetLane">Lane Configuration</label>
             <select id="setupLanes"><option value="2">Dual Lane (2)</option><option value="4" selected>Quad Lane (4)</option></select>
         </div>
         <div class="modal-opt">
-            <label>Default Product</label>
+            <label id="lblSetProd">Default Product</label>
             <select id="setupProd"><option value="lunch">Lunch (0.01)</option><option value="bfast">Breakfast (0.017)</option></select>
         </div>
-        <button class="modal-btn" onclick="window.completeSetup()">START APP</button>
+        <button class="modal-btn" onclick="window.completeSetup()" id="btnStartApp">START APP</button>
     </div>
 </div>
 
 <div class="modal-overlay" id="settingsMenu">
     <div class="modal">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h2 style="margin:0;">⚙️ Options</h2>
-            <button onclick="window.toggleSettings()" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
-        </div>
-        <br>
-        <div class="modal-opt">
-            <label>Your Display Name</label>
-            <input type="text" id="setDispName" onblur="window.saveDisplayName()" placeholder="e.g., Big Mike" style="font-weight:normal;">
+            <h2 id="menuTitle">Options</h2>
+            <button onclick="window.toggleSettings()" style="background:none; border:none; font-size:1.5rem; color:var(--text);">✕</button>
         </div>
         <div class="modal-opt">
-            <label>Target Weight (g)</label>
-            <input type="number" id="setTarget" inputmode="decimal" oninput="window.onTargetInput()" style="background:var(--input-bg);">
-            <div class="target-confirm" id="targetConfirm">
-                ⚠️ Change target weight mid-shift?
-                <div class="target-confirm-btns">
-                    <button class="btn-confirm-yes" onclick="window.confirmTargetChange()">Yes, apply</button>
-                    <button class="btn-confirm-no" onclick="window.cancelTargetChange()">Cancel</button>
-                </div>
-            </div>
+            <label id="lblMenuName">Your Display Name</label>
+            <input type="text" id="setDispName" onblur="window.saveDisplayName()" placeholder="e.g., Big Mike" style="background:var(--input-bg); font-weight: normal;">
         </div>
-        <hr style="border:0; border-top:1px solid var(--border); margin:12px 0;">
         <div class="modal-opt">
-            <label>Unlock Method</label>
+            <label id="lblMenuTarget">Target Weight (g)</label>
+            <input type="number" id="setTarget" inputmode="decimal" oninput="window.updateTargetFromSettings()" style="background:var(--input-bg);">
+        </div>
+        <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
+        <div class="modal-opt">
+            <label id="lblMenuInput">Unlock Method</label>
             <select id="setInputMode" onchange="window.saveLocalSettings()">
                 <option value="button">Lock Button (Default)</option>
                 <option value="longpress">Long Press (1s)</option>
@@ -272,26 +215,26 @@
             </select>
         </div>
         <div class="modal-opt">
-            <label>Machines</label>
+            <label id="lblMenuMach">Machines</label>
             <select id="setMachines" onchange="window.saveLocalSettings()"><option value="1">1 Machine</option><option value="2">2 Machines</option></select>
         </div>
         <div class="modal-opt">
-            <label>Configuration</label>
+            <label id="lblMenuLane">Configuration</label>
             <select id="setLanes" onchange="window.switchProfile()"><option value="2">Dual Lane</option><option value="4">Quad Lane</option></select>
         </div>
         <div class="modal-opt">
-            <label>Product Mode</label>
+            <label id="lblMenuProd">Product Mode</label>
             <select id="setProd" onchange="window.switchProfile()"><option value="lunch">Lunch</option><option value="bfast">Breakfast</option></select>
         </div>
         <div class="modal-opt">
-            <label>Smart Mode (Adaptive)</label>
+            <label id="lblMenuSmart">Smart Mode (Adaptive)</label>
             <select id="setSmart" onchange="window.saveLocalSettings()"><option value="off">Off (Fixed)</option><option value="on">On (Always)</option><option value="auto">Auto (Beta)</option></select>
         </div>
         <div class="modal-opt">
-            <label>Theme</label>
+            <label id="lblMenuTheme">Theme</label>
             <select id="setTheme" onchange="window.toggleTheme()"><option value="light">Light Mode</option><option value="dark">Dark Mode</option></select>
         </div>
-        <button class="modal-btn danger" onclick="window.factoryReset()">FACTORY RESET (LOCAL)</button>
+        <button class="modal-btn danger" onclick="window.factoryReset()" id="btnMenuReset">FACTORY RESET (LOCAL)</button>
     </div>
 </div>
 
@@ -302,7 +245,7 @@
             <h1 class="brand-title">The Advantage<span class="moon-icon">🌙</span></h1>
         </div>
         <div class="header-btns">
-            <button class="gear-btn btn-hidden" id="btnAdmin" onclick="window.openAdmin()" style="color:var(--accent);">👑</button>
+            <button class="gear-btn btn-hidden" id="btnAdmin" onclick="window.openAdmin()" style="color: var(--accent);">👑</button>
             <button class="gear-btn" onclick="window.toggleSettings()">⚙️</button>
         </div>
     </div>
@@ -313,41 +256,43 @@
     </div>
     <div id="lanesContainer"></div>
     <div class="history-section">
-        <label style="font-size:0.9rem; margin-bottom:10px; display:block;">Shift History</label>
-        <div id="historyCards" class="history-cards"></div>
-        <button class="btn-clear" onclick="window.clearHistory()">CLEAR TABLE</button>
-        <button class="btn-clear" onclick="window.saveToHistory()" style="background:var(--info); margin-top:6px;">SAVE CHECK</button>
+        <label id="lblHistory" style="font-size:0.9rem; margin-bottom:10px;">Shift History</label>
+        <div style="overflow-x:auto;">
+            <table class="history-table">
+                <thead><tr id="histHeader"></tr></thead>
+                <tbody id="histBody"></tbody>
+            </table>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn-clear" onclick="window.saveToHistory()" style="background:var(--info);" id="btnSaveCheck">SAVE CHECK</button>
+            <button class="btn-clear" onclick="window.clearHistory()" id="btnClearTable">CLEAR TABLE</button>
+        </div>
     </div>
 </div>
 
-<div class="container" id="supervisorDashboard" style="display:none; padding-bottom:90px;">
+<div class="container" id="supervisorDashboard" style="display:none; padding-bottom: 80px;">
     <div class="header">
         <div style="display:flex; align-items:center;">
             <div id="supStatusDot" class="status-dot status-online"></div>
-            <h1 style="margin:0; font-size:1.35rem; font-weight:800; letter-spacing:-0.5px;">DSI Line <span style="font-size:0.78rem; color:var(--accent); vertical-align:middle;">(OEE VIEW)</span></h1>
+            <h1 style="margin:0; font-size:1.4rem; font-weight:800; letter-spacing:-0.5px;">DSI Line <span style="font-size: 0.8rem; color: var(--accent); vertical-align: middle;">(OEE VIEW)</span></h1>
         </div>
         <div class="header-btns">
-            <button class="gear-btn btn-hidden" id="btnAdminSup" onclick="window.openAdmin()" style="color:var(--accent);">👑</button>
+            <button class="gear-btn btn-hidden" id="btnAdminSup" onclick="window.openAdmin()" style="color: var(--accent);">👑</button>
             <button class="gear-btn" onclick="window.toggleSettings()">⚙️</button>
         </div>
     </div>
-    <div id="supCardsContainer" style="margin-top:14px;"></div>
+    <div id="supCardsContainer" style="margin-top: 15px;"></div>
 </div>
 
 <div class="stats-bar" id="globalStatsBar" style="display:none;">
     <div class="stat-box">
-        <span class="stat-val"><span id="machAvg">--</span><span class="stat-delta" id="avgDelta"></span></span>
-        <span class="stat-lbl">LINE AVG</span>
+        <span class="stat-val" id="machAvg">--</span>
+        <span class="stat-lbl" id="lblAvg">LINE AVG</span>
     </div>
-    <div class="stat-divider"></div>
+    <div style="width:1px; height:30px; background:rgba(255,255,255,0.3);"></div>
     <div class="stat-box">
         <span class="stat-val" id="stdDev">--</span>
-        <span class="stat-lbl">LINE SD</span>
-    </div>
-    <div class="stat-divider"></div>
-    <div class="stat-box">
-        <span class="stat-val" id="targetDisplay">--</span>
-        <span class="stat-lbl">TARGET</span>
+        <span class="stat-lbl" id="lblSD">LINE SD</span>
     </div>
 </div>
 
@@ -367,102 +312,115 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    
-    // We attach these directly to the window so the rest of the app can see them
-    window.db = getDatabase(app);
+    const db = getDatabase(app);
+    const auth = getAuth(app); 
+
+    window.db = db; 
     window.ref = ref;
     window.set = set;
     window.onValue = onValue;
     window.update = update;
-    const auth = getAuth(app);
-
-    const ADMIN_UID = 'm510406lBidDf7qCzqXEHmIKxBu2';
-
+    
+    const ADMIN_UID = 'm510406lBidDf7qCzqXEHmIKxBu2'; 
+    
     let currentUserUid = null;
     let isAdmin = false;
-    let appInitialized = false;
+    let appInitialized = false; 
     window.isOfflineMode = false;
-    window.currentUserData = {};
+    window.currentUserData = {}; 
 
     window.forceOfflineMode = function() {
         window.isOfflineMode = true;
         document.getElementById('accessDeniedOverlay').style.display = 'none';
-        if (!appInitialized) { appInitialized = true; window.initApp(); }
+        if (!appInitialized) {
+            appInitialized = true;
+            window.initApp();
+        }
     };
 
     signInAnonymously(auth).then((result) => {
         currentUserUid = result.user.uid;
-        window.myUid = currentUserUid;
+        window.myUid = currentUserUid; 
         isAdmin = (currentUserUid === ADMIN_UID);
-
-        if (isAdmin) {
+        
+        if(isAdmin) {
             document.getElementById('btnAdmin').classList.remove('btn-hidden');
             document.getElementById('btnAdminSup').classList.remove('btn-hidden');
             window.startAdminRadar();
         }
 
         const userRef = window.ref(window.db, `users/${currentUserUid}`);
-        window.update(userRef, { lastLogin: new Date().toLocaleString() }).catch(e => console.warn(e));
+        window.update(userRef, { lastLogin: new Date().toLocaleString() }).catch(e => console.warn("Admin check-in ignored", e));
 
         window.onValue(userRef, (snap) => {
             window.currentUserData = snap.val() || {};
             const isApproved = window.currentUserData.approved === true;
+            
             if (isAdmin || isApproved) {
                 document.getElementById('accessDeniedOverlay').style.display = 'none';
                 document.getElementById('statusDot').className = "status-dot status-online";
                 document.getElementById('supStatusDot').className = "status-dot status-online";
-                if (!appInitialized) { appInitialized = true; window.initApp(); }
-                else { window.routeUserByRole(); }
+
+                if (!appInitialized) {
+                    appInitialized = true;
+                    window.initApp(); 
+                } else {
+                    window.routeUserByRole();
+                }
             } else {
                 document.getElementById('accessDeniedOverlay').style.display = 'flex';
                 document.getElementById('userIdDisplay').innerText = currentUserUid;
             }
         });
     }).catch((error) => {
-        console.error("Firebase auth failed:", error.message);
+        console.error("Security connection failed:", error.message);
         document.getElementById('userIdDisplay').innerText = "CONNECTION ERROR";
     });
 </script>
 
 <script>
+    // --- GLOBAL STATE ---
     let config = {
         machines: 2, lanes: 4, product: 'lunch', smart: 'auto', theme: 'light',
-        currentMachine: 1, lang: 'en', inputMode: 'button', displayName: ''
+        currentMachine: 1, lang: 'en', inputMode: 'button', displayName: '' 
     };
 
-    let store = {};
-    let history = [];
+    let store = {}; 
+    let history = {};
     const FACTORS = { lunch: 0.01, bfast: 0.017 };
-    let pressTimer;
-    let lastAutoSaveCombo = "";
+    let pressTimer; let lastAutoSaveCombo = "";
     let cloudPathKey = "";
-    let prevAvg = null;
-    let pendingTargetValue = null;
 
-    // =====================================================================
-    // INIT
-    // =====================================================================
     window.initApp = function() {
-        const saved = localStorage.getItem('dsi_config_v11');
-        if (saved) config = { ...config, ...JSON.parse(saved) };
-        if (!config.smart) config.smart = 'auto';
-        if (!config.theme) config.theme = 'light';
-        if (!config.inputMode) config.inputMode = 'button';
+        const savedConfig = localStorage.getItem('dsi_config_v11');
+        if (savedConfig) {
+            config = { ...config, ...JSON.parse(savedConfig) }; 
+        }
+        
+        if(!config.smart) config.smart = 'auto';
+        if(!config.theme) config.theme = 'light';
+        if(!config.inputMode) config.inputMode = 'button';
 
-        window.applyTheme();
-
-        const fields = { setMachines:'machines', setLanes:'lanes', setProd:'product', setSmart:'smart', setInputMode:'inputMode', setTheme:'theme' };
-        for (const [id, key] of Object.entries(fields)) { const el = document.getElementById(id); if (el) el.value = config[key]; }
-        if (document.getElementById('setDispName')) document.getElementById('setDispName').value = config.displayName || '';
+        if(document.getElementById('setMachines')) document.getElementById('setMachines').value = config.machines;
+        if(document.getElementById('setLanes')) document.getElementById('setLanes').value = config.lanes;
+        if(document.getElementById('setProd')) document.getElementById('setProd').value = config.product;
+        if(document.getElementById('setSmart')) document.getElementById('setSmart').value = config.smart;
+        if(document.getElementById('setInputMode')) document.getElementById('setInputMode').value = config.inputMode;
+        if(document.getElementById('setTheme')) document.getElementById('setTheme').value = config.theme;
+        if(document.getElementById('setDispName')) document.getElementById('setDispName').value = config.displayName || '';
 
         const hasSetup = localStorage.getItem('dsi_setup_done');
         if (!hasSetup) document.getElementById('setupWizard').style.display = 'flex';
-        else window.routeUserByRole();
+        else {
+            window.applyTheme();
+            window.routeUserByRole(); 
+        }
     };
 
     window.routeUserByRole = function() {
         const role = window.currentUserData.role || 'operator';
         document.getElementById('globalStatsBar').style.display = 'flex';
+        
         if (role === 'supervisor') {
             document.getElementById('appContent').style.display = 'none';
             document.getElementById('supervisorDashboard').style.display = 'block';
@@ -474,153 +432,129 @@
             window.renderInterface();
             if (!window.isOfflineMode) window.startCloudSync();
         }
-    };
+    }
 
-    // =====================================================================
+    // ======================================================================
     // SUPERVISOR ENGINE
-    // =====================================================================
+    // ======================================================================
     let unsubSupHistories = null;
 
     window.startSupervisorSync = function() {
-        if (!window.db) { setTimeout(window.startSupervisorSync, 500); return; }
+        if(!window.db) { setTimeout(window.startSupervisorSync, 500); return; }
         if (unsubSupHistories) unsubSupHistories();
+
         const dbRefHistories = window.ref(window.db, 'histories');
         unsubSupHistories = window.onValue(dbRefHistories, (snap) => {
-            window.renderSupervisorDashboard(snap.val() || {});
+            const allHistories = snap.val() || {};
+            window.renderSupervisorDashboard(allHistories);
         });
-    };
+    }
 
     window.renderSupervisorDashboard = function(allHistories) {
+        const m1Latest = window.getAbsoluteLatest(allHistories.M1);
+        const m2Latest = window.getAbsoluteLatest(allHistories.M2);
+        
         const container = document.getElementById('supCardsContainer');
         container.innerHTML = '';
         let allWeightsGlobal = [];
 
-        for (let m = 1; m <= config.machines; m++) {
-            const machKey = `M${m}`;
-            const machHistories = allHistories[machKey];
-            const latest = window.getAbsoluteLatest(machHistories);
-            const recentChecks = window.getRecentChecks(machHistories, 3);
+        if (m1Latest) {
+            container.innerHTML += window.buildSupCard('DSI 1', m1Latest);
+            allWeightsGlobal = allWeightsGlobal.concat(window.extractWeights(m1Latest.entry));
+        } else { container.innerHTML += `<div class="sup-card"><h3 style="color:gray;">DSI 1: No Data</h3></div>`; }
 
-            if (latest) {
-                container.innerHTML += window.buildSupCard(`DSI ${m}`, latest, recentChecks);
-                allWeightsGlobal = allWeightsGlobal.concat(window.extractWeights(latest.entry));
-            } else {
-                container.innerHTML += `<div class="sup-card"><h3 style="color:gray;">DSI ${m}: No Data</h3></div>`;
-            }
-        }
+        if (m2Latest) {
+            container.innerHTML += window.buildSupCard('DSI 2', m2Latest);
+            allWeightsGlobal = allWeightsGlobal.concat(window.extractWeights(m2Latest.entry));
+        } else { container.innerHTML += `<div class="sup-card"><h3 style="color:gray;">DSI 2: No Data</h3></div>`; }
 
-        if (allWeightsGlobal.length > 0) {
+        if(allWeightsGlobal.length > 0) {
             const mean = allWeightsGlobal.reduce((a, b) => a + b, 0) / allWeightsGlobal.length;
             document.getElementById('machAvg').innerText = mean.toFixed(1);
-            if (allWeightsGlobal.length > 1) {
+            if(allWeightsGlobal.length > 1) {
                 const v = allWeightsGlobal.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / allWeightsGlobal.length;
                 document.getElementById('stdDev').innerText = Math.sqrt(v).toFixed(2);
             } else { document.getElementById('stdDev').innerText = "--"; }
-        } else {
-            document.getElementById('machAvg').innerText = "--";
-            document.getElementById('stdDev').innerText = "--";
-        }
-    };
+        } else { document.getElementById('machAvg').innerText = "--"; document.getElementById('stdDev').innerText = "--"; }
+    }
 
     window.getAbsoluteLatest = function(machineHistories) {
-        if (!machineHistories) return null;
-        let latestEntry = null, activeProduct = '';
-        for (let prodKey in machineHistories) {
-            let entries = Array.isArray(machineHistories[prodKey]) ? machineHistories[prodKey] : Object.values(machineHistories[prodKey]);
-            if (entries && entries.length > 0) {
+        if(!machineHistories) return null;
+        let latestEntry = null;
+        let activeProduct = '';
+        
+        for(let prodKey in machineHistories) {
+            let histArray = machineHistories[prodKey];
+            let entries = Array.isArray(histArray) ? histArray : Object.values(histArray);
+            if(entries && entries.length > 0) {
                 let entry = entries[0];
-                let entryTs = entry.timestamp || 0;
-                if (!latestEntry || entryTs > (latestEntry.timestamp || 0)) {
+                let entryTs = entry.timestamp || 0; 
+                let latestTs = latestEntry ? (latestEntry.timestamp || 0) : -1;
+                
+                if(!latestEntry || entryTs > latestTs) {
                     latestEntry = entry;
                     activeProduct = prodKey.includes('lunch') ? 'Lunch' : 'Breakfast';
                 }
             }
         }
         return latestEntry ? { entry: latestEntry, product: activeProduct } : null;
-    };
-
-    // Get last N checks across all products for trend chips
-    window.getRecentChecks = function(machineHistories, n) {
-        if (!machineHistories) return [];
-        let all = [];
-        for (let prodKey in machineHistories) {
-            let entries = Array.isArray(machineHistories[prodKey]) ? machineHistories[prodKey] : Object.values(machineHistories[prodKey]);
-            entries.forEach(e => all.push(e));
-        }
-        all.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-        return all.slice(0, n);
-    };
+    }
 
     window.extractWeights = function(entry) {
         let wts = [];
-        entry.lanes.forEach(l => { let val = parseFloat(l.w); if (!isNaN(val)) wts.push(val); });
+        entry.lanes.forEach(l => { let val = parseFloat(l.w); if(!isNaN(val)) wts.push(val); });
         return wts;
-    };
+    }
 
-    window.buildSupCard = function(title, dataObj, recentChecks) {
+    window.buildSupCard = function(title, dataObj) {
         const entry = dataObj.entry;
-        const target = parseFloat(entry.target || 0);
-        const opName = entry.operator || 'Unknown';
+        const target = entry.target || 0;
+        const opName = entry.operator || 'Unknown Operator';
         let lanesHtml = '';
-        const isStale = (Date.now() - (entry.timestamp || 0)) > 180000;
+        
+        let isStale = (Date.now() - (entry.timestamp || 0)) > 180000;
+        let staleWarning = isStale ? `<span style="color:var(--danger); font-size:0.7rem; font-weight:bold;">⚠️ STALE DATA</span>` : '';
 
         entry.lanes.forEach((l, idx) => {
             let weightVal = parseFloat(l.w);
             let colorClass = '';
-            if (!isNaN(weightVal) && target > 0 && !isStale) {
+            if (!isNaN(weightVal) && target > 0) {
                 let diff = Math.abs(weightVal - target);
-                if (diff <= 0.5) colorClass = 'bg-perfect';
-                else if (diff <= 2) colorClass = 'bg-success';
-                else if (diff <= 3) colorClass = 'bg-warning';
+                if(diff <= 0.5) colorClass = 'bg-perfect';
+                else if(diff <= 2) colorClass = 'bg-success';
+                else if(diff <= 3) colorClass = 'bg-warning';
                 else colorClass = 'bg-danger';
             }
+            if(isStale) colorClass = ''; 
+
             lanesHtml += `<div class="sup-lane ${colorClass}"><span class="sup-lane-lbl">L${idx+1}</span><span class="sup-lane-wt">${l.w}</span><span class="sup-lane-dens">${l.d}</span></div>`;
         });
 
-        // Build trend chips from recent checks
-        let trendHtml = `<div class="sup-trend"><span class="sup-trend-lbl">Trend:</span>`;
-        const chipCount = 3;
-        for (let i = 0; i < chipCount; i++) {
-            const check = recentChecks[i];
-            if (!check) { trendHtml += `<span class="trend-chip trend-empty">·</span>`; continue; }
-            const wts = window.extractWeights(check);
-            if (wts.length === 0) { trendHtml += `<span class="trend-chip trend-empty">·</span>`; continue; }
-            const mean = wts.reduce((a, b) => a + b, 0) / wts.length;
-            const diff = Math.abs(mean - target);
-            let cls, symbol;
-            if (diff <= 0.5) { cls = 'trend-perfect'; symbol = '✓'; }
-            else if (diff <= 2) { cls = 'trend-success'; symbol = '↑'; }
-            else if (diff <= 3) { cls = 'trend-warning'; symbol = '~'; }
-            else { cls = 'trend-danger'; symbol = '✗'; }
-            trendHtml += `<span class="trend-chip ${cls}" title="Avg: ${mean.toFixed(1)}g">${symbol}</span>`;
-        }
-        trendHtml += `<span style="font-size:0.62rem; opacity:0.5; margin-left:4px;">(newest → oldest)</span></div>`;
-
         return `
-        <div class="sup-card ${isStale ? 'stale' : ''}">
+        <div class="sup-card" style="${isStale ? 'opacity: 0.6; border-color: var(--danger);' : ''}">
             <div class="sup-header">
                 <h2 class="sup-title">${title} <span style="font-size:0.8rem; color:gray; font-weight:normal;">• ${dataObj.product}</span></h2>
-                <div class="sup-meta">
-                    Target: ${target}g
-                    <strong>${entry.time}${isStale ? ' ⚠️' : ''}</strong>
-                </div>
+                <div class="sup-meta">Target: ${target}g<span>${entry.time} ${staleWarning}</span></div>
             </div>
-            <div class="sup-operator">👤 ${opName}</div>
+            <div style="font-size:0.8rem; margin-bottom: 10px; color: var(--accent); font-weight: bold;">Operated by: ${opName}</div>
             <div class="sup-grid">${lanesHtml}</div>
-            ${trendHtml}
         </div>`;
-    };
+    }
 
-    // =====================================================================
-    // OPERATOR ENGINE
-    // =====================================================================
-    let unsubStore = null, unsubHistory = null;
-    let dbRef_Store = null, dbRef_History = null;
+    // ======================================================================
+    // OPERATOR ENGINE (ATOMIC SCALPEL FIX)
+    // ======================================================================
+    let unsubStore = null;   
+    let unsubHistory = null; 
+    let dbRef_Store = null;
+    let dbRef_History = null;
 
     window.startCloudSync = function() {
-        if (!window.db) { setTimeout(window.startCloudSync, 500); return; }
+        if(!window.db) { setTimeout(window.startCloudSync, 500); return; }
+        
         cloudPathKey = `M${config.currentMachine}/${config.product}_${config.lanes}L`;
         const dot = document.getElementById('statusDot');
+        
         if (unsubStore) unsubStore();
         if (unsubHistory) unsubHistory();
 
@@ -630,11 +564,18 @@
         unsubStore = window.onValue(dbRef_Store, (snapshot) => {
             dot.className = "status-dot status-online";
             const val = snapshot.val();
-            if (val) { store = val; window.updateUIFromCloud(); }
+            if(val) { 
+                store = val; 
+                window.updateUIFromCloud(); 
+            } 
             else {
-                if (!store.target) {
+                if(!store.target) {
                     const defaultTarget = config.product === 'bfast' ? '63' : '102';
-                    store = { target: defaultTarget, lastUpdated: Date.now(), lanes: Array(config.lanes).fill().map(() => ({ d:'', w:'', attempts:0, smartActive:false, lastD:null, lastW:null, locked:true })) };
+                    store = { 
+                        target: defaultTarget, 
+                        lastUpdated: Date.now(),
+                        lanes: Array(config.lanes).fill().map(() => ({ d:'', w:'', attempts: 0, smartActive: false, lastD: null, lastW: null, locked: true })) 
+                    };
                     window.set(dbRef_Store, store);
                 }
             }
@@ -642,33 +583,38 @@
 
         unsubHistory = window.onValue(dbRef_History, (snapshot) => {
             const val = snapshot.val();
-            history = val ? (Array.isArray(val) ? val : Object.values(val)) : [];
-            window.renderHistoryCards();
+            history = val || [];
+            window.renderHistoryTable();
         });
-    };
+    }
 
     window.pushLaneToCloud = function(idx) {
         if (!dbRef_Store || window.isOfflineMode) return;
         document.getElementById('statusDot').className = "status-dot status-syncing";
+        
         const now = Date.now();
         const updates = {};
         updates[`lanes/${idx-1}`] = { ...store.lanes[idx-1], lastUpdated: now };
         updates[`lastUpdated`] = now;
+        
         window.update(dbRef_Store, updates).then(() => {
             document.getElementById('statusDot').className = "status-dot status-online";
         }).catch(e => {
+            console.error("Bouncer rejected the update:", e);
             document.getElementById('statusDot').className = "status-dot status-offline";
         });
-    };
+    }
 
     window.pushTargetToCloud = function() {
         if (!dbRef_Store || window.isOfflineMode) return;
-        window.update(dbRef_Store, { target: store.target, lastUpdated: Date.now() }).catch(e => console.error(e));
-    };
+        window.update(dbRef_Store, { 
+            target: store.target, 
+            lastUpdated: Date.now() 
+        }).catch(e => {
+            console.error("Target update rejected:", e);
+        });
+    }
 
-    // =====================================================================
-    // RENDER INTERFACE
-    // =====================================================================
     window.renderInterface = function() {
         const nav = document.getElementById('machineNav');
         if (config.machines === 1) {
@@ -677,7 +623,7 @@
         } else {
             nav.className = 'machine-nav';
             nav.innerHTML = '';
-            for (let i = 1; i <= config.machines; i++) {
+            for(let i=1; i<=config.machines; i++) {
                 const btn = document.createElement('button');
                 btn.className = `m-btn ${config.currentMachine === i ? 'm-active' : ''}`;
                 btn.innerText = `DSI ${i}`;
@@ -688,36 +634,29 @@
 
         const prodName = config.product === 'lunch' ? 'Lunch' : 'Breakfast';
         document.getElementById('displayConfig').innerText = `${config.lanes} Lane • ${prodName}`;
-
-        ['setMachines','setLanes','setProd','setSmart','setInputMode','setTheme'].forEach(id => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            const map = { setMachines:'machines', setLanes:'lanes', setProd:'product', setSmart:'smart', setInputMode:'inputMode', setTheme:'theme' };
-            el.value = config[map[id]];
-        });
-        if (document.getElementById('setDispName')) document.getElementById('setDispName').value = config.displayName || '';
+        
+        if(document.getElementById('setMachines')) document.getElementById('setMachines').value = config.machines;
+        if(document.getElementById('setLanes')) document.getElementById('setLanes').value = config.lanes;
+        if(document.getElementById('setProd')) document.getElementById('setProd').value = config.product;
+        if(document.getElementById('setDispName')) document.getElementById('setDispName').value = config.displayName || '';
+        if(document.getElementById('setSmart')) document.getElementById('setSmart').value = config.smart || 'auto';
+        if(document.getElementById('setInputMode')) document.getElementById('setInputMode').value = config.inputMode || 'button';
+        if(document.getElementById('setTheme')) document.getElementById('setTheme').value = config.theme || 'light';
 
         const container = document.getElementById('lanesContainer');
         container.innerHTML = '';
-
-        for (let i = 1; i <= config.lanes; i++) {
+        for(let i=1; i<=config.lanes; i++) {
             let labelText = "DENSITY";
-            if (config.inputMode === 'longpress') labelText += " (HOLD)";
-            if (config.inputMode === 'doubletap') labelText += " (×2)";
+            if(config.inputMode === 'longpress') labelText += " (HOLD)";
+            if(config.inputMode === 'doubletap') labelText += " (x2)";
 
-            const btnHtml = config.inputMode === 'button'
-                ? `<button class="btn-icon" id="lockDens-${i}" onmousedown="event.preventDefault()" onclick="window.toggleLock(${i})">🔒</button>`
-                : `<button class="btn-icon btn-hidden" id="lockDens-${i}">🔒</button>`;
+            const btnHtml = config.inputMode === 'button' ? 
+                `<button class="btn-icon" id="lockDens-${i}" onmousedown="event.preventDefault()" onclick="window.toggleLock(${i})">🔒</button>` : 
+                `<button class="btn-icon btn-hidden" id="lockDens-${i}">🔒</button>`;
 
             container.innerHTML += `
                 <div class="lane-card" id="card-${i}">
-                    <div class="lane-header">
-                        <div class="lane-header-left">
-                            <span>LANE ${i}</span>
-                            <span class="smart-tag" id="tag-${i}">SMART</span>
-                        </div>
-                        <span class="lane-trend" id="trend-${i}"></span>
-                    </div>
+                    <div class="lane-header"><span>LANE ${i}</span><span class="smart-tag" id="tag-${i}">SMART</span></div>
                     <div>
                         <label>${labelText}</label>
                         <div class="input-group">
@@ -733,342 +672,217 @@
                         </div>
                     </div>
                     <div class="result-box" id="resBox-${i}" onclick="window.applyResult(${i})">
-                        <span id="resText-${i}">New Density: --</span>
-                        <span class="tap-hint">TAP TO APPLY</span>
+                        <span id="resText-${i}">New Density: --</span><span class="tap-hint">TAP TO APPLY</span>
                     </div>
                     <input type="hidden" id="calcVal-${i}">
-                </div>`;
+                </div>
+            `;
         }
-
-        for (let i = 1; i <= config.lanes; i++) {
+        
+        for(let i=1; i<=config.lanes; i++) {
             const el = document.getElementById(`currDens-${i}`);
-            if (config.inputMode === 'longpress') {
-                el.addEventListener('touchstart', () => { pressTimer = setTimeout(() => window.unlockAndFocus(i), 800); });
+            if(config.inputMode === 'longpress') {
+                el.addEventListener('touchstart', () => { pressTimer = setTimeout(() => { window.unlockAndFocus(i); }, 800); });
                 el.addEventListener('touchend', () => clearTimeout(pressTimer));
-                el.addEventListener('mousedown', () => { pressTimer = setTimeout(() => window.unlockAndFocus(i), 800); });
+                el.addEventListener('mousedown', () => { pressTimer = setTimeout(() => { window.unlockAndFocus(i); }, 800); });
                 el.addEventListener('mouseup', () => clearTimeout(pressTimer));
-            } else if (config.inputMode === 'doubletap') {
-                el.ondblclick = () => window.unlockAndFocus(i);
-            }
+            } else if (config.inputMode === 'doubletap') { el.ondblclick = function() { window.unlockAndFocus(i); }; }
         }
-    };
+    }
 
     window.updateUIFromCloud = function() {
-        if (!store || !store.lanes) return;
+        if(!store || !store.lanes) return;
         const tEl = document.getElementById('setTarget');
-        if (document.activeElement !== tEl) {
+        if(document.activeElement !== tEl) {
             tEl.value = store.target;
             document.getElementById('displayTarget').innerText = `Target: ${store.target}g`;
-            document.getElementById('targetDisplay').innerText = `${store.target}g`;
         }
-        for (let i = 1; i <= config.lanes; i++) {
+        for(let i=1; i<=config.lanes; i++) {
             const lane = store.lanes[i-1];
-            if (!lane) continue;
+            if(!lane) continue;
             const dEl = document.getElementById(`currDens-${i}`);
-            if (document.activeElement !== dEl) {
+            if(document.activeElement !== dEl) {
                 dEl.value = lane.d;
-                if (lane.locked) {
+                if(lane.locked) {
                     dEl.readOnly = true; dEl.style.borderColor = 'var(--border)';
-                    if (config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon locked'; document.getElementById(`lockDens-${i}`).innerText = '🔒'; }
+                    if(config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon locked'; document.getElementById(`lockDens-${i}`).innerText = '🔒'; }
                 } else {
                     dEl.readOnly = false; dEl.style.borderColor = 'var(--info)';
-                    if (config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓'; }
+                    if(config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓'; }
                 }
             }
             const wEl = document.getElementById(`avgWt-${i}`);
-            if (document.activeElement !== wEl) wEl.value = lane.w || '';
-
-            const card = document.getElementById(`card-${i}`);
-            if (config.smart === 'on' || (config.smart === 'auto' && lane.smartActive)) card.classList.add('smart-active');
-            else card.classList.remove('smart-active');
+            if(document.activeElement !== wEl) wEl.value = lane.w || '';
+            
+            if(config.smart === 'on' || (config.smart === 'auto' && lane.smartActive)) document.getElementById(`card-${i}`).classList.add('smart-active');
+            else document.getElementById(`card-${i}`).classList.remove('smart-active');
         }
         window.calculateLocal();
-    };
+    }
 
     window.calculateLocal = function() {
-        if (!store || !store.lanes) return;
+        if(!store || !store.lanes) return; 
         const target = parseFloat(store.target);
         const baseK = FACTORS[config.product];
-        let weights = [], count = 0;
+        let weights = []; let count = 0;
 
-        for (let i = 1; i <= config.lanes; i++) {
-            if (!store.lanes[i-1]) continue;
+        for(let i=1; i<=config.lanes; i++) {
+            if(!store.lanes[i-1]) continue;
+            const currD = parseFloat(store.lanes[i-1].d);
+            const currW = parseFloat(store.lanes[i-1].w);
             const lane = store.lanes[i-1];
-            const currD = parseFloat(lane.d);
-            const currW = parseFloat(lane.w);
             const resText = document.getElementById(`resText-${i}`);
             const hiddenVal = document.getElementById(`calcVal-${i}`);
             const card = document.getElementById(`card-${i}`);
-            const resBox = document.getElementById(`resBox-${i}`);
-            const trendEl = document.getElementById(`trend-${i}`);
 
-            if (!isNaN(target) && !isNaN(currD) && !isNaN(currW)) {
+            if(!isNaN(target) && !isNaN(currD) && !isNaN(currW)) {
                 const diff = currW - target;
                 let activeK = baseK;
+
                 const isSmart = config.smart === 'on' || (config.smart === 'auto' && lane.smartActive);
-                if (isSmart && lane.lastD !== null && lane.lastW !== null) {
-                    let dDelta = currD - lane.lastD, wDelta = currW - lane.lastW;
-                    if (Math.abs(wDelta) > 0.5 && Math.abs(dDelta) > 0.001) {
+                if(isSmart && lane.lastD !== null && lane.lastW !== null) {
+                    let dDelta = currD - lane.lastD;
+                    let wDelta = currW - lane.lastW;
+                    if(Math.abs(wDelta) > 0.5 && Math.abs(dDelta) > 0.001) {
                         let observedK = dDelta / wDelta;
                         observedK = Math.max(baseK * 0.5, Math.min(observedK, baseK * 5));
                         activeK = (observedK * 0.6) + (baseK * 0.4);
                     }
                 }
+
                 const newD = currD + (diff * activeK);
                 hiddenVal.value = newD.toFixed(3);
-                resText.innerText = `New Density: ${newD.toFixed(3)}`;
-                resBox.classList.add('has-value');
+                resText.innerText = `New Density: ` + newD.toFixed(3);
 
                 const absDiff = Math.abs(diff);
-                card.className = "lane-card";
-                if (isSmart) card.classList.add('smart-active');
-                if (absDiff <= 0.5) { card.classList.add('bg-perfect'); trendEl.innerHTML = '<span style="color:var(--perfect)">● Perfect</span>'; }
-                else if (absDiff <= 2) { card.classList.add('bg-success'); trendEl.innerHTML = `<span style="color:var(--success)">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}g</span>`; }
-                else if (absDiff <= 3) { card.classList.add('bg-warning'); trendEl.innerHTML = `<span style="color:var(--warning)">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}g</span>`; }
-                else { card.classList.add('bg-danger'); trendEl.innerHTML = `<span style="color:var(--danger)">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}g</span>`; }
+                card.className = "lane-card"; 
+                if(isSmart) card.classList.add('smart-active');
+                
+                if (absDiff <= 0.5) card.classList.add('bg-perfect');
+                else if (absDiff <= 2) card.classList.add('bg-success');
+                else if (absDiff <= 3) card.classList.add('bg-warning');
+                else card.classList.add('bg-danger');
 
                 weights.push(currW); count++;
             } else {
                 resText.innerText = `New Density: --`; hiddenVal.value = "";
-                resBox.classList.remove('has-value');
-                trendEl.innerHTML = '';
                 card.className = "lane-card";
-                if (config.smart === 'on' || (config.smart === 'auto' && lane.smartActive)) card.classList.add('smart-active');
+                if(config.smart === 'on' || (config.smart === 'auto' && lane.smartActive)) card.classList.add('smart-active');
             }
         }
 
-        if (count > 0) {
+        if(count > 0) {
             const mean = weights.reduce((a, b) => a + b, 0) / count;
-            const meanStr = mean.toFixed(1);
-            document.getElementById('machAvg').innerText = meanStr;
-            document.getElementById('targetDisplay').innerText = `${store.target || '--'}g`;
-
-            const deltaEl = document.getElementById('avgDelta');
-            if (prevAvg !== null) {
-                const delta = mean - prevAvg;
-                if (Math.abs(delta) < 0.1) { deltaEl.textContent = ''; }
-                else if (delta > 0) { deltaEl.textContent = '▲'; deltaEl.className = 'stat-delta delta-up'; }
-                else { deltaEl.textContent = '▼'; deltaEl.className = 'stat-delta delta-down'; }
-            }
-
-            if (count > 1) {
+            document.getElementById('machAvg').innerText = mean.toFixed(1);
+            if(count > 1) {
                 const v = weights.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / count;
                 document.getElementById('stdDev').innerText = Math.sqrt(v).toFixed(2);
             } else { document.getElementById('stdDev').innerText = "--"; }
-        } else {
-            document.getElementById('machAvg').innerText = "--";
-            document.getElementById('stdDev').innerText = "--";
-        }
-    };
-
-    // =====================================================================
-    // HISTORY — CARD VIEW
-    // =====================================================================
-    window.renderHistoryCards = function() {
-        const container = document.getElementById('historyCards');
-        if (!history || history.length === 0) {
-            container.innerHTML = '<div style="text-align:center; opacity:0.5; padding:20px; font-size:0.85rem;">No checks saved yet</div>';
-            return;
-        }
-        const arr = Array.isArray(history) ? history : Object.values(history);
-        container.innerHTML = arr.map((r, idx) => {
-            const laneGrid = r.lanes.map((l, li) => `
-                <div class="hist-lane-cell">
-                    <span class="hist-lane-lbl">L${li+1}</span>
-                    <span class="hist-lane-wt">${l.w}</span>
-                    <span class="hist-lane-dens">${l.d}</span>
-                </div>`).join('');
-            return `
-            <div class="hist-card" id="hcard-${idx}">
-                <div class="hist-card-header" onclick="window.toggleHistCard(${idx})">
-                    <div>
-                        <span class="hist-card-time">${r.time}</span>
-                        ${r.operator ? `<span style="font-size:0.72rem; opacity:0.6; margin-left:8px;">by ${r.operator}</span>` : ''}
-                    </div>
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <span class="hist-card-avg">Avg: <strong>${r.avg}g</strong></span>
-                        <span class="hist-card-chevron">▼</span>
-                    </div>
-                </div>
-                <div class="hist-card-body">
-                    <div style="font-size:0.72rem; opacity:0.55; margin-bottom:4px;">Target: ${r.target || '--'}g</div>
-                    <div class="hist-lane-grid">${laneGrid}</div>
-                </div>
-            </div>`;
-        }).join('');
-    };
-
-    window.toggleHistCard = function(idx) {
-        const card = document.getElementById(`hcard-${idx}`);
-        card.classList.toggle('expanded');
-    };
+        } else { document.getElementById('machAvg').innerText = "--"; document.getElementById('stdDev').innerText = "--"; }
+    }
 
     window.checkAutoSave = function() {
         let currentCombo = "";
         let allFilled = true;
-        for (let i = 1; i <= config.lanes; i++) {
+        for(let i=1; i<=config.lanes; i++) {
             const w = document.getElementById(`avgWt-${i}`).value;
-            if (!w) { allFilled = false; break; }
+            if(!w) { allFilled = false; break; }
             currentCombo += w + ",";
         }
-        if (allFilled && currentCombo !== lastAutoSaveCombo) {
+        if(allFilled && currentCombo !== lastAutoSaveCombo) {
             lastAutoSaveCombo = currentCombo;
             window.saveToHistory();
         }
-    };
+    }
 
     window.saveToHistory = function() {
-        const time = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
-        const timestamp = Date.now();
-        const avgEl = document.getElementById('machAvg');
-        const avg = avgEl ? avgEl.innerText : '--';
-        prevAvg = parseFloat(avg) || null;
+        const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        const timestamp = Date.now(); 
+        const avg = document.getElementById('machAvg').innerText;
         const opName = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
+        
         let row = { time, timestamp, avg, operator: opName, target: store.target, lanes: [] };
-        for (let i = 1; i <= config.lanes; i++) {
-            const wt = store.lanes[i-1] ? store.lanes[i-1].w : '';
-            const calc = document.getElementById(`calcVal-${i}`).value;
-            const dens = store.lanes[i-1] ? store.lanes[i-1].d : '';
-            row.lanes.push({ w: wt ? `${wt}g` : '--', d: calc || dens || '--' });
+        for(let i=1; i<=config.lanes; i++) {
+             const wt = store.lanes[i-1].w;
+             const calc = document.getElementById(`calcVal-${i}`).value;
+             const dens = store.lanes[i-1].d;
+             row.lanes.push({ w: wt ? `${wt}g` : '--', d: calc || dens || '--' });
         }
-        if (!Array.isArray(history)) history = [];
         history.unshift(row);
-        if (history.length > 50) history.pop();
+        if(history.length > 50) history.pop();
         if (!window.isOfflineMode && dbRef_History) window.set(dbRef_History, history);
-        window.renderHistoryCards();
-    };
+    }
 
-    window.clearHistory = function() {
-        if (confirm("Clear shift history?")) {
-            history = [];
-            if (!window.isOfflineMode && dbRef_History) window.set(dbRef_History, history);
-            window.renderHistoryCards();
-        }
-    };
-
-    // =====================================================================
-    // LANE ACTIONS
-    // =====================================================================
     window.applyResult = function(idx) {
         const val = document.getElementById(`calcVal-${idx}`).value;
+        const currD = parseFloat(store.lanes[idx-1].d);
+        const currW = parseFloat(store.lanes[idx-1].w);
         const lane = store.lanes[idx-1];
-        const currD = parseFloat(lane.d);
-        const currW = parseFloat(lane.w);
 
-        if (val && !isNaN(currD)) {
+        if(val && !isNaN(currD)) {
             window.saveToHistory();
             lane.lastD = currD; lane.lastW = currW;
             const target = parseFloat(store.target);
             if (Math.abs(currW - target) > 2) {
                 lane.attempts++;
-                if (config.smart === 'auto' && lane.attempts >= 2) lane.smartActive = true;
+                if(config.smart === 'auto' && lane.attempts >= 2) lane.smartActive = true; 
             } else { lane.attempts = 0; }
 
-            lane.d = val; lane.w = ''; lane.locked = true;
+            lane.d = val; lane.w = ''; lane.locked = true; 
             lastAutoSaveCombo = "";
-
-            const card = document.getElementById(`card-${idx}`);
-            card.classList.add('apply-flash');
-            setTimeout(() => card.classList.remove('apply-flash'), 300);
-            if (navigator.vibrate) navigator.vibrate([60]);
-
-            window.calculateLocal();
-            window.pushLaneToCloud(idx);
+            window.calculateLocal(); 
+            window.pushLaneToCloud(idx); 
         }
-    };
+    }
 
-    window.unlockAndFocus = function(i) {
-        const el = document.getElementById(`currDens-${i}`);
-        el.readOnly = false; el.focus(); el.style.borderColor = 'var(--info)';
-        store.lanes[i-1].locked = false;
-        window.pushLaneToCloud(i);
-        if (config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓'; }
-    };
-
-    window.toggleLock = function(i) {
-        store.lanes[i-1].locked = !store.lanes[i-1].locked;
-        const el = document.getElementById(`currDens-${i}`);
-        if (!store.lanes[i-1].locked) { el.readOnly = false; setTimeout(() => { el.focus(); el.style.borderColor = 'var(--info)'; }, 50); }
-        else { el.readOnly = true; el.style.borderColor = 'var(--border)'; }
-        window.pushLaneToCloud(i);
-    };
-
-    window.handleInput = function(i) { store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; window.calculateLocal(); };
-    window.handleWeightInput = function(i) { store.lanes[i-1].w = document.getElementById(`avgWt-${i}`).value; window.calculateLocal(); window.pushLaneToCloud(i); };
-    window.lockOnBlur = function(i) { setTimeout(() => { if (document.activeElement === document.getElementById(`currDens-${i}`)) return; store.lanes[i-1].locked = true; store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; window.pushLaneToCloud(i); }, 150); };
-    window.recheckLane = function(idx) { store.lanes[idx-1].w = ''; document.getElementById(`avgWt-${idx}`).value = ''; lastAutoSaveCombo = ""; document.getElementById(`avgWt-${idx}`).focus(); window.calculateLocal(); window.pushLaneToCloud(idx); };
-
-    // =====================================================================
-    // TARGET WITH CONFIRMATION
-    // =====================================================================
-    window.onTargetInput = function() {
-        const newVal = document.getElementById('setTarget').value;
-        if (store.target && store.target !== newVal && store.lanes && store.lanes.some(l => l.w)) {
-            pendingTargetValue = newVal;
-            document.getElementById('targetConfirm').classList.add('show');
-        } else {
-            window.applyTargetNow(newVal);
-        }
-    };
-
-    window.confirmTargetChange = function() {
-        if (pendingTargetValue !== null) {
-            window.applyTargetNow(pendingTargetValue);
-            pendingTargetValue = null;
-        }
-        document.getElementById('targetConfirm').classList.remove('show');
-    };
-
-    window.cancelTargetChange = function() {
-        document.getElementById('setTarget').value = store.target || '';
-        pendingTargetValue = null;
-        document.getElementById('targetConfirm').classList.remove('show');
-    };
-
-    window.applyTargetNow = function(val) {
-        store.target = val;
-        document.getElementById('displayTarget').innerText = `Target: ${val}g`;
-        document.getElementById('targetDisplay').innerText = `${val}g`;
-        window.calculateLocal();
-        window.pushTargetToCloud();
-    };
-
-    // =====================================================================
-    // SETTINGS
-    // =====================================================================
-    window.toggleSettings = function() {
-        const m = document.getElementById('settingsMenu');
-        m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
+    window.unlockAndFocus = function(i) { const el = document.getElementById(`currDens-${i}`); el.readOnly = false; el.focus(); el.style.borderColor = 'var(--info)'; store.lanes[i-1].locked = false; window.pushLaneToCloud(i); if(config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓'; } }
+    window.toggleLock = function(i) { store.lanes[i-1].locked = !store.lanes[i-1].locked; const el = document.getElementById(`currDens-${i}`); if(!store.lanes[i-1].locked) { el.readOnly = false; setTimeout(() => { el.focus(); el.style.borderColor = 'var(--info)'; }, 50); } else { el.readOnly = true; el.style.borderColor = 'var(--border)'; } window.pushLaneToCloud(i); }
+    window.handleInput = function(i) { store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; window.calculateLocal(); }
+    window.handleWeightInput = function(i) { store.lanes[i-1].w = document.getElementById(`avgWt-${i}`).value; window.calculateLocal(); window.pushLaneToCloud(i); }
+    window.lockOnBlur = function(i) { setTimeout(() => { if(document.activeElement === document.getElementById(`currDens-${i}`)) return; store.lanes[i-1].locked = true; store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; window.pushLaneToCloud(i); }, 150); }
+    window.recheckLane = function(idx) { store.lanes[idx-1].w = ''; document.getElementById(`avgWt-${idx}`).value = ''; lastAutoSaveCombo = ""; document.getElementById(`avgWt-${idx}`).focus(); window.calculateLocal(); window.pushLaneToCloud(idx); }
+    window.updateTargetFromSettings = function() { store.target = document.getElementById('setTarget').value; window.calculateLocal(); window.pushTargetToCloud(); }
+    window.switchMachine = function(m) { config.currentMachine = m; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); }
+    window.switchProfile = function() { config.lanes = parseInt(document.getElementById('setLanes').value); config.product = document.getElementById('setProd').value; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); }
+    
+    window.toggleSettings = function() { 
+        const m = document.getElementById('settingsMenu'); 
+        m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; 
         if (m.style.display === 'flex') {
-            if (document.getElementById('setDispName')) document.getElementById('setDispName').value = config.displayName || '';
-            if (document.getElementById('setSmart')) document.getElementById('setSmart').value = config.smart || 'auto';
-            if (document.getElementById('setTheme')) document.getElementById('setTheme').value = config.theme || 'light';
-            if (document.getElementById('setTarget') && store.target) document.getElementById('setTarget').value = store.target;
-            document.getElementById('targetConfirm').classList.remove('show');
-        }
-    };
-
-    window.saveLocalSettings = function() {
-        if (document.getElementById('setMachines')) config.machines = parseInt(document.getElementById('setMachines').value);
-        if (document.getElementById('setLanes')) config.lanes = parseInt(document.getElementById('setLanes').value);
-        if (document.getElementById('setProd')) config.product = document.getElementById('setProd').value;
-        if (document.getElementById('setSmart')) config.smart = document.getElementById('setSmart').value;
-        if (document.getElementById('setInputMode')) config.inputMode = document.getElementById('setInputMode').value;
-        if (document.getElementById('setTheme')) config.theme = document.getElementById('setTheme').value;
-        localStorage.setItem('dsi_config_v11', JSON.stringify(config));
-    };
-
+            if(document.getElementById('setDispName')) document.getElementById('setDispName').value = config.displayName || '';
+            if(document.getElementById('setSmart')) document.getElementById('setSmart').value = config.smart || 'auto';
+            if(document.getElementById('setTheme')) document.getElementById('setTheme').value = config.theme || 'light';
+        } 
+    }
+    
+    window.saveLocalSettings = function() { 
+        if(document.getElementById('setMachines')) config.machines = parseInt(document.getElementById('setMachines').value); 
+        if(document.getElementById('setLanes')) config.lanes = parseInt(document.getElementById('setLanes').value); 
+        if(document.getElementById('setProd')) config.product = document.getElementById('setProd').value; 
+        if(document.getElementById('setSmart')) config.smart = document.getElementById('setSmart').value; 
+        if(document.getElementById('setInputMode')) config.inputMode = document.getElementById('setInputMode').value; 
+        if(document.getElementById('setTheme')) config.theme = document.getElementById('setTheme').value; 
+        localStorage.setItem('dsi_config_v11', JSON.stringify(config)); 
+    }
+    
     window.toggleTheme = function() { config.theme = document.getElementById('setTheme').value; window.applyTheme(); window.saveLocalSettings(); };
-    window.saveDisplayName = function() { const name = document.getElementById('setDispName').value; config.displayName = name; window.saveLocalSettings(); if (window.myUid && !window.isOfflineMode && window.update && window.db) window.update(window.ref(window.db, `users/${window.myUid}`), { displayName: name }).catch(e=>{}); };
-    window.applyTheme = function() { if (config.theme === 'dark') document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); };
-    window.completeSetup = function() { config.machines = parseInt(document.getElementById('setupMachines').value); config.lanes = parseInt(document.getElementById('setupLanes').value); config.product = document.getElementById('setupProd').value; localStorage.setItem('dsi_setup_done', 'true'); window.saveLocalSettings(); document.getElementById('setupWizard').style.display = 'none'; window.routeUserByRole(); };
-    window.factoryReset = function() { if (confirm("Erase LOCAL settings? Cloud data remains.")) { localStorage.clear(); location.reload(); } };
-    window.switchMachine = function(m) { config.currentMachine = m; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); };
-    window.switchProfile = function() { config.lanes = parseInt(document.getElementById('setLanes').value); config.product = document.getElementById('setProd').value; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); };
+    window.saveDisplayName = function() { const name = document.getElementById('setDispName').value; config.displayName = name; window.saveLocalSettings(); if (window.myUid && !window.isOfflineMode && window.update && window.db) { window.update(window.ref(window.db, `users/${window.myUid}`), { displayName: name }).catch(e=>console.log(e)); } };
+    window.applyTheme = function() { if(config.theme === 'dark') document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); }
+    window.completeSetup = function() { config.machines = parseInt(document.getElementById('setupMachines').value); config.lanes = parseInt(document.getElementById('setupLanes').value); config.product = document.getElementById('setupProd').value; localStorage.setItem('dsi_setup_done', 'true'); window.saveLocalSettings(); document.getElementById('setupWizard').style.display = 'none'; window.routeUserByRole(); }
+    window.factoryReset = function() { if(confirm("Erase LOCAL settings? Cloud data remains.")) { localStorage.clear(); location.reload(); } }
 
-    // =====================================================================
-    // ADMIN
-    // =====================================================================
+    window.renderHistoryTable = function() {
+        let hHtml = `<th>Time</th><th>AVG</th>`;
+        for(let i=1; i<=config.lanes; i++) hHtml += `<th>L${i}</th>`;
+        document.getElementById('histHeader').innerHTML = hHtml;
+        document.getElementById('histBody').innerHTML = history.map(r => {
+            let cells = `<td>${r.time}</td><td>${r.avg}</td>`;
+            r.lanes.forEach(l => { cells += `<td><span class="cell-wt">${l.w}</span><span class="cell-dens">${l.d}</span></td>`; });
+            return `<tr>${cells}</tr>`;
+        }).join('');
+    }
+    window.clearHistory = function() { if(confirm("Clear history?")) { history = []; if (!window.isOfflineMode && dbRef_History) window.set(dbRef_History, history); window.renderHistoryTable(); } }
+
     let usersDbRef;
     window.openAdmin = function() {
         document.getElementById('adminModal').style.display = 'flex';
@@ -1076,70 +890,66 @@
             usersDbRef = window.ref(window.db, 'users');
             window.onValue(usersDbRef, (snap) => {
                 const users = snap.val() || {};
-                let pendingHtml = '', allHtml = '';
-                const pending = [], approved = [];
-
+                let html = '';
                 for (const [key, data] of Object.entries(users)) {
-                    if (data.requestPending === true && data.approved !== true) pending.push([key, data]);
-                    else approved.push([key, data]);
+                    const isAppr = data.approved ? 'checked' : '';
+                    const adminName = data.adminName || '';
+                    const dispName = data.displayName || 'No Name Set';
+                    const role = data.role || 'operator';
+                    html += `
+                    <div style="border:1px solid var(--border); padding:10px; margin-bottom:10px; border-radius:8px; background: rgba(128,128,128,0.05);">
+                        <div style="font-size:0.65rem; color:gray; margin-bottom: 5px; word-break: break-all;">ID: ${key}</div>
+                        <div style="font-size:0.8rem; margin-bottom: 5px;">Device Name: <strong>${dispName}</strong></div>
+                        <input type="text" placeholder="Admin Name (e.g., John Doe)" value="${adminName}" onblur="window.updateAdminName('${key}', this.value)" style="margin-bottom:8px; padding: 8px; font-size: 0.9rem; width: 100%; box-sizing: border-box;">
+                        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <select onchange="window.updateUserRole('${key}', this.value)" style="padding: 5px; font-size: 0.8rem; width: 48%; border-radius: 4px; border: 1px solid var(--border);">
+                                <option value="operator" ${role === 'operator' ? 'selected' : ''}>Operator</option>
+                                <option value="supervisor" ${role === 'supervisor' ? 'selected' : ''}>Supervisor</option>
+                            </select>
+                            <label style="display:flex; align-items:center; gap:5px; font-weight: bold; font-size: 0.9rem;">
+                                <input type="checkbox" ${isAppr} onchange="window.toggleUserApprove('${key}', this.checked)" style="width:18px; height:18px;"> 
+                                Approved
+                            </label>
+                        </div>
+                        <div style="font-size:0.65rem; color:gray;">Last Seen: ${data.lastLogin || 'Unknown'}</div>
+                    </div>`;
                 }
-
-                const pendingSection = document.getElementById('adminPendingSection');
-                const pendingList = document.getElementById('adminPendingList');
-                if (pending.length > 0) {
-                    pendingSection.style.display = 'block';
-                    pendingList.innerHTML = pending.map(([key, data]) => window.buildAdminUserCard(key, data, true)).join('');
-                } else { pendingSection.style.display = 'none'; }
-
-                document.getElementById('adminUserList').innerHTML = approved.map(([key, data]) => window.buildAdminUserCard(key, data, false)).join('');
+                document.getElementById('adminUserList').innerHTML = html;
             });
         }
-    };
-
-    window.buildAdminUserCard = function(key, data, highlight) {
-        const isAppr = data.approved ? 'checked' : '';
-        const adminName = data.adminName || '';
-        const dispName = data.displayName || 'No Name Set';
-        const role = data.role || 'operator';
-        return `
-        <div class="admin-user-card" style="${highlight ? 'border-color:var(--warning);' : ''}">
-            <div class="admin-user-id">ID: ${key}</div>
-            <div class="admin-user-name">Device: <strong>${dispName}</strong></div>
-            <input type="text" placeholder="Admin Name" value="${adminName}" onblur="window.updateAdminName('${key}', this.value)" style="margin-bottom:8px; padding:8px; font-size:0.85rem; width:100%; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text);">
-            <div class="admin-user-row">
-                <select onchange="window.updateUserRole('${key}', this.value)" style="padding:6px; font-size:0.8rem; width:48%; border-radius:6px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);">
-                    <option value="operator" ${role === 'operator' ? 'selected' : ''}>Operator</option>
-                    <option value="supervisor" ${role === 'supervisor' ? 'selected' : ''}>Supervisor</option>
-                </select>
-                <label style="display:flex; align-items:center; gap:5px; font-weight:bold; font-size:0.9rem; cursor:pointer;">
-                    <input type="checkbox" ${isAppr} onchange="window.toggleUserApprove('${key}', this.checked)" style="width:18px; height:18px;">
-                    Approved
-                </label>
-            </div>
-            <div class="admin-user-last">Last seen: ${data.lastLogin || 'Unknown'}</div>
-        </div>`;
-    };
-
-    window.closeAdmin = function() { document.getElementById('adminModal').style.display = 'none'; };
-    window.updateAdminName = function(uid, name) { window.update(window.ref(window.db, `users/${uid}`), { adminName: name }); };
-    window.updateUserRole = function(uid, role) { window.update(window.ref(window.db, `users/${uid}`), { role }); };
-    window.toggleUserApprove = function(uid, isAppr) {
-        window.update(window.ref(window.db, `users/${uid}`), { approved: isAppr, requestPending: false });
-        if (isAppr) notifiedSet.delete(uid);
-    };
+    }
+    window.closeAdmin = function() { document.getElementById('adminModal').style.display = 'none'; }
+    window.updateAdminName = function(uid, newName) { window.update(window.ref(window.db, `users/${uid}`), { adminName: newName }); }
+    window.updateUserRole = function(uid, newRole) { window.update(window.ref(window.db, `users/${uid}`), { role: newRole }); }
+    
+    window.toggleUserApprove = function(uid, isAppr) { 
+        window.update(window.ref(window.db, `users/${uid}`), { 
+            approved: isAppr,
+            requestPending: false 
+        }); 
+        if(isAppr) notifiedSet.delete(uid); 
+    }
 
     window.pingAdmin = function() {
         const nameInput = document.getElementById('reqName').value.trim();
-        if (!nameInput) { alert("Please enter your name."); return; }
-        window.update(window.ref(window.db, `users/${window.myUid}`), { displayName: nameInput, requestPending: true, requestTime: Date.now() })
-            .then(() => {
-                document.getElementById('requestForm').innerHTML = `<div style="color:var(--success); font-weight:bold; font-size:1.1rem; padding:10px;">✅ Flare Sent!<br><span style="font-size:0.8rem; color:var(--text); font-weight:normal;">Admin has been notified.</span></div>`;
-            });
-    };
+        if(!nameInput) { alert("Please enter your name."); return; }
+        
+        window.update(window.ref(window.db, `users/${window.myUid}`), {
+            displayName: nameInput,
+            requestPending: true,
+            requestTime: Date.now()
+        }).then(() => {
+            document.getElementById('requestForm').innerHTML = `
+                <div style="color: var(--success); font-weight: bold; font-size: 1.1rem; padding: 10px;">
+                    ✅ Flare Sent!<br><span style="font-size: 0.8rem; color: var(--text); font-weight: normal;">Admin has been notified.</span>
+                </div>`;
+        });
+    }
 
     let notifiedSet = new Set();
     window.startAdminRadar = function() {
-        window.onValue(window.ref(window.db, 'users'), (snap) => {
+        const usersRef = window.ref(window.db, 'users');
+        window.onValue(usersRef, (snap) => {
             const users = snap.val() || {};
             for (let uid in users) {
                 const u = users[uid];
@@ -1149,15 +959,15 @@
                 }
             }
         });
-    };
+    }
 
     window.showAdminToast = function(msg) {
         const toast = document.getElementById('adminToast');
         document.getElementById('toastMsg').innerText = msg;
         toast.classList.add('show');
-        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-        setTimeout(() => toast.classList.remove('show'), 6000);
-    };
+        if(navigator.vibrate) navigator.vibrate([200, 100, 200]); 
+        setTimeout(() => { toast.classList.remove('show'); }, 6000); 
+    }
 </script>
 </body>
 </html>
