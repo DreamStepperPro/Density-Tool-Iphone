@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <title>The Night Shift Advantage v12</title>
+    <title>The Night Shift Advantage v12.1</title>
     <style>
         /* --- THEMES --- */
         :root {
@@ -18,7 +18,6 @@
             --success: var(--green); --warning: var(--yellow); --danger: var(--red); --info: var(--blue); --accent: var(--purple);
             --shadow: 0 2px 8px rgba(0,0,0,0.07);
             --shadow-lg: 0 4px 20px rgba(0,0,0,0.12);
-            /* Stats bar and active machine button — separate from --dark-grey */
             --statsbar-bg: #2a2a2a;
             --m-active-bg: #2a2a2a;
         }
@@ -26,7 +25,6 @@
             --bg: #0f0f13; --card-bg: #1a1a22; --text: #e8e8f0; --border: #2e2e3e;
             --input-bg: #24242e; --nav-bg: #1a1a22;
             --dark-grey: #e8e8f0;
-            /* In dark mode these stay dark — NOT overridden by --dark-grey */
             --statsbar-bg: #111118;
             --m-active-bg: #3a3a52;
             --shadow: 0 2px 8px rgba(0,0,0,0.3);
@@ -54,7 +52,6 @@
 
         .machine-nav { display: flex; gap: 8px; margin-bottom: 12px; }
         .m-btn { flex: 1; padding: 11px; font-weight: bold; border: 2px solid var(--border); border-radius: 10px; background: var(--card-bg); color: var(--text); transition: 0.2s; font-size: 0.95rem; cursor: pointer; }
-        /* Uses --m-active-bg so dark mode doesn't go white-on-white */
         .m-active { background: var(--m-active-bg); color: white; border-color: var(--m-active-bg); }
         .nav-hidden { display: none !important; }
 
@@ -81,7 +78,6 @@
         .btn-recheck { color: var(--warning); border-color: var(--warning); }
         .btn-hidden { display: none !important; }
 
-        /* RESULT BOX — pulses when a new density is ready */
         .result-box { grid-column: span 2; padding: 13px; text-align: center; border-radius: 10px; background: rgba(128,128,128,0.07); border: 2px dashed var(--border); font-weight: bold; cursor: pointer; transition: background 0.25s, border-color 0.25s, transform 0.15s; }
         .result-box:active { transform: scale(0.98); }
         .result-box span { display: block; }
@@ -89,14 +85,12 @@
         .result-box.has-value { animation: gentle-pulse 1.8s ease-in-out infinite; }
         @keyframes gentle-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(0,198,240,0.0)} 50%{box-shadow:0 0 0 6px rgba(0,198,240,0.25)} }
 
-        /* STATS BAR — uses --statsbar-bg so it stays dark in both modes */
         .stats-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--statsbar-bg); color: white; padding: 10px 16px; display: flex; justify-content: space-around; align-items: center; z-index: 10; border-top-left-radius: 16px; border-top-right-radius: 16px; box-shadow: 0 -3px 15px rgba(0,0,0,0.25); }
         .stat-box { text-align: center; }
         .stat-val { font-size: 1.2rem; font-weight: bold; display: block; }
         .stat-lbl { font-size: 0.58rem; text-transform: uppercase; opacity: 0.75; letter-spacing: 0.5px; }
         .stat-divider { width: 1px; height: 32px; background: rgba(255,255,255,0.2); }
 
-        /* Delta arrow in stats bar */
         .stat-delta { font-size: 0.7rem; font-weight: bold; display: inline-block; margin-left: 4px; }
         .delta-up { color: #ff7070; }
         .delta-down { color: #70e070; }
@@ -111,7 +105,6 @@
         .modal-btn.secondary { background: var(--statsbar-bg); }
         .modal-btn.danger { background: var(--danger); margin-top: 20px; }
 
-        /* TARGET CHANGE CONFIRMATION */
         .target-confirm { display: none; background: rgba(255,180,0,0.12); border: 1.5px solid var(--warning); border-radius: 8px; padding: 10px 12px; margin-top: 6px; font-size: 0.85rem; }
         .target-confirm.show { display: block; }
         .target-confirm-btns { display: flex; gap: 8px; margin-top: 8px; }
@@ -119,7 +112,6 @@
         .btn-confirm-yes { background: var(--warning); color: #000; }
         .btn-confirm-no { background: var(--border); color: var(--text); }
 
-        /* HISTORY CARDS */
         .history-section { margin-top: 20px; padding-bottom: 60px; }
         .history-cards { display: flex; flex-direction: column; gap: 8px; }
         .hist-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
@@ -137,7 +129,6 @@
         .hist-lane-dens { font-size: 0.68rem; opacity: 0.7; display: block; }
         .btn-clear { width: 100%; padding: 12px; background: #666; color: white; border: none; margin-top: 10px; border-radius: 10px; font-weight: bold; cursor: pointer; }
 
-        /* Semantic status backgrounds */
         .bg-perfect { background-color: rgba(0,198,240,0.15) !important; border-color: var(--perfect) !important; }
         .bg-perfect .result-box { border-color: var(--perfect); }
         .bg-success { background-color: rgba(40,167,69,0.12) !important; border-color: var(--success) !important; }
@@ -146,7 +137,6 @@
 
         select { width: 100%; padding: 11px; border-radius: 8px; background: var(--input-bg); color: var(--text); border: 1.5px solid var(--border); font-size: 1rem; }
 
-        /* SUPERVISOR DASHBOARD */
         .sup-card { background: var(--card-bg); border: 2px solid var(--border); border-radius: 14px; padding: 15px; margin-bottom: 14px; box-shadow: var(--shadow); transition: opacity 0.3s, border-color 0.3s; }
         .sup-card.stale { opacity: 0.55; border-color: var(--danger); }
         .sup-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1.5px solid var(--border); padding-bottom: 10px; margin-bottom: 12px; }
@@ -159,7 +149,6 @@
         .sup-lane-wt { font-size: 1.05rem; display: block; }
         .sup-lane-dens { font-size: 0.65rem; opacity: 0.75; }
 
-        /* Supervisor trend chips */
         .sup-trend { display: flex; gap: 4px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
         .sup-trend-lbl { font-size: 0.62rem; opacity: 0.6; text-transform: uppercase; margin-right: 4px; }
         .trend-chip { width: 22px; height: 22px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; border: 1px solid transparent; }
@@ -170,11 +159,9 @@
         .trend-empty { background: rgba(128,128,128,0.1); color: #aaa; border-color: var(--border); }
         .sup-operator { font-size: 0.78rem; color: var(--accent); font-weight: bold; margin-bottom: 10px; }
 
-        /* ADMIN TOAST */
         #adminToast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-160px); background: var(--accent); color: white; padding: 14px 22px; border-radius: 30px; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.35); z-index: 9999; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 10px; cursor: pointer; white-space: nowrap; }
         #adminToast.show { transform: translateX(-50%) translateY(0); }
 
-        /* ADMIN MODAL */
         .admin-pending-section { background: rgba(255,193,7,0.1); border: 1.5px solid var(--warning); border-radius: 10px; padding: 12px; margin-bottom: 14px; }
         .admin-pending-title { font-size: 0.75rem; font-weight: bold; text-transform: uppercase; color: #c98f00; margin-bottom: 8px; letter-spacing: 0.5px; }
         .admin-all-title { font-size: 0.75rem; font-weight: bold; text-transform: uppercase; opacity: 0.5; margin: 12px 0 8px; letter-spacing: 0.5px; }
@@ -184,14 +171,30 @@
         .admin-user-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; gap: 8px; }
         .admin-user-last { font-size: 0.62rem; color: gray; }
 
-        /* Apply flash */
         @keyframes flash-apply { 0%{opacity:0.4; transform:scale(0.97)} 100%{opacity:1; transform:scale(1)} }
         .apply-flash { animation: flash-apply 0.25s ease-out; }
+
+        /* ========================================= */
+        /* SOS SYSTEM CSS (NEW IN v12.1)             */
+        /* ========================================= */
+        .fab-sos { position: fixed; bottom: 85px; right: 20px; width: 60px; height: 60px; background: var(--danger); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.8rem; box-shadow: 0 4px 15px rgba(255,77,77,0.5); cursor: pointer; z-index: 50; transition: transform 0.2s, background 0.2s; border: 3px solid var(--card-bg); }
+        .fab-sos:active { transform: scale(0.9); }
+        .fab-badge { position: absolute; top: -5px; right: -5px; background: white; color: var(--danger); font-size: 0.75rem; font-weight: bold; width: 22px; height: 22px; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 2px solid var(--danger); }
+        
+        .chat-box { background: var(--input-bg); border: 1.5px solid var(--border); border-radius: 10px; height: 300px; overflow-y: auto; padding: 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
+        .msg-bubble { max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 0.9rem; line-height: 1.4; position: relative; word-wrap: break-word; }
+        .msg-them { background: rgba(128,128,128,0.1); border-bottom-left-radius: 2px; align-self: flex-start; border: 1px solid var(--border); }
+        .msg-me { background: rgba(0, 198, 240, 0.15); border: 1px solid var(--perfect); border-bottom-right-radius: 2px; align-self: flex-end; }
+        .msg-err { background: rgba(255,77,77,0.15); border: 1px solid var(--danger); font-weight: bold; }
+        .msg-meta { font-size: 0.65rem; opacity: 0.6; margin-bottom: 4px; display: flex; justify-content: space-between; font-weight: bold; }
+        
+        .quick-tap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .btn-quick { background: var(--input-bg); border: 1.5px solid var(--danger); color: var(--danger); font-weight: bold; padding: 12px 10px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; transition: 0.2s; box-shadow: var(--shadow); }
+        .btn-quick:active { background: var(--danger); color: white; }
     </style>
 </head>
 <body>
 
-<!-- ACCESS PENDING OVERLAY -->
 <div class="modal-overlay" id="accessDeniedOverlay" style="display:flex; z-index:300; background:var(--bg);">
     <div class="modal" style="text-align:center;">
         <h2 style="color:var(--danger);">🔒 Access Pending</h2>
@@ -208,13 +211,11 @@
     </div>
 </div>
 
-<!-- ADMIN TOAST -->
 <div id="adminToast" onclick="window.openAdmin()">
     <span style="font-size:1.4rem;">🚨</span>
     <span id="toastMsg">New Access Request!</span>
 </div>
 
-<!-- ADMIN COMMAND CENTER -->
 <div class="modal-overlay" id="adminModal" style="display:none; z-index:250;">
     <div class="modal">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
@@ -230,7 +231,6 @@
     </div>
 </div>
 
-<!-- SETUP WIZARD -->
 <div class="modal-overlay" id="setupWizard" style="display:none;">
     <div class="modal">
         <h2>Initial Setup</h2>
@@ -250,7 +250,6 @@
     </div>
 </div>
 
-<!-- SETTINGS MENU -->
 <div class="modal-overlay" id="settingsMenu">
     <div class="modal">
         <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -302,11 +301,41 @@
             <label>Theme</label>
             <select id="setTheme" onchange="window.toggleTheme()"><option value="light">Light Mode</option><option value="dark">Dark Mode</option></select>
         </div>
+        
+        <button class="modal-btn" style="background: var(--perfect); color: black;" onclick="window.enableSystemNotifications()">🔔 ENABLE SYSTEM NOTIFICATIONS</button>
+        
         <button class="modal-btn danger" onclick="window.factoryReset()">FACTORY RESET (LOCAL)</button>
     </div>
 </div>
 
-<!-- OPERATOR VIEW -->
+<div class="fab-sos" id="btnSos" onclick="window.openSos()" style="display:none;">
+    🚨<div class="fab-badge" id="sosBadge" style="display:none;">0</div>
+</div>
+
+<div class="modal-overlay" id="sosModal" style="display:none; z-index:200;">
+    <div class="modal" style="max-height: 95vh; display: flex; flex-direction: column;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h2 style="color:var(--danger); margin:0;">📻 Line Dispatch</h2>
+            <button onclick="window.closeSos()" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
+        </div>
+        
+        <div class="chat-box" id="chatBox">
+            <div style="text-align:center; opacity:0.5; font-size:0.8rem; margin-top: auto;">Radio channel open...</div>
+        </div>
+
+        <div class="quick-tap-grid" id="quickTaps">
+            <button class="btn-quick" onclick="window.sendCommsMsg('ERR_JAM')">⚠️ CUTTER JAM</button>
+            <button class="btn-quick" onclick="window.sendCommsMsg('ERR_WT')">⚖️ WEIGHT OFF</button>
+            <button class="btn-quick" onclick="window.sendCommsMsg('ERR_MECH')" style="grid-column: span 2;">🔧 MAINTENANCE REQ</button>
+        </div>
+
+        <div style="display:flex; gap:8px;">
+            <input type="text" id="chatInput" placeholder="Type message..." style="flex:1; padding: 10px;">
+            <button class="modal-btn" style="width:auto; margin-top:0; padding:0 20px;" onclick="window.sendCustomComms()">SEND</button>
+        </div>
+    </div>
+</div>
+
 <div class="container" id="appContent" style="display:none; filter:blur(5px);">
     <div class="header">
         <div style="display:flex; align-items:center;">
@@ -332,7 +361,6 @@
     </div>
 </div>
 
-<!-- SUPERVISOR VIEW -->
 <div class="container" id="supervisorDashboard" style="display:none; padding-bottom:90px;">
     <div class="header">
         <div style="display:flex; align-items:center;">
@@ -347,7 +375,6 @@
     <div id="supCardsContainer" style="margin-top:14px;"></div>
 </div>
 
-<!-- GLOBAL STATS BAR -->
 <div class="stats-bar" id="globalStatsBar" style="display:none;">
     <div class="stat-box">
         <span class="stat-val"><span id="machAvg">--</span><span class="stat-delta" id="avgDelta"></span></span>
@@ -365,10 +392,9 @@
     </div>
 </div>
 
-<!-- FIREBASE — Gemini-compatible module block -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, set, onValue, update, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
     const firebaseConfig = {
@@ -382,14 +408,14 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const auth = getAuth(app);
-
-    window.db = db;
+    
+    window.db = getDatabase(app);
     window.ref = ref;
     window.set = set;
     window.onValue = onValue;
     window.update = update;
+    window.push = push;
+    const auth = getAuth(app);
 
     const ADMIN_UID = 'm510406lBidDf7qCzqXEHmIKxBu2';
 
@@ -402,10 +428,7 @@
     window.forceOfflineMode = function() {
         window.isOfflineMode = true;
         document.getElementById('accessDeniedOverlay').style.display = 'none';
-        if (!appInitialized) {
-            appInitialized = true;
-            window.initApp();
-        }
+        if (!appInitialized) { appInitialized = true; window.initApp(); }
     };
 
     signInAnonymously(auth).then((result) => {
@@ -420,22 +443,25 @@
         }
 
         const userRef = window.ref(window.db, `users/${currentUserUid}`);
-        window.update(userRef, { lastLogin: new Date().toLocaleString() }).catch(e => console.warn("Admin check-in ignored", e));
+        window.update(userRef, { lastLogin: new Date().toLocaleString() }).catch(e => console.warn(e));
 
         window.onValue(userRef, (snap) => {
             window.currentUserData = snap.val() || {};
             const isApproved = window.currentUserData.approved === true;
-
             if (isAdmin || isApproved) {
                 document.getElementById('accessDeniedOverlay').style.display = 'none';
                 document.getElementById('statusDot').className = "status-dot status-online";
                 document.getElementById('supStatusDot').className = "status-dot status-online";
-
-                if (!appInitialized) {
-                    appInitialized = true;
-                    window.initApp();
-                } else {
-                    window.routeUserByRole();
+                
+                // Show the SOS Siren once approved
+                document.getElementById('btnSos').style.display = 'flex';
+                
+                if (!appInitialized) { 
+                    appInitialized = true; 
+                    window.initApp(); 
+                    window.startCommsListener(); // Start listening to radio chatter
+                } else { 
+                    window.routeUserByRole(); 
                 }
             } else {
                 document.getElementById('accessDeniedOverlay').style.display = 'flex';
@@ -443,7 +469,7 @@
             }
         });
     }).catch((error) => {
-        console.error("Security connection failed:", error.message);
+        console.error("Firebase auth failed:", error.message);
         document.getElementById('userIdDisplay').innerText = "CONNECTION ERROR";
     });
 </script>
@@ -462,6 +488,154 @@
     let cloudPathKey = "";
     let prevAvg = null;
     let pendingTargetValue = null;
+
+    // =====================================================================
+    // SOS / COMMS ENGINE (NEW IN v12.1)
+    // =====================================================================
+    let isSosOpen = false;
+    let unreadSos = 0;
+    let lastNotifiedTs = Date.now(); // Prevents spamming old notifications on load
+
+    const DICTIONARY = {
+        'ERR_JAM': "🚨 JAM: Cutter physically jammed.",
+        'ERR_WT': "⚖️ WEIGHT OFF: Need calibration.",
+        'ERR_MECH': "🔧 MAINTENANCE: Mechanical failure."
+    };
+
+    window.openSos = function() {
+        document.getElementById('sosModal').style.display = 'flex';
+        document.getElementById('sosBadge').style.display = 'none';
+        isSosOpen = true;
+        unreadSos = 0;
+        const box = document.getElementById('chatBox');
+        box.scrollTop = box.scrollHeight;
+    };
+
+    window.closeSos = function() {
+        document.getElementById('sosModal').style.display = 'none';
+        isSosOpen = false;
+    };
+
+    window.sendCustomComms = function() {
+        const input = document.getElementById('chatInput');
+        const text = input.value.trim();
+        if(!text) return;
+        window.sendCommsMsg('TEXT', text);
+        input.value = '';
+    };
+
+    window.sendCommsMsg = function(code, customText = "") {
+        if (window.isOfflineMode || !window.db) return;
+        
+        const role = window.currentUserData.role || 'operator';
+        const name = config.displayName || window.currentUserData.adminName || 'Unknown';
+        const machineStr = role === 'supervisor' || isAdmin ? 'ADMIN' : `DSI ${config.currentMachine}`;
+        
+        const payload = {
+            senderUid: window.myUid,
+            senderName: name,
+            role: role,
+            machine: machineStr,
+            code: code,
+            text: code === 'TEXT' ? customText : DICTIONARY[code],
+            timestamp: Date.now()
+        };
+
+        // Push atomic message to the database
+        const msgRef = window.ref(window.db, 'messages');
+        window.push(msgRef, payload);
+    };
+
+    window.startCommsListener = function() {
+        if (window.isOfflineMode || !window.db) return;
+        const msgRef = window.ref(window.db, 'messages');
+        
+        window.onValue(msgRef, (snap) => {
+            const msgs = snap.val() || {};
+            // Sort by timestamp and keep only the last 30 to prevent UI lag
+            const sorted = Object.values(msgs).sort((a,b) => a.timestamp - b.timestamp).slice(-30);
+            window.renderChat(sorted);
+        });
+    };
+
+    window.renderChat = function(messages) {
+        const box = document.getElementById('chatBox');
+        let html = '';
+        let newMsgsCount = 0;
+
+        messages.forEach(msg => {
+            const isMe = msg.senderUid === window.myUid;
+            const isErr = msg.code !== 'TEXT';
+            const bubbleClass = isMe ? 'msg-me' : 'msg-them';
+            const errClass = isErr ? 'msg-err' : '';
+            const timeStr = new Date(msg.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+
+            html += `
+            <div class="msg-bubble ${bubbleClass} ${errClass}">
+                <div class="msg-meta">
+                    <span>${msg.senderName} (${msg.machine})</span>
+                    <span style="margin-left:10px;">${timeStr}</span>
+                </div>
+                ${msg.text}
+            </div>`;
+
+            // Native Pings & Badges Logic
+            if (msg.timestamp > lastNotifiedTs) {
+                lastNotifiedTs = msg.timestamp;
+                if (!isMe) {
+                    newMsgsCount++;
+                    // If Admin/Supervisor, try firing Native Android Notification
+                    if (isAdmin || window.currentUserData.role === 'supervisor') {
+                        window.fireNativeNotification(`DSI Line Alert: ${msg.machine}`, msg.text);
+                    } else if (!isSosOpen) {
+                        // Vibrate operator phone if they receive a message while modal is closed
+                        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                    }
+                }
+            }
+        });
+
+        box.innerHTML = html || '<div style="text-align:center; opacity:0.5; font-size:0.8rem; margin-top: auto;">Radio channel open...</div>';
+        
+        // Update Unread Badge
+        if (!isSosOpen && newMsgsCount > 0) {
+            unreadSos += newMsgsCount;
+            const badge = document.getElementById('sosBadge');
+            badge.innerText = unreadSos;
+            badge.style.display = 'flex';
+        }
+
+        // Auto-scroll to bottom
+        box.scrollTop = box.scrollHeight;
+    };
+
+    // System Push Notification Hook
+    window.enableSystemNotifications = function() {
+        if (!("Notification" in window)) {
+            alert("Your device browser does not support native notifications.");
+            return;
+        }
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                alert("✅ System alerts enabled! You will get native pings even if the app is minimized.");
+                new Notification("Test Ping", { body: "The Night Shift Advantage comms are active.", icon: "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/anonymous.png" });
+            } else {
+                alert("❌ Notifications denied. Please check your browser settings.");
+            }
+        });
+    };
+
+    window.fireNativeNotification = function(title, body) {
+        if ("Notification" in window && Notification.permission === "granted") {
+            // Fires an actual OS-level notification
+            new Notification(title, { body: body });
+            if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
+        } else {
+            // Fallback to the in-app drop-down toast if permission isn't granted
+            window.showAdminToast(`📻 ${title} - ${body}`);
+        }
+    };
+
 
     // =====================================================================
     // INIT
@@ -976,7 +1150,6 @@
             lane.d = val; lane.w = ''; lane.locked = true;
             lastAutoSaveCombo = "";
 
-            // Flash + haptic
             const card = document.getElementById(`card-${idx}`);
             card.classList.add('apply-flash');
             setTimeout(() => card.classList.remove('apply-flash'), 300);
@@ -1139,7 +1312,6 @@
             });
     };
 
-    let notifiedSet = new Set();
     window.startAdminRadar = function() {
         window.onValue(window.ref(window.db, 'users'), (snap) => {
             const users = snap.val() || {};
@@ -1147,7 +1319,7 @@
                 const u = users[uid];
                 if (u.requestPending === true && u.approved !== true && !notifiedSet.has(uid)) {
                     notifiedSet.add(uid);
-                    window.showAdminToast(`${u.displayName || 'Someone'} is requesting access!`);
+                    window.showAdminToast(`🔑 ${u.displayName || 'Someone'} is requesting access!`);
                 }
             }
         });
