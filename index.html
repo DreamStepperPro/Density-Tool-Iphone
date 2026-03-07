@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <title>The Night Shift Advantage v12.1</title>
+    <title>The Night Shift Advantage v12.4</title>
     <style>
         /* --- THEMES --- */
         :root {
@@ -43,6 +43,7 @@
         body.dark-mode .brand-title { background: linear-gradient(45deg, var(--accent), #c0c0e0); -webkit-background-clip: text; background-clip: text; }
 
         .gear-btn { font-size: 1.5rem; background: none; border: none; cursor: pointer; padding: 5px; color: var(--text); }
+        .lang-btn { background: var(--info); color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem; box-shadow: var(--shadow); }
 
         .status-dot { width: 9px; height: 9px; background: #ccc; border-radius: 50%; display: inline-block; margin-right: 6px; flex-shrink: 0; transition: background 0.3s, box-shadow 0.3s; }
         .status-online { background: var(--success); box-shadow: 0 0 6px var(--success); }
@@ -57,7 +58,6 @@
 
         .info-bar { display: flex; justify-content: space-between; background: var(--card-bg); padding: 11px 14px; border-radius: 10px; margin-bottom: 12px; border: 1px solid var(--border); font-size: 0.85rem; font-weight: bold; align-items: center; box-shadow: var(--shadow); }
 
-        /* LANE CARDS */
         .lane-card { background: var(--card-bg); border: 2px solid var(--border); padding: 13px; margin-bottom: 10px; border-radius: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; position: relative; box-shadow: var(--shadow); transition: border-color 0.3s, background-color 0.3s, box-shadow 0.3s; }
         .lane-header { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 4px; font-weight: bold; }
         .lane-header-left { display: flex; align-items: center; gap: 8px; }
@@ -95,7 +95,6 @@
         .delta-up { color: #ff7070; }
         .delta-down { color: #70e070; }
 
-        /* MODALS */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.88); z-index: 100; display: none; justify-content: center; align-items: center; padding: 16px; }
         .modal { background: var(--card-bg); padding: 20px; border-radius: 16px; width: 100%; max-width: 420px; color: var(--text); max-height: 88vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
         .modal h2 { margin-top: 0; font-size: 1.15rem; }
@@ -174,20 +173,18 @@
         @keyframes flash-apply { 0%{opacity:0.4; transform:scale(0.97)} 100%{opacity:1; transform:scale(1)} }
         .apply-flash { animation: flash-apply 0.25s ease-out; }
 
-        /* ========================================= */
-        /* SOS SYSTEM CSS (NEW IN v12.1)             */
-        /* ========================================= */
+        /* SOS / LINE DISPATCH */
         .fab-sos { position: fixed; bottom: 85px; right: 20px; width: 60px; height: 60px; background: var(--danger); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.8rem; box-shadow: 0 4px 15px rgba(255,77,77,0.5); cursor: pointer; z-index: 50; transition: transform 0.2s, background 0.2s; border: 3px solid var(--card-bg); }
         .fab-sos:active { transform: scale(0.9); }
         .fab-badge { position: absolute; top: -5px; right: -5px; background: white; color: var(--danger); font-size: 0.75rem; font-weight: bold; width: 22px; height: 22px; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 2px solid var(--danger); }
-        
+
         .chat-box { background: var(--input-bg); border: 1.5px solid var(--border); border-radius: 10px; height: 300px; overflow-y: auto; padding: 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
         .msg-bubble { max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 0.9rem; line-height: 1.4; position: relative; word-wrap: break-word; }
         .msg-them { background: rgba(128,128,128,0.1); border-bottom-left-radius: 2px; align-self: flex-start; border: 1px solid var(--border); }
-        .msg-me { background: rgba(0, 198, 240, 0.15); border: 1px solid var(--perfect); border-bottom-right-radius: 2px; align-self: flex-end; }
+        .msg-me { background: rgba(0,198,240,0.15); border: 1px solid var(--perfect); border-bottom-right-radius: 2px; align-self: flex-end; }
         .msg-err { background: rgba(255,77,77,0.15); border: 1px solid var(--danger); font-weight: bold; }
         .msg-meta { font-size: 0.65rem; opacity: 0.6; margin-bottom: 4px; display: flex; justify-content: space-between; font-weight: bold; }
-        
+
         .quick-tap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
         .btn-quick { background: var(--input-bg); border: 1.5px solid var(--danger); color: var(--danger); font-weight: bold; padding: 12px 10px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; transition: 0.2s; box-shadow: var(--shadow); }
         .btn-quick:active { background: var(--danger); color: white; }
@@ -195,154 +192,157 @@
 </head>
 <body>
 
+<!-- ACCESS PENDING -->
 <div class="modal-overlay" id="accessDeniedOverlay" style="display:flex; z-index:300; background:var(--bg);">
     <div class="modal" style="text-align:center;">
-        <h2 style="color:var(--danger);">🔒 Access Pending</h2>
-        <p style="font-size:0.9rem; margin-bottom:20px;">Your device is waiting for Admin approval.</p>
+        <h2 style="color:var(--danger);" data-i18n="accessPending">🔒 Access Pending</h2>
+        <p style="font-size:0.9rem; margin-bottom:20px;" data-i18n="accessWait">Your device is waiting for Admin approval.</p>
         <div id="requestForm" style="background:rgba(128,128,128,0.05); padding:15px; border-radius:10px; border:1px solid var(--border); margin-bottom:20px;">
-            <label style="text-align:left; margin-bottom:5px;">Identify Yourself to Admin</label>
-            <input type="text" id="reqName" placeholder="Enter your name / role..." style="margin-bottom:10px; font-weight:normal;">
-            <button class="modal-btn" onclick="window.pingAdmin()" style="margin-top:0; background:var(--accent);">PING ADMIN FOR ACCESS</button>
+            <label style="text-align:left; margin-bottom:5px;" data-i18n="identify">Identify Yourself to Admin</label>
+            <input type="text" id="reqName" placeholder="Enter your name / role..." style="margin-bottom:10px; font-weight:normal;" data-i18n-ph="enterName">
+            <button class="modal-btn" onclick="window.pingAdmin()" style="margin-top:0; background:var(--accent);" data-i18n="pingAdmin">PING ADMIN FOR ACCESS</button>
         </div>
         <p style="font-size:0.8rem; opacity:0.8; margin-bottom:5px;">Your Device ID:</p>
         <code id="userIdDisplay" style="background:var(--input-bg); padding:10px; display:block; word-break:break-all; border-radius:8px; border:1px solid var(--border); font-weight:bold; margin-bottom:20px;">Loading...</code>
         <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
-        <button class="modal-btn secondary" onclick="window.forceOfflineMode()">WORK OFFLINE</button>
+        <button class="modal-btn secondary" onclick="window.forceOfflineMode()" data-i18n="workOffline">WORK OFFLINE</button>
     </div>
 </div>
 
+<!-- ADMIN TOAST -->
 <div id="adminToast" onclick="window.openAdmin()">
     <span style="font-size:1.4rem;">🚨</span>
     <span id="toastMsg">New Access Request!</span>
 </div>
 
+<!-- ADMIN COMMAND CENTER -->
 <div class="modal-overlay" id="adminModal" style="display:none; z-index:250;">
     <div class="modal">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h2 style="color:var(--accent); margin:0;">👑 Command Center</h2>
+            <h2 style="color:var(--accent); margin:0;" data-i18n="cmdCenter">👑 Command Center</h2>
             <button onclick="window.closeAdmin()" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
         </div>
         <div id="adminPendingSection" style="display:none;" class="admin-pending-section">
-            <div class="admin-pending-title">⏳ Pending Approvals</div>
+            <div class="admin-pending-title" data-i18n="pendingAppr">⏳ Pending Approvals</div>
             <div id="adminPendingList"></div>
         </div>
-        <div class="admin-all-title">All Users</div>
+        <div class="admin-all-title" data-i18n="allUsers">All Users</div>
         <div id="adminUserList" style="max-height:55vh; overflow-y:auto;"></div>
     </div>
 </div>
 
+<!-- SETUP WIZARD -->
 <div class="modal-overlay" id="setupWizard" style="display:none;">
     <div class="modal">
         <h2>Initial Setup</h2>
         <div class="modal-opt">
-            <label>Number of Machines</label>
+            <label data-i18n="machines">Number of Machines</label>
             <select id="setupMachines"><option value="1">1 Machine</option><option value="2" selected>2 Machines</option></select>
         </div>
         <div class="modal-opt">
-            <label>Lane Configuration</label>
+            <label data-i18n="config">Lane Configuration</label>
             <select id="setupLanes"><option value="2">Dual Lane (2)</option><option value="4" selected>Quad Lane (4)</option></select>
         </div>
         <div class="modal-opt">
-            <label>Default Product</label>
+            <label data-i18n="prodMode">Default Product</label>
             <select id="setupProd"><option value="lunch">Lunch (0.01)</option><option value="bfast">Breakfast (0.017)</option></select>
         </div>
         <button class="modal-btn" onclick="window.completeSetup()">START APP</button>
     </div>
 </div>
 
+<!-- SETTINGS -->
 <div class="modal-overlay" id="settingsMenu">
     <div class="modal">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h2 style="margin:0;">⚙️ Options</h2>
+            <h2 style="margin:0;" data-i18n="options">⚙️ Options</h2>
             <button onclick="window.toggleSettings()" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
         </div>
         <br>
         <div class="modal-opt">
-            <label>Your Display Name</label>
+            <label data-i18n="dispName">Your Display Name</label>
             <input type="text" id="setDispName" onblur="window.saveDisplayName()" placeholder="e.g., Big Mike" style="font-weight:normal;">
         </div>
         <div class="modal-opt">
-            <label>Target Weight (g)</label>
+            <label data-i18n="targetWt">Target Weight (g)</label>
             <input type="number" id="setTarget" inputmode="decimal" oninput="window.onTargetInput()" style="background:var(--input-bg);">
             <div class="target-confirm" id="targetConfirm">
-                ⚠️ Change target weight mid-shift?
+                <span data-i18n="changeTarget">⚠️ Change target weight mid-shift?</span>
                 <div class="target-confirm-btns">
-                    <button class="btn-confirm-yes" onclick="window.confirmTargetChange()">Yes, apply</button>
+                    <button class="btn-confirm-yes" onclick="window.confirmTargetChange()">Yes</button>
                     <button class="btn-confirm-no" onclick="window.cancelTargetChange()">Cancel</button>
                 </div>
             </div>
         </div>
         <hr style="border:0; border-top:1px solid var(--border); margin:12px 0;">
         <div class="modal-opt">
-            <label>Unlock Method</label>
+            <label data-i18n="unlockMethod">Unlock Method</label>
             <select id="setInputMode" onchange="window.saveLocalSettings()">
-                <option value="button">Lock Button (Default)</option>
-                <option value="longpress">Long Press (1s)</option>
-                <option value="doubletap">Double Tap</option>
+                <option value="button" data-i18n="lockBtn">Lock Button (Default)</option>
+                <option value="longpress" data-i18n="longPress">Long Press (1s)</option>
+                <option value="doubletap" data-i18n="doubleTap">Double Tap</option>
             </select>
         </div>
         <div class="modal-opt">
-            <label>Machines</label>
+            <label data-i18n="machines">Machines</label>
             <select id="setMachines" onchange="window.saveLocalSettings()"><option value="1">1 Machine</option><option value="2">2 Machines</option></select>
         </div>
         <div class="modal-opt">
-            <label>Configuration</label>
-            <select id="setLanes" onchange="window.switchProfile()"><option value="2">Dual Lane</option><option value="4">Quad Lane</option></select>
+            <label data-i18n="config">Configuration</label>
+            <select id="setLanes" onchange="window.switchProfile()"><option value="2" data-i18n="dualLane">Dual Lane</option><option value="4" data-i18n="quadLane">Quad Lane</option></select>
         </div>
         <div class="modal-opt">
-            <label>Product Mode</label>
-            <select id="setProd" onchange="window.switchProfile()"><option value="lunch">Lunch</option><option value="bfast">Breakfast</option></select>
+            <label data-i18n="prodMode">Product Mode</label>
+            <select id="setProd" onchange="window.switchProfile()"><option value="lunch" data-i18n="lunch">Lunch</option><option value="bfast" data-i18n="bfast">Breakfast</option></select>
         </div>
         <div class="modal-opt">
-            <label>Smart Mode (Adaptive)</label>
-            <select id="setSmart" onchange="window.saveLocalSettings()"><option value="off">Off (Fixed)</option><option value="on">On (Always)</option><option value="auto">Auto (Beta)</option></select>
+            <label data-i18n="smartMode">Smart Mode (Adaptive)</label>
+            <select id="setSmart" onchange="window.saveLocalSettings()"><option value="off">Off</option><option value="on">On</option><option value="auto">Auto</option></select>
         </div>
         <div class="modal-opt">
-            <label>Theme</label>
-            <select id="setTheme" onchange="window.toggleTheme()"><option value="light">Light Mode</option><option value="dark">Dark Mode</option></select>
+            <label data-i18n="theme">Theme</label>
+            <select id="setTheme" onchange="window.toggleTheme()"><option value="light">Light</option><option value="dark">Dark</option></select>
         </div>
-        
-        <button class="modal-btn" style="background: var(--perfect); color: black;" onclick="window.enableSystemNotifications()">🔔 ENABLE SYSTEM NOTIFICATIONS</button>
-        
-        <button class="modal-btn danger" onclick="window.factoryReset()">FACTORY RESET (LOCAL)</button>
+        <button class="modal-btn" style="background:var(--perfect); color:black;" onclick="window.enableSystemNotifications()" data-i18n="enableAlerts">🔔 ENABLE SYSTEM ALERTS</button>
+        <button class="modal-btn danger" onclick="window.factoryReset()" data-i18n="reset">FACTORY RESET (LOCAL)</button>
     </div>
 </div>
 
+<!-- SOS / LINE DISPATCH MODAL -->
+<div class="modal-overlay" id="sosModal" style="display:none; z-index:200;">
+    <div class="modal" style="max-height:95vh; display:flex; flex-direction:column;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h2 style="color:var(--danger); margin:0;" data-i18n="dispatch">📻 Line Dispatch</h2>
+            <button onclick="window.closeSos()" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
+        </div>
+        <div class="chat-box" id="chatBox">
+            <div style="text-align:center; opacity:0.5; font-size:0.8rem; margin-top:auto;" data-i18n="radioOpen">Radio channel open...</div>
+        </div>
+        <div class="quick-tap-grid" id="quickTaps">
+            <button class="btn-quick" onclick="window.sendCommsMsg('ERR_WT')" data-i18n="weightOff">⚖️ WEIGHT OFF</button>
+            <button class="btn-quick" onclick="window.sendCommsMsg('ERR_MECH')" data-i18n="maintReq">🔧 MAINTENANCE REQ</button>
+        </div>
+        <div style="display:flex; gap:8px;">
+            <input type="text" id="chatInput" placeholder="Type message..." style="flex:1; padding:10px;" data-i18n-ph="typeMsg" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();window.sendCustomComms();}">
+            <button class="modal-btn" style="width:auto; margin-top:0; padding:0 20px;" onclick="window.sendCustomComms()" data-i18n="send">SEND</button>
+        </div>
+    </div>
+</div>
+
+<!-- SOS FAB -->
 <div class="fab-sos" id="btnSos" onclick="window.openSos()" style="display:none;">
     🚨<div class="fab-badge" id="sosBadge" style="display:none;">0</div>
 </div>
 
-<div class="modal-overlay" id="sosModal" style="display:none; z-index:200;">
-    <div class="modal" style="max-height: 95vh; display: flex; flex-direction: column;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h2 style="color:var(--danger); margin:0;">📻 Line Dispatch</h2>
-            <button onclick="window.closeSos()" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
-        </div>
-        
-        <div class="chat-box" id="chatBox">
-            <div style="text-align:center; opacity:0.5; font-size:0.8rem; margin-top: auto;">Radio channel open...</div>
-        </div>
-
-        <div class="quick-tap-grid" id="quickTaps">
-            <button class="btn-quick" onclick="window.sendCommsMsg('ERR_JAM')">⚠️ CUTTER JAM</button>
-            <button class="btn-quick" onclick="window.sendCommsMsg('ERR_WT')">⚖️ WEIGHT OFF</button>
-            <button class="btn-quick" onclick="window.sendCommsMsg('ERR_MECH')" style="grid-column: span 2;">🔧 MAINTENANCE REQ</button>
-        </div>
-
-        <div style="display:flex; gap:8px;">
-            <input type="text" id="chatInput" placeholder="Type message..." style="flex:1; padding: 10px;">
-            <button class="modal-btn" style="width:auto; margin-top:0; padding:0 20px;" onclick="window.sendCustomComms()">SEND</button>
-        </div>
-    </div>
-</div>
-
+<!-- OPERATOR VIEW -->
 <div class="container" id="appContent" style="display:none; filter:blur(5px);">
     <div class="header">
         <div style="display:flex; align-items:center;">
             <div id="statusDot" class="status-dot"></div>
-            <h1 class="brand-title">The Advantage<span class="moon-icon">🌙</span></h1>
+            <h1 class="brand-title" data-i18n="title">The Advantage</h1><span class="moon-icon">🌙</span>
         </div>
         <div class="header-btns">
+            <button class="lang-btn" id="langToggleBtnOp" onclick="window.toggleLanguage()">EN</button>
             <button class="gear-btn btn-hidden" id="btnAdmin" onclick="window.openAdmin()" style="color:var(--accent);">👑</button>
             <button class="gear-btn" onclick="window.toggleSettings()">⚙️</button>
         </div>
@@ -354,13 +354,14 @@
     </div>
     <div id="lanesContainer"></div>
     <div class="history-section">
-        <label style="font-size:0.9rem; margin-bottom:10px; display:block;">Shift History</label>
+        <label style="font-size:0.9rem; margin-bottom:10px; display:block;" data-i18n="history">Shift History</label>
         <div id="historyCards" class="history-cards"></div>
-        <button class="btn-clear" onclick="window.saveToHistory()" style="background:var(--info); margin-top:6px;">SAVE CHECK</button>
-        <button class="btn-clear" onclick="window.clearHistory()" style="margin-top:6px;">CLEAR TABLE</button>
+        <button class="btn-clear" onclick="window.saveToHistory()" style="background:var(--info); margin-top:6px;" data-i18n="saveCheck">SAVE CHECK</button>
+        <button class="btn-clear" onclick="window.clearHistory()" style="margin-top:6px;" data-i18n="clearTable">CLEAR TABLE</button>
     </div>
 </div>
 
+<!-- SUPERVISOR VIEW -->
 <div class="container" id="supervisorDashboard" style="display:none; padding-bottom:90px;">
     <div class="header">
         <div style="display:flex; align-items:center;">
@@ -368,6 +369,7 @@
             <h1 style="margin:0; font-size:1.35rem; font-weight:800; letter-spacing:-0.5px;">DSI Line <span style="font-size:0.78rem; color:var(--accent); vertical-align:middle;">(OEE VIEW)</span></h1>
         </div>
         <div class="header-btns">
+            <button class="lang-btn" id="langToggleBtnSup" onclick="window.toggleLanguage()">EN</button>
             <button class="gear-btn btn-hidden" id="btnAdminSup" onclick="window.openAdmin()" style="color:var(--accent);">👑</button>
             <button class="gear-btn" onclick="window.toggleSettings()">⚙️</button>
         </div>
@@ -375,23 +377,25 @@
     <div id="supCardsContainer" style="margin-top:14px;"></div>
 </div>
 
+<!-- GLOBAL STATS BAR -->
 <div class="stats-bar" id="globalStatsBar" style="display:none;">
     <div class="stat-box">
         <span class="stat-val"><span id="machAvg">--</span><span class="stat-delta" id="avgDelta"></span></span>
-        <span class="stat-lbl">LINE AVG</span>
+        <span class="stat-lbl" data-i18n="lineAvg">LINE AVG</span>
     </div>
     <div class="stat-divider"></div>
     <div class="stat-box">
         <span class="stat-val" id="stdDev">--</span>
-        <span class="stat-lbl">LINE SD</span>
+        <span class="stat-lbl" data-i18n="lineSd">LINE SD</span>
     </div>
     <div class="stat-divider"></div>
     <div class="stat-box">
         <span class="stat-val" id="targetDisplay">--</span>
-        <span class="stat-lbl">TARGET</span>
+        <span class="stat-lbl" data-i18n="target">TARGET</span>
     </div>
 </div>
 
+<!-- FIREBASE -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, set, onValue, update, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -408,7 +412,6 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    
     window.db = getDatabase(app);
     window.ref = ref;
     window.set = set;
@@ -418,7 +421,6 @@
     const auth = getAuth(app);
 
     const ADMIN_UID = 'm510406lBidDf7qCzqXEHmIKxBu2';
-
     let currentUserUid = null;
     let isAdmin = false;
     let appInitialized = false;
@@ -451,21 +453,19 @@
             if (isAdmin || isApproved) {
                 document.getElementById('accessDeniedOverlay').style.display = 'none';
                 document.getElementById('statusDot').className = "status-dot status-online";
-                document.getElementById('supStatusDot').className = "status-dot status-online";
-                
-                // Show the SOS Siren once approved
+                if (document.getElementById('supStatusDot')) document.getElementById('supStatusDot').className = "status-dot status-online";
                 document.getElementById('btnSos').style.display = 'flex';
-                
-                if (!appInitialized) { 
-                    appInitialized = true; 
-                    window.initApp(); 
-                    window.startCommsListener(); // Start listening to radio chatter
-                } else { 
-                    window.routeUserByRole(); 
+                if (!appInitialized) {
+                    appInitialized = true;
+                    window.initApp();
+                    window.startCommsListener();
+                } else {
+                    window.routeUserByRole();
                 }
             } else {
                 document.getElementById('accessDeniedOverlay').style.display = 'flex';
                 document.getElementById('userIdDisplay').innerText = currentUserUid;
+                document.getElementById('btnSos').style.display = 'none';
             }
         });
     }).catch((error) => {
@@ -475,6 +475,74 @@
 </script>
 
 <script>
+    // =====================================================================
+    // i18n
+    // =====================================================================
+    const i18n = {
+        en: {
+            title: "The Advantage", target: "Target", lane: "LANE", density: "DENSITY", avgWt: "AVG WEIGHT",
+            newDens: "New Density:", tapApply: "TAP TO APPLY", history: "Shift History", saveCheck: "SAVE CHECK",
+            clearTable: "CLEAR TABLE", lineAvg: "LINE AVG", lineSd: "LINE SD", options: "⚙️ Options",
+            dispName: "Your Display Name", targetWt: "Target Weight (g)", unlockMethod: "Unlock Method",
+            machines: "Machines", config: "Configuration", prodMode: "Product Mode", smartMode: "Smart Mode",
+            theme: "Theme", enableAlerts: "🔔 ENABLE SYSTEM ALERTS", reset: "FACTORY RESET (LOCAL)",
+            lunch: "Lunch", bfast: "Breakfast", dispatch: "📻 Line Dispatch", weightOff: "⚖️ WEIGHT OFF",
+            maintReq: "🔧 MAINTENANCE REQ", send: "SEND", radioOpen: "Radio channel open...",
+            accessPending: "🔒 Access Pending", accessWait: "Your device is waiting for Admin approval.",
+            identify: "Identify Yourself to Admin", pingAdmin: "PING ADMIN FOR ACCESS", workOffline: "WORK OFFLINE",
+            cmdCenter: "👑 Command Center", pendingAppr: "⏳ Pending Approvals", allUsers: "All Users",
+            lockBtn: "Lock Button (Default)", longPress: "Long Press (1s)", doubleTap: "Double Tap",
+            dualLane: "Dual Lane", quadLane: "Quad Lane", changeTarget: "⚠️ Change target weight mid-shift?",
+            enterName: "Enter your name / role...", typeMsg: "Type message...",
+            errWt: "⚖️ WEIGHT OFF: Need calibration.", errMech: "🔧 MAINTENANCE: Mechanical failure."
+        },
+        es: {
+            title: "La Ventaja", target: "Objetivo", lane: "CARRIL", density: "DENSIDAD", avgWt: "PESO PROM",
+            newDens: "Nueva Densidad:", tapApply: "TOCA PARA APLICAR", history: "Historial de Turno", saveCheck: "GUARDAR",
+            clearTable: "BORRAR TABLA", lineAvg: "PROM LÍNEA", lineSd: "SD LÍNEA", options: "⚙️ Opciones",
+            dispName: "Tu Nombre", targetWt: "Peso Objetivo (g)", unlockMethod: "Método Desbloqueo",
+            machines: "Máquinas", config: "Configuración", prodMode: "Modo Producto", smartMode: "Modo Inteligente",
+            theme: "Tema", enableAlerts: "🔔 ACTIVAR ALERTAS", reset: "RESETEO DE FÁBRICA",
+            lunch: "Almuerzo", bfast: "Desayuno", dispatch: "📻 Radio de Línea", weightOff: "⚖️ PESO INCORRECTO",
+            maintReq: "🔧 REQ. MANTENIMIENTO", send: "ENVIAR", radioOpen: "Canal de radio abierto...",
+            accessPending: "🔒 Acceso Pendiente", accessWait: "Tu dispositivo espera aprobación del Admin.",
+            identify: "Identifícate al Admin", pingAdmin: "CONTACTAR ADMIN", workOffline: "TRABAJAR OFFLINE",
+            cmdCenter: "👑 Centro de Mando", pendingAppr: "⏳ Aprobaciones Pendientes", allUsers: "Todos los Usuarios",
+            lockBtn: "Botón Bloqueo", longPress: "Pulsar 1s", doubleTap: "Doble Toque",
+            dualLane: "Dos Carriles", quadLane: "Cuatro Carriles", changeTarget: "⚠️ ¿Cambiar objetivo en medio turno?",
+            enterName: "Ingresa tu nombre...", typeMsg: "Escribe un mensaje...",
+            errWt: "⚖️ PESO INCORRECTO: Requiere calibración.", errMech: "🔧 MANTENIMIENTO: Falla mecánica."
+        }
+    };
+
+    window.t = function(key) { return i18n[config.lang][key] || key; };
+
+    window.toggleLanguage = function() {
+        config.lang = config.lang === 'en' ? 'es' : 'en';
+        window.saveLocalSettings();
+        window.applyTranslations();
+    };
+
+    window.applyTranslations = function() {
+        document.getElementById('langToggleBtnOp').innerText = config.lang.toUpperCase();
+        document.getElementById('langToggleBtnSup').innerText = config.lang.toUpperCase();
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (i18n[config.lang][key]) el.innerText = i18n[config.lang][key];
+        });
+        document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+            const key = el.getAttribute('data-i18n-ph');
+            if (i18n[config.lang][key]) el.placeholder = i18n[config.lang][key];
+        });
+        // Only re-render JS-injected UI if the app is actually running
+        if (document.getElementById('lanesContainer') && document.getElementById('lanesContainer').children.length > 0) {
+            window.renderInterface();
+        }
+        if (store && store.lanes) window.updateUIFromCloud();
+        if (history && history.length > 0) window.renderHistoryCards();
+        if (window.db && !window.isOfflineMode) window.startCommsListener();
+    };
+
     let config = {
         machines: 2, lanes: 4, product: 'lunch', smart: 'auto', theme: 'light',
         currentMachine: 1, lang: 'en', inputMode: 'button', displayName: ''
@@ -490,23 +558,20 @@
     let pendingTargetValue = null;
 
     // =====================================================================
-    // SOS / COMMS ENGINE (NEW IN v12.1)
+    // SOS / COMMS ENGINE
     // =====================================================================
     let isSosOpen = false;
     let unreadSos = 0;
-    let lastNotifiedTs = Date.now(); // Prevents spamming old notifications on load
-
-    const DICTIONARY = {
-        'ERR_JAM': "🚨 JAM: Cutter physically jammed.",
-        'ERR_WT': "⚖️ WEIGHT OFF: Need calibration.",
-        'ERR_MECH': "🔧 MAINTENANCE: Mechanical failure."
-    };
+    let lastNotifiedTs = Date.now();
 
     window.openSos = function() {
+        if (window.isOfflineMode) {
+            window.showAdminToast('📵 Line Dispatch unavailable offline');
+            return;
+        }
         document.getElementById('sosModal').style.display = 'flex';
         document.getElementById('sosBadge').style.display = 'none';
-        isSosOpen = true;
-        unreadSos = 0;
+        isSosOpen = true; unreadSos = 0;
         const box = document.getElementById('chatBox');
         box.scrollTop = box.scrollHeight;
     };
@@ -519,41 +584,44 @@
     window.sendCustomComms = function() {
         const input = document.getElementById('chatInput');
         const text = input.value.trim();
-        if(!text) return;
+        if (!text) return;
         window.sendCommsMsg('TEXT', text);
         input.value = '';
     };
 
     window.sendCommsMsg = function(code, customText = "") {
         if (window.isOfflineMode || !window.db) return;
-        
         const role = window.currentUserData.role || 'operator';
         const name = config.displayName || window.currentUserData.adminName || 'Unknown';
-        const machineStr = role === 'supervisor' || isAdmin ? 'ADMIN' : `DSI ${config.currentMachine}`;
-        
-        const payload = {
-            senderUid: window.myUid,
-            senderName: name,
-            role: role,
-            machine: machineStr,
-            code: code,
-            text: code === 'TEXT' ? customText : DICTIONARY[code],
-            timestamp: Date.now()
-        };
-
-        // Push atomic message to the database
-        const msgRef = window.ref(window.db, 'messages');
-        window.push(msgRef, payload);
+        const isAdminUser = (window.currentUserData && window.currentUserData.role === 'supervisor') || role === 'supervisor' || window.myUid === 'm510406lBidDf7qCzqXEHmIKxBu2';
+        const machineStr = isAdminUser ? 'ADMIN' : `DSI ${config.currentMachine}`;
+        window.push(window.ref(window.db, 'messages'), {
+            senderUid: window.myUid, senderName: name, role, machine: machineStr,
+            code, text: customText, timestamp: Date.now()
+        }).then(() => {
+            // Prune: after every send, trim messages node to last 100 entries
+            window.onValue(window.ref(window.db, 'messages'), (snap) => {
+                const msgs = snap.val();
+                if (!msgs) return;
+                const keys = Object.keys(msgs).sort((a, b) => (msgs[a].timestamp || 0) - (msgs[b].timestamp || 0));
+                if (keys.length > 100) {
+                    const toDelete = keys.slice(0, keys.length - 100);
+                    const updates = {};
+                    toDelete.forEach(k => { updates[`messages/${k}`] = null; });
+                    window.update(window.ref(window.db, '/'), updates).catch(e => console.warn('Prune failed:', e));
+                }
+            }, { onlyOnce: true });
+        });
     };
 
+    let unsubComms = null;
     window.startCommsListener = function() {
         if (window.isOfflineMode || !window.db) return;
-        const msgRef = window.ref(window.db, 'messages');
-        
-        window.onValue(msgRef, (snap) => {
+        // Unsub existing listener before re-registering (prevents stacking on language toggle)
+        if (unsubComms) { unsubComms(); unsubComms = null; }
+        unsubComms = window.onValue(window.ref(window.db, 'messages'), (snap) => {
             const msgs = snap.val() || {};
-            // Sort by timestamp and keep only the last 30 to prevent UI lag
-            const sorted = Object.values(msgs).sort((a,b) => a.timestamp - b.timestamp).slice(-30);
+            const sorted = Object.values(msgs).sort((a, b) => a.timestamp - b.timestamp).slice(-30);
             window.renderChat(sorted);
         });
     };
@@ -562,80 +630,60 @@
         const box = document.getElementById('chatBox');
         let html = '';
         let newMsgsCount = 0;
-
         messages.forEach(msg => {
             const isMe = msg.senderUid === window.myUid;
             const isErr = msg.code !== 'TEXT';
             const bubbleClass = isMe ? 'msg-me' : 'msg-them';
             const errClass = isErr ? 'msg-err' : '';
-            const timeStr = new Date(msg.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-
+            const timeStr = new Date(msg.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+            let displayText = msg.text;
+            if (msg.code === 'ERR_WT') displayText = window.t('errWt');
+            if (msg.code === 'ERR_MECH') displayText = window.t('errMech');
             html += `
             <div class="msg-bubble ${bubbleClass} ${errClass}">
-                <div class="msg-meta">
-                    <span>${msg.senderName} (${msg.machine})</span>
-                    <span style="margin-left:10px;">${timeStr}</span>
-                </div>
-                ${msg.text}
+                <div class="msg-meta"><span>${msg.senderName} (${msg.machine})</span><span>${timeStr}</span></div>
+                ${displayText}
             </div>`;
-
-            // Native Pings & Badges Logic
             if (msg.timestamp > lastNotifiedTs) {
                 lastNotifiedTs = msg.timestamp;
                 if (!isMe) {
                     newMsgsCount++;
-                    // If Admin/Supervisor, try firing Native Android Notification
-                    if (isAdmin || window.currentUserData.role === 'supervisor') {
-                        window.fireNativeNotification(`DSI Line Alert: ${msg.machine}`, msg.text);
+                    const role = window.currentUserData ? window.currentUserData.role : '';
+                    if (role === 'supervisor' || window.myUid === 'm510406lBidDf7qCzqXEHmIKxBu2') {
+                        window.fireNativeNotification(`DSI Alert: ${msg.machine}`, displayText);
                     } else if (!isSosOpen) {
-                        // Vibrate operator phone if they receive a message while modal is closed
                         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
                     }
                 }
             }
         });
-
-        box.innerHTML = html || '<div style="text-align:center; opacity:0.5; font-size:0.8rem; margin-top: auto;">Radio channel open...</div>';
-        
-        // Update Unread Badge
+        box.innerHTML = html || `<div style="text-align:center; opacity:0.5; font-size:0.8rem; margin-top:auto;">${window.t('radioOpen')}</div>`;
         if (!isSosOpen && newMsgsCount > 0) {
             unreadSos += newMsgsCount;
             const badge = document.getElementById('sosBadge');
             badge.innerText = unreadSos;
             badge.style.display = 'flex';
         }
-
-        // Auto-scroll to bottom
         box.scrollTop = box.scrollHeight;
     };
 
-    // System Push Notification Hook
     window.enableSystemNotifications = function() {
-        if (!("Notification" in window)) {
-            alert("Your device browser does not support native notifications.");
-            return;
-        }
+        if (!("Notification" in window)) { alert("Your browser does not support native notifications."); return; }
         Notification.requestPermission().then(permission => {
             if (permission === "granted") {
-                alert("✅ System alerts enabled! You will get native pings even if the app is minimized.");
-                new Notification("Test Ping", { body: "The Night Shift Advantage comms are active.", icon: "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/anonymous.png" });
-            } else {
-                alert("❌ Notifications denied. Please check your browser settings.");
-            }
+                alert("✅ System alerts enabled!");
+                try { new Notification("System Ready", { body: "The Night Shift Advantage is connected." }); } catch(e) {}
+            } else { alert("❌ Notifications denied. Check browser permissions."); }
         });
     };
 
     window.fireNativeNotification = function(title, body) {
         if ("Notification" in window && Notification.permission === "granted") {
-            // Fires an actual OS-level notification
-            new Notification(title, { body: body });
-            if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
-        } else {
-            // Fallback to the in-app drop-down toast if permission isn't granted
-            window.showAdminToast(`📻 ${title} - ${body}`);
+            try { new Notification(title, { body }); } catch(e) {}
+            if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
         }
+        window.showAdminToast(`📻 ${title} - ${body}`);
     };
-
 
     // =====================================================================
     // INIT
@@ -646,13 +694,12 @@
         if (!config.smart) config.smart = 'auto';
         if (!config.theme) config.theme = 'light';
         if (!config.inputMode) config.inputMode = 'button';
-
+        if (!config.lang) config.lang = 'en';
         window.applyTheme();
-
+        window.applyTranslations();
         const fieldMap = { setMachines:'machines', setLanes:'lanes', setProd:'product', setSmart:'smart', setInputMode:'inputMode', setTheme:'theme' };
         for (const [id, key] of Object.entries(fieldMap)) { const el = document.getElementById(id); if (el) el.value = config[key]; }
         if (document.getElementById('setDispName')) document.getElementById('setDispName').value = config.displayName || '';
-
         const hasSetup = localStorage.getItem('dsi_setup_done');
         if (!hasSetup) document.getElementById('setupWizard').style.display = 'flex';
         else window.routeUserByRole();
@@ -678,12 +725,10 @@
     // SUPERVISOR ENGINE
     // =====================================================================
     let unsubSupHistories = null;
-
     window.startSupervisorSync = function() {
         if (!window.db) { setTimeout(window.startSupervisorSync, 500); return; }
         if (unsubSupHistories) unsubSupHistories();
-        const dbRefHistories = window.ref(window.db, 'histories');
-        unsubSupHistories = window.onValue(dbRefHistories, (snap) => {
+        unsubSupHistories = window.onValue(window.ref(window.db, 'histories'), (snap) => {
             window.renderSupervisorDashboard(snap.val() || {});
         });
     };
@@ -692,13 +737,10 @@
         const container = document.getElementById('supCardsContainer');
         container.innerHTML = '';
         let allWeightsGlobal = [];
-
         for (let m = 1; m <= config.machines; m++) {
-            const machKey = `M${m}`;
-            const machHistories = allHistories[machKey];
+            const machHistories = allHistories[`M${m}`];
             const latest = window.getAbsoluteLatest(machHistories);
             const recentChecks = window.getRecentChecks(machHistories, 3);
-
             if (latest) {
                 container.innerHTML += window.buildSupCard(`DSI ${m}`, latest, recentChecks);
                 allWeightsGlobal = allWeightsGlobal.concat(window.extractWeights(latest.entry));
@@ -706,7 +748,6 @@
                 container.innerHTML += `<div class="sup-card"><h3 style="color:gray;">DSI ${m}: No Data</h3></div>`;
             }
         }
-
         if (allWeightsGlobal.length > 0) {
             const mean = allWeightsGlobal.reduce((a, b) => a + b, 0) / allWeightsGlobal.length;
             document.getElementById('machAvg').innerText = mean.toFixed(1);
@@ -714,10 +755,7 @@
                 const v = allWeightsGlobal.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / allWeightsGlobal.length;
                 document.getElementById('stdDev').innerText = Math.sqrt(v).toFixed(2);
             } else { document.getElementById('stdDev').innerText = "--"; }
-        } else {
-            document.getElementById('machAvg').innerText = "--";
-            document.getElementById('stdDev').innerText = "--";
-        }
+        } else { document.getElementById('machAvg').innerText = "--"; document.getElementById('stdDev').innerText = "--"; }
     };
 
     window.getAbsoluteLatest = function(machineHistories) {
@@ -727,10 +765,7 @@
             let entries = Array.isArray(machineHistories[prodKey]) ? machineHistories[prodKey] : Object.values(machineHistories[prodKey]);
             if (entries && entries.length > 0) {
                 let entry = entries[0];
-                if (!latestEntry || (entry.timestamp || 0) > (latestEntry.timestamp || 0)) {
-                    latestEntry = entry;
-                    activeProduct = prodKey.includes('lunch') ? 'Lunch' : 'Breakfast';
-                }
+                if (!latestEntry || (entry.timestamp || 0) > (latestEntry.timestamp || 0)) { latestEntry = entry; activeProduct = prodKey.includes('lunch') ? 'lunch' : 'bfast'; }
             }
         }
         return latestEntry ? { entry: latestEntry, product: activeProduct } : null;
@@ -743,8 +778,7 @@
             let entries = Array.isArray(machineHistories[prodKey]) ? machineHistories[prodKey] : Object.values(machineHistories[prodKey]);
             entries.forEach(e => all.push(e));
         }
-        all.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-        return all.slice(0, n);
+        return all.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)).slice(0, n);
     };
 
     window.extractWeights = function(entry) {
@@ -757,12 +791,10 @@
         const entry = dataObj.entry;
         const target = parseFloat(entry.target || 0);
         const opName = entry.operator || 'Unknown';
-        let lanesHtml = '';
         const isStale = (Date.now() - (entry.timestamp || 0)) > 180000;
-
+        let lanesHtml = '';
         entry.lanes.forEach((l, idx) => {
-            let weightVal = parseFloat(l.w);
-            let colorClass = '';
+            let weightVal = parseFloat(l.w), colorClass = '';
             if (!isNaN(weightVal) && target > 0 && !isStale) {
                 let diff = Math.abs(weightVal - target);
                 if (diff <= 0.5) colorClass = 'bg-perfect';
@@ -770,10 +802,8 @@
                 else if (diff <= 3) colorClass = 'bg-warning';
                 else colorClass = 'bg-danger';
             }
-            lanesHtml += `<div class="sup-lane ${colorClass}"><span class="sup-lane-lbl">L${idx+1}</span><span class="sup-lane-wt">${l.w}</span><span class="sup-lane-dens">${l.d}</span></div>`;
+            lanesHtml += `<div class="sup-lane ${colorClass}"><span class="sup-lane-lbl">${window.t('lane')} ${idx+1}</span><span class="sup-lane-wt">${l.w}</span><span class="sup-lane-dens">${l.d}</span></div>`;
         });
-
-        // Trend chips — last 3 checks
         let trendHtml = `<div class="sup-trend"><span class="sup-trend-lbl">Trend:</span>`;
         for (let i = 0; i < 3; i++) {
             const check = recentChecks[i];
@@ -790,12 +820,11 @@
             trendHtml += `<span class="trend-chip ${cls}" title="Avg: ${mean.toFixed(1)}g">${symbol}</span>`;
         }
         trendHtml += `<span style="font-size:0.62rem; opacity:0.5; margin-left:4px;">(newest → oldest)</span></div>`;
-
         return `
         <div class="sup-card ${isStale ? 'stale' : ''}">
             <div class="sup-header">
-                <h2 class="sup-title">${title} <span style="font-size:0.8rem; color:gray; font-weight:normal;">• ${dataObj.product}</span></h2>
-                <div class="sup-meta">Target: ${target}g<strong>${entry.time}${isStale ? ' ⚠️' : ''}</strong></div>
+                <h2 class="sup-title">${title} <span style="font-size:0.8rem; color:gray; font-weight:normal;">• ${window.t(dataObj.product)}</span></h2>
+                <div class="sup-meta">${window.t('target')}: ${target}g<strong>${entry.time}${isStale ? ' ⚠️' : ''}</strong></div>
             </div>
             <div class="sup-operator">👤 ${opName}</div>
             <div class="sup-grid">${lanesHtml}</div>
@@ -815,10 +844,8 @@
         const dot = document.getElementById('statusDot');
         if (unsubStore) unsubStore();
         if (unsubHistory) unsubHistory();
-
         dbRef_Store = window.ref(window.db, `stores/${cloudPathKey}`);
         dbRef_History = window.ref(window.db, `histories/${cloudPathKey}`);
-
         unsubStore = window.onValue(dbRef_Store, (snapshot) => {
             dot.className = "status-dot status-online";
             const val = snapshot.val();
@@ -831,7 +858,6 @@
                 }
             }
         });
-
         unsubHistory = window.onValue(dbRef_History, (snapshot) => {
             const val = snapshot.val();
             history = val ? (Array.isArray(val) ? val : Object.values(val)) : [];
@@ -848,9 +874,7 @@
         updates[`lastUpdated`] = now;
         window.update(dbRef_Store, updates).then(() => {
             document.getElementById('statusDot').className = "status-dot status-online";
-        }).catch(() => {
-            document.getElementById('statusDot').className = "status-dot status-offline";
-        });
+        }).catch(() => { document.getElementById('statusDot').className = "status-dot status-offline"; });
     };
 
     window.pushTargetToCloud = function() {
@@ -863,12 +887,9 @@
     // =====================================================================
     window.renderInterface = function() {
         const nav = document.getElementById('machineNav');
-        if (config.machines === 1) {
-            nav.className = 'machine-nav nav-hidden';
-            config.currentMachine = 1;
-        } else {
-            nav.className = 'machine-nav';
-            nav.innerHTML = '';
+        if (config.machines === 1) { nav.className = 'machine-nav nav-hidden'; config.currentMachine = 1; }
+        else {
+            nav.className = 'machine-nav'; nav.innerHTML = '';
             for (let i = 1; i <= config.machines; i++) {
                 const btn = document.createElement('button');
                 btn.className = `m-btn ${config.currentMachine === i ? 'm-active' : ''}`;
@@ -877,33 +898,24 @@
                 nav.appendChild(btn);
             }
         }
-
-        const prodName = config.product === 'lunch' ? 'Lunch' : 'Breakfast';
-        document.getElementById('displayConfig').innerText = `${config.lanes} Lane • ${prodName}`;
-
+        const prodName = config.product === 'lunch' ? window.t('lunch') : window.t('bfast');
+        document.getElementById('displayConfig').innerText = `${config.lanes} ${window.t('lane')} • ${prodName}`;
         const fieldMap = { setMachines:'machines', setLanes:'lanes', setProd:'product', setSmart:'smart', setInputMode:'inputMode', setTheme:'theme' };
         for (const [id, key] of Object.entries(fieldMap)) { const el = document.getElementById(id); if (el) el.value = config[key]; }
         if (document.getElementById('setDispName')) document.getElementById('setDispName').value = config.displayName || '';
-
         const container = document.getElementById('lanesContainer');
         container.innerHTML = '';
-
         for (let i = 1; i <= config.lanes; i++) {
-            let labelText = "DENSITY";
+            let labelText = window.t('density');
             if (config.inputMode === 'longpress') labelText += " (HOLD)";
             if (config.inputMode === 'doubletap') labelText += " (×2)";
-
             const btnHtml = config.inputMode === 'button'
                 ? `<button class="btn-icon" id="lockDens-${i}" onmousedown="event.preventDefault()" onclick="window.toggleLock(${i})">🔒</button>`
                 : `<button class="btn-icon btn-hidden" id="lockDens-${i}">🔒</button>`;
-
             container.innerHTML += `
                 <div class="lane-card" id="card-${i}">
                     <div class="lane-header">
-                        <div class="lane-header-left">
-                            <span>LANE ${i}</span>
-                            <span class="smart-tag" id="tag-${i}">SMART</span>
-                        </div>
+                        <div class="lane-header-left"><span>${window.t('lane')} ${i}</span><span class="smart-tag" id="tag-${i}">SMART</span></div>
                         <span class="lane-trend" id="trend-${i}"></span>
                     </div>
                     <div>
@@ -914,20 +926,19 @@
                         </div>
                     </div>
                     <div>
-                        <label>AVG WEIGHT</label>
+                        <label>${window.t('avgWt')}</label>
                         <div class="input-group">
                             <input type="number" id="avgWt-${i}" inputmode="decimal" oninput="window.handleWeightInput(${i})" onblur="window.checkAutoSave()">
                             <button class="btn-icon btn-recheck" onclick="window.recheckLane(${i})">↻</button>
                         </div>
                     </div>
                     <div class="result-box" id="resBox-${i}" onclick="window.applyResult(${i})">
-                        <span id="resText-${i}">New Density: --</span>
-                        <span class="tap-hint">TAP TO APPLY</span>
+                        <span id="resText-${i}">${window.t('newDens')} --</span>
+                        <span class="tap-hint">${window.t('tapApply')}</span>
                     </div>
                     <input type="hidden" id="calcVal-${i}">
                 </div>`;
         }
-
         for (let i = 1; i <= config.lanes; i++) {
             const el = document.getElementById(`currDens-${i}`);
             if (config.inputMode === 'longpress') {
@@ -935,9 +946,7 @@
                 el.addEventListener('touchend', () => clearTimeout(pressTimer));
                 el.addEventListener('mousedown', () => { pressTimer = setTimeout(() => window.unlockAndFocus(i), 800); });
                 el.addEventListener('mouseup', () => clearTimeout(pressTimer));
-            } else if (config.inputMode === 'doubletap') {
-                el.ondblclick = () => window.unlockAndFocus(i);
-            }
+            } else if (config.inputMode === 'doubletap') { el.ondblclick = () => window.unlockAndFocus(i); }
         }
     };
 
@@ -946,7 +955,7 @@
         const tEl = document.getElementById('setTarget');
         if (document.activeElement !== tEl) {
             tEl.value = store.target;
-            document.getElementById('displayTarget').innerText = `Target: ${store.target}g`;
+            document.getElementById('displayTarget').innerText = `${window.t('target')}: ${store.target}g`;
             document.getElementById('targetDisplay').innerText = `${store.target}g`;
         }
         for (let i = 1; i <= config.lanes; i++) {
@@ -977,18 +986,15 @@
         const target = parseFloat(store.target);
         const baseK = FACTORS[config.product];
         let weights = [], count = 0;
-
         for (let i = 1; i <= config.lanes; i++) {
             if (!store.lanes[i-1]) continue;
             const lane = store.lanes[i-1];
-            const currD = parseFloat(lane.d);
-            const currW = parseFloat(lane.w);
+            const currD = parseFloat(lane.d), currW = parseFloat(lane.w);
             const resText = document.getElementById(`resText-${i}`);
             const hiddenVal = document.getElementById(`calcVal-${i}`);
             const card = document.getElementById(`card-${i}`);
             const resBox = document.getElementById(`resBox-${i}`);
             const trendEl = document.getElementById(`trend-${i}`);
-
             if (!isNaN(target) && !isNaN(currD) && !isNaN(currW)) {
                 const diff = currW - target;
                 let activeK = baseK;
@@ -1003,32 +1009,27 @@
                 }
                 const newD = currD + (diff * activeK);
                 hiddenVal.value = newD.toFixed(3);
-                resText.innerText = `New Density: ${newD.toFixed(3)}`;
+                resText.innerText = `${window.t('newDens')} ${newD.toFixed(3)}`;
                 resBox.classList.add('has-value');
-
                 const absDiff = Math.abs(diff);
                 card.className = "lane-card";
                 if (isSmart) card.classList.add('smart-active');
-                if (absDiff <= 0.5) { card.classList.add('bg-perfect'); trendEl.innerHTML = '<span style="color:var(--perfect)">● Perfect</span>'; }
+                if (absDiff <= 0.5) { card.classList.add('bg-perfect'); trendEl.innerHTML = '<span style="color:var(--perfect)">●</span>'; }
                 else if (absDiff <= 2) { card.classList.add('bg-success'); trendEl.innerHTML = `<span style="color:var(--success)">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}g</span>`; }
                 else if (absDiff <= 3) { card.classList.add('bg-warning'); trendEl.innerHTML = `<span style="color:var(--warning)">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}g</span>`; }
                 else { card.classList.add('bg-danger'); trendEl.innerHTML = `<span style="color:var(--danger)">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}g</span>`; }
-
                 weights.push(currW); count++;
             } else {
-                resText.innerText = `New Density: --`; hiddenVal.value = "";
-                resBox.classList.remove('has-value');
-                trendEl.innerHTML = '';
+                resText.innerText = `${window.t('newDens')} --`; hiddenVal.value = "";
+                resBox.classList.remove('has-value'); trendEl.innerHTML = '';
                 card.className = "lane-card";
                 if (config.smart === 'on' || (config.smart === 'auto' && lane.smartActive)) card.classList.add('smart-active');
             }
         }
-
         if (count > 0) {
             const mean = weights.reduce((a, b) => a + b, 0) / count;
             document.getElementById('machAvg').innerText = mean.toFixed(1);
             document.getElementById('targetDisplay').innerText = `${store.target || '--'}g`;
-
             const deltaEl = document.getElementById('avgDelta');
             if (prevAvg !== null) {
                 const delta = mean - prevAvg;
@@ -1036,24 +1037,20 @@
                 else if (delta > 0) { deltaEl.textContent = '▲'; deltaEl.className = 'stat-delta delta-up'; }
                 else { deltaEl.textContent = '▼'; deltaEl.className = 'stat-delta delta-down'; }
             }
-
             if (count > 1) {
                 const v = weights.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / count;
                 document.getElementById('stdDev').innerText = Math.sqrt(v).toFixed(2);
             } else { document.getElementById('stdDev').innerText = "--"; }
-        } else {
-            document.getElementById('machAvg').innerText = "--";
-            document.getElementById('stdDev').innerText = "--";
-        }
+        } else { document.getElementById('machAvg').innerText = "--"; document.getElementById('stdDev').innerText = "--"; }
     };
 
     // =====================================================================
-    // HISTORY — CARD VIEW
+    // HISTORY CARDS
     // =====================================================================
     window.renderHistoryCards = function() {
         const container = document.getElementById('historyCards');
         if (!history || history.length === 0) {
-            container.innerHTML = '<div style="text-align:center; opacity:0.5; padding:20px; font-size:0.85rem;">No checks saved yet</div>';
+            container.innerHTML = '<div style="text-align:center; opacity:0.5; padding:20px; font-size:0.85rem;">--</div>';
             return;
         }
         const arr = Array.isArray(history) ? history : Object.values(history);
@@ -1077,16 +1074,14 @@
                     </div>
                 </div>
                 <div class="hist-card-body">
-                    <div style="font-size:0.72rem; opacity:0.55; margin-bottom:4px;">Target: ${r.target || '--'}g</div>
+                    <div style="font-size:0.72rem; opacity:0.55; margin-bottom:4px;">${window.t('target')}: ${r.target || '--'}g</div>
                     <div class="hist-lane-grid">${laneGrid}</div>
                 </div>
             </div>`;
         }).join('');
     };
 
-    window.toggleHistCard = function(idx) {
-        document.getElementById(`hcard-${idx}`).classList.toggle('expanded');
-    };
+    window.toggleHistCard = function(idx) { document.getElementById(`hcard-${idx}`).classList.toggle('expanded'); };
 
     window.checkAutoSave = function() {
         let currentCombo = "", allFilled = true;
@@ -1095,10 +1090,7 @@
             if (!w) { allFilled = false; break; }
             currentCombo += w + ",";
         }
-        if (allFilled && currentCombo !== lastAutoSaveCombo) {
-            lastAutoSaveCombo = currentCombo;
-            window.saveToHistory();
-        }
+        if (allFilled && currentCombo !== lastAutoSaveCombo) { lastAutoSaveCombo = currentCombo; window.saveToHistory(); }
     };
 
     window.saveToHistory = function() {
@@ -1135,26 +1127,19 @@
     window.applyResult = function(idx) {
         const val = document.getElementById(`calcVal-${idx}`).value;
         const lane = store.lanes[idx-1];
-        const currD = parseFloat(lane.d);
-        const currW = parseFloat(lane.w);
-
+        const currD = parseFloat(lane.d), currW = parseFloat(lane.w);
         if (val && !isNaN(currD)) {
             window.saveToHistory();
             lane.lastD = currD; lane.lastW = currW;
             const target = parseFloat(store.target);
-            if (Math.abs(currW - target) > 2) {
-                lane.attempts++;
-                if (config.smart === 'auto' && lane.attempts >= 2) lane.smartActive = true;
-            } else { lane.attempts = 0; }
-
+            if (Math.abs(currW - target) > 2) { lane.attempts++; if (config.smart === 'auto' && lane.attempts >= 2) lane.smartActive = true; }
+            else { lane.attempts = 0; }
             lane.d = val; lane.w = ''; lane.locked = true;
             lastAutoSaveCombo = "";
-
             const card = document.getElementById(`card-${idx}`);
             card.classList.add('apply-flash');
             setTimeout(() => card.classList.remove('apply-flash'), 300);
             if (navigator.vibrate) navigator.vibrate([60]);
-
             window.calculateLocal();
             window.pushLaneToCloud(idx);
         }
@@ -1182,36 +1167,18 @@
     window.recheckLane = function(idx) { store.lanes[idx-1].w = ''; document.getElementById(`avgWt-${idx}`).value = ''; lastAutoSaveCombo = ""; document.getElementById(`avgWt-${idx}`).focus(); window.calculateLocal(); window.pushLaneToCloud(idx); };
 
     // =====================================================================
-    // TARGET WITH CONFIRMATION
+    // TARGET CONFIRMATION
     // =====================================================================
     window.onTargetInput = function() {
         const newVal = document.getElementById('setTarget').value;
         if (store.target && store.target !== newVal && store.lanes && store.lanes.some(l => l.w)) {
             pendingTargetValue = newVal;
             document.getElementById('targetConfirm').classList.add('show');
-        } else {
-            window.applyTargetNow(newVal);
-        }
+        } else { window.applyTargetNow(newVal); }
     };
-
-    window.confirmTargetChange = function() {
-        if (pendingTargetValue !== null) { window.applyTargetNow(pendingTargetValue); pendingTargetValue = null; }
-        document.getElementById('targetConfirm').classList.remove('show');
-    };
-
-    window.cancelTargetChange = function() {
-        document.getElementById('setTarget').value = store.target || '';
-        pendingTargetValue = null;
-        document.getElementById('targetConfirm').classList.remove('show');
-    };
-
-    window.applyTargetNow = function(val) {
-        store.target = val;
-        document.getElementById('displayTarget').innerText = `Target: ${val}g`;
-        document.getElementById('targetDisplay').innerText = `${val}g`;
-        window.calculateLocal();
-        window.pushTargetToCloud();
-    };
+    window.confirmTargetChange = function() { if (pendingTargetValue !== null) { window.applyTargetNow(pendingTargetValue); pendingTargetValue = null; } document.getElementById('targetConfirm').classList.remove('show'); };
+    window.cancelTargetChange = function() { document.getElementById('setTarget').value = store.target || ''; pendingTargetValue = null; document.getElementById('targetConfirm').classList.remove('show'); };
+    window.applyTargetNow = function(val) { store.target = val; document.getElementById('displayTarget').innerText = `${window.t('target')}: ${val}g`; document.getElementById('targetDisplay').innerText = `${val}g`; window.calculateLocal(); window.pushTargetToCloud(); };
 
     // =====================================================================
     // SETTINGS
@@ -1227,7 +1194,6 @@
             document.getElementById('targetConfirm').classList.remove('show');
         }
     };
-
     window.saveLocalSettings = function() {
         if (document.getElementById('setMachines')) config.machines = parseInt(document.getElementById('setMachines').value);
         if (document.getElementById('setLanes')) config.lanes = parseInt(document.getElementById('setLanes').value);
@@ -1235,9 +1201,9 @@
         if (document.getElementById('setSmart')) config.smart = document.getElementById('setSmart').value;
         if (document.getElementById('setInputMode')) config.inputMode = document.getElementById('setInputMode').value;
         if (document.getElementById('setTheme')) config.theme = document.getElementById('setTheme').value;
+        // lang is set directly on config before saveLocalSettings is called — always persist it
         localStorage.setItem('dsi_config_v11', JSON.stringify(config));
     };
-
     window.toggleTheme = function() { config.theme = document.getElementById('setTheme').value; window.applyTheme(); window.saveLocalSettings(); };
     window.saveDisplayName = function() { const name = document.getElementById('setDispName').value; config.displayName = name; window.saveLocalSettings(); if (window.myUid && !window.isOfflineMode && window.update && window.db) window.update(window.ref(window.db, `users/${window.myUid}`), { displayName: name }).catch(e=>{}); };
     window.applyTheme = function() { if (config.theme === 'dark') document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); };
@@ -1282,14 +1248,15 @@
             <div class="admin-user-name">Device: <strong>${dispName}</strong></div>
             <input type="text" placeholder="Admin Name" value="${adminName}" onblur="window.updateAdminName('${key}', this.value)" style="margin-bottom:8px; padding:8px; font-size:0.85rem; width:100%; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text);">
             <div class="admin-user-row">
-                <select onchange="window.updateUserRole('${key}', this.value)" style="padding:6px; font-size:0.8rem; width:48%; border-radius:6px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);">
+                <select onchange="window.updateUserRole('${key}', this.value)" style="padding:6px; font-size:0.8rem; width:40%; border-radius:6px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);">
                     <option value="operator" ${role === 'operator' ? 'selected' : ''}>Operator</option>
                     <option value="supervisor" ${role === 'supervisor' ? 'selected' : ''}>Supervisor</option>
                 </select>
-                <label style="display:flex; align-items:center; gap:5px; font-weight:bold; font-size:0.9rem; cursor:pointer;">
-                    <input type="checkbox" ${isAppr} onchange="window.toggleUserApprove('${key}', this.checked)" style="width:18px; height:18px;">
-                    Approved
+                <label style="display:flex; align-items:center; gap:5px; font-weight:bold; font-size:0.85rem; cursor:pointer;">
+                    <input type="checkbox" ${isAppr} onchange="window.toggleUserApprove('${key}', this.checked)" style="width:16px; height:16px;">
+                    Apprv
                 </label>
+                <button onclick="if(confirm('Remove this user? They will need to request access again.')) window.deleteUser('${key}')" style="background:var(--danger); color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.8rem;">🗑️ Remove</button>
             </div>
             <div class="admin-user-last">Last seen: ${data.lastLogin || 'Unknown'}</div>
         </div>`;
@@ -1300,18 +1267,20 @@
     window.updateUserRole = function(uid, role) { window.update(window.ref(window.db, `users/${uid}`), { role }); };
     window.toggleUserApprove = function(uid, isAppr) {
         window.update(window.ref(window.db, `users/${uid}`), { approved: isAppr, requestPending: false });
-        if (isAppr) notifiedSet.delete(uid);
+        if (isAppr) { notifiedSet.delete(uid); persistNotifiedSet(); }
     };
+    window.deleteUser = function(uid) { window.set(window.ref(window.db, `users/${uid}`), null); };
 
     window.pingAdmin = function() {
         const nameInput = document.getElementById('reqName').value.trim();
         if (!nameInput) { alert("Please enter your name."); return; }
         window.update(window.ref(window.db, `users/${window.myUid}`), { displayName: nameInput, requestPending: true, requestTime: Date.now() })
-            .then(() => {
-                document.getElementById('requestForm').innerHTML = `<div style="color:var(--success); font-weight:bold; font-size:1.1rem; padding:10px;">✅ Flare Sent!<br><span style="font-size:0.8rem; color:var(--text); font-weight:normal;">Admin has been notified.</span></div>`;
-            });
+            .then(() => { document.getElementById('requestForm').innerHTML = `<div style="color:var(--success); font-weight:bold; font-size:1.1rem; padding:10px;">✅ Flare Sent!<br><span style="font-size:0.8rem; color:var(--text); font-weight:normal;">Admin has been notified.</span></div>`; });
     };
 
+    // Persist notifiedSet in sessionStorage so page refresh doesn't re-toast pending requests
+    let notifiedSet = new Set(JSON.parse(sessionStorage.getItem('dsi_notified') || '[]'));
+    function persistNotifiedSet() { sessionStorage.setItem('dsi_notified', JSON.stringify([...notifiedSet])); }
     window.startAdminRadar = function() {
         window.onValue(window.ref(window.db, 'users'), (snap) => {
             const users = snap.val() || {};
@@ -1319,7 +1288,8 @@
                 const u = users[uid];
                 if (u.requestPending === true && u.approved !== true && !notifiedSet.has(uid)) {
                     notifiedSet.add(uid);
-                    window.showAdminToast(`🔑 ${u.displayName || 'Someone'} is requesting access!`);
+                    persistNotifiedSet();
+                    window.fireNativeNotification('🔑 Access Request', `${u.displayName || 'Someone'} wants access!`);
                 }
             }
         });
