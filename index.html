@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <title>The Night Shift Advantage v11.6.1</title>
+    <title>The Night Shift Advantage v11.6.2</title>
     <style>
         /* --- THEMES --- */
         :root {
@@ -120,6 +120,16 @@
         .sup-lane-lbl { font-size: 0.6rem; text-transform: uppercase; opacity: 0.8; display: block; margin-bottom: 5px; }
         .sup-lane-wt { font-size: 1.1rem; display: block; }
         .sup-lane-dens { font-size: 0.7rem; opacity: 0.8; }
+
+        /* ADMIN TOAST NOTIFICATION */
+        #adminToast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-150px);
+            background: var(--accent); color: white; padding: 15px 25px; border-radius: 30px;
+            font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 9999;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; align-items: center; gap: 10px; cursor: pointer;
+        }
+        #adminToast.show { transform: translateX(-50%) translateY(0); }
     </style>
 </head>
 <body>
@@ -128,12 +138,23 @@
     <div class="modal" style="text-align: center;">
         <h2 style="color: var(--danger);">🔒 Access Pending</h2>
         <p style="font-size: 0.9rem; margin-bottom: 20px;">Your device is waiting for Admin approval.</p>
+        
+        <div id="requestForm" style="background: rgba(128,128,128,0.05); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 20px;">
+            <label style="text-align: left; margin-bottom: 5px;">Identify Yourself to Admin</label>
+            <input type="text" id="reqName" placeholder="Enter your name / role..." style="margin-bottom: 10px; font-weight: normal;">
+            <button class="modal-btn" onclick="window.pingAdmin()" style="margin-top: 0; background: var(--accent);">PING ADMIN FOR ACCESS</button>
+        </div>
+
         <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 5px;">Your Device ID:</p>
         <code id="userIdDisplay" style="background: var(--input-bg); padding: 10px; display: block; word-break: break-all; border-radius: 6px; border: 1px solid var(--border); font-weight: bold; margin-bottom: 20px;">Loading...</code>
         <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
-        <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 10px;">Need to work right now?</p>
         <button class="modal-btn secondary" onclick="window.forceOfflineMode()">WORK OFFLINE</button>
     </div>
+</div>
+
+<div id="adminToast" onclick="window.openAdmin()">
+    <span style="font-size: 1.5rem;">🚨</span>
+    <span id="toastMsg">New Access Request!</span>
 </div>
 
 <div class="modal-overlay" id="adminModal" style="display:none; z-index: 250;">
@@ -295,7 +316,6 @@
     window.onValue = onValue;
     window.update = update;
     
-    // THE HARDCODED ADMIN UID
     const ADMIN_UID = 'm510406lBidDf7qCzqXEHmIKxBu2'; 
     
     let currentUserUid = null;
@@ -321,6 +341,7 @@
         if(isAdmin) {
             document.getElementById('btnAdmin').classList.remove('btn-hidden');
             document.getElementById('btnAdminSup').classList.remove('btn-hidden');
+            window.startAdminRadar();
         }
 
         const userRef = window.ref(window.db, `users/${currentUserUid}`);
@@ -486,7 +507,6 @@
         const opName = entry.operator || 'Unknown Operator';
         let lanesHtml = '';
         
-        // CONNECTION STALE LOGIC (3 Minutes)
         let isStale = (Date.now() - (entry.timestamp || 0)) > 180000;
         let staleWarning = isStale ? `<span style="color:var(--danger); font-size:0.7rem; font-weight:bold;">⚠️ STALE DATA</span>` : '';
 
@@ -495,13 +515,12 @@
             let colorClass = '';
             if (!isNaN(weightVal) && target > 0) {
                 let diff = Math.abs(weightVal - target);
-                // SEMANTIC COLOR MAPPING
                 if(diff <= 0.5) colorClass = 'bg-perfect';
                 else if(diff <= 2) colorClass = 'bg-success';
                 else if(diff <= 3) colorClass = 'bg-warning';
                 else colorClass = 'bg-danger';
             }
-            if(isStale) colorClass = ''; // Dim the colors if data is old
+            if(isStale) colorClass = ''; 
 
             lanesHtml += `<div class="sup-lane ${colorClass}"><span class="sup-lane-lbl">L${idx+1}</span><span class="sup-lane-wt">${l.w}</span><span class="sup-lane-dens">${l.d}</span></div>`;
         });
@@ -518,7 +537,7 @@
     }
 
     // ======================================================================
-    // OPERATOR ENGINE (THE SCALPEL FIX)
+    // OPERATOR ENGINE (ATOMIC SCALPEL FIX)
     // ======================================================================
     let unsubStore = null;   
     let unsubHistory = null; 
@@ -564,19 +583,15 @@
         });
     }
 
-    // --- THE ATOMIC SCALPEL UPDATE FUNCTIONS ---
     window.pushLaneToCloud = function(idx) {
         if (!dbRef_Store || window.isOfflineMode) return;
         document.getElementById('statusDot').className = "status-dot status-syncing";
         
         const now = Date.now();
-        
-        // We package the specific lane AND the top-level timestamp into ONE atomic envelope
         const updates = {};
         updates[`lanes/${idx-1}`] = { ...store.lanes[idx-1], lastUpdated: now };
         updates[`lastUpdated`] = now;
         
-        // Update the main machine path atomically
         window.update(dbRef_Store, updates).then(() => {
             document.getElementById('statusDot').className = "status-dot status-online";
         }).catch(e => {
@@ -594,7 +609,6 @@
             console.error("Target update rejected:", e);
         });
     }
-    // -------------------------------------
 
     window.renderInterface = function() {
         const nav = document.getElementById('machineNav');
@@ -701,7 +715,6 @@
         window.calculateLocal();
     }
 
-    // Purely local calculation. Syncs are handled explicitly now.
     window.calculateLocal = function() {
         if(!store || !store.lanes) return; 
         const target = parseFloat(store.target);
@@ -740,7 +753,6 @@
                 card.className = "lane-card"; 
                 if(isSmart) card.classList.add('smart-active');
                 
-                // SEMANTIC COLOR MAPPING
                 if (absDiff <= 0.5) card.classList.add('bg-perfect');
                 else if (absDiff <= 2) card.classList.add('bg-success');
                 else if (absDiff <= 3) card.classList.add('bg-warning');
@@ -814,7 +826,7 @@
             lane.d = val; lane.w = ''; lane.locked = true; 
             lastAutoSaveCombo = "";
             window.calculateLocal(); 
-            window.pushLaneToCloud(idx); // SCALPEL PUSH
+            window.pushLaneToCloud(idx); 
         }
     }
 
@@ -828,7 +840,6 @@
     window.switchMachine = function(m) { config.currentMachine = m; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); }
     window.switchProfile = function() { config.lanes = parseInt(document.getElementById('setLanes').value); config.product = document.getElementById('setProd').value; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); }
     
-    // --- UTILS ---
     window.toggleSettings = function() { 
         const m = document.getElementById('settingsMenu'); 
         m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; 
@@ -867,7 +878,6 @@
     }
     window.clearHistory = function() { if(confirm("Clear history?")) { history = []; if (!window.isOfflineMode && dbRef_History) window.set(dbRef_History, history); window.renderHistoryTable(); } }
 
-    // --- ADMIN COMMAND CENTER ---
     let usersDbRef;
     window.openAdmin = function() {
         document.getElementById('adminModal').style.display = 'flex';
@@ -906,7 +916,53 @@
     window.closeAdmin = function() { document.getElementById('adminModal').style.display = 'none'; }
     window.updateAdminName = function(uid, newName) { window.update(window.ref(window.db, `users/${uid}`), { adminName: newName }); }
     window.updateUserRole = function(uid, newRole) { window.update(window.ref(window.db, `users/${uid}`), { role: newRole }); }
-    window.toggleUserApprove = function(uid, isAppr) { window.update(window.ref(window.db, `users/${uid}`), { approved: isAppr }); }
+    
+    window.toggleUserApprove = function(uid, isAppr) { 
+        window.update(window.ref(window.db, `users/${uid}`), { 
+            approved: isAppr,
+            requestPending: false 
+        }); 
+        if(isAppr) notifiedSet.delete(uid); 
+    }
+
+    window.pingAdmin = function() {
+        const nameInput = document.getElementById('reqName').value.trim();
+        if(!nameInput) { alert("Please enter your name."); return; }
+        
+        window.update(window.ref(window.db, `users/${window.myUid}`), {
+            displayName: nameInput,
+            requestPending: true,
+            requestTime: Date.now()
+        }).then(() => {
+            document.getElementById('requestForm').innerHTML = `
+                <div style="color: var(--success); font-weight: bold; font-size: 1.1rem; padding: 10px;">
+                    ✅ Flare Sent!<br><span style="font-size: 0.8rem; color: var(--text); font-weight: normal;">Admin has been notified.</span>
+                </div>`;
+        });
+    }
+
+    let notifiedSet = new Set();
+    window.startAdminRadar = function() {
+        const usersRef = window.ref(window.db, 'users');
+        window.onValue(usersRef, (snap) => {
+            const users = snap.val() || {};
+            for (let uid in users) {
+                const u = users[uid];
+                if (u.requestPending === true && u.approved !== true && !notifiedSet.has(uid)) {
+                    notifiedSet.add(uid);
+                    window.showAdminToast(`${u.displayName || 'Someone'} is requesting access!`);
+                }
+            }
+        });
+    }
+
+    window.showAdminToast = function(msg) {
+        const toast = document.getElementById('adminToast');
+        document.getElementById('toastMsg').innerText = msg;
+        toast.classList.add('show');
+        if(navigator.vibrate) navigator.vibrate([200, 100, 200]); 
+        setTimeout(() => { toast.classList.remove('show'); }, 6000); 
+    }
 </script>
 </body>
 </html>
