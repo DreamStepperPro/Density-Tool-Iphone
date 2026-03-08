@@ -463,18 +463,26 @@ window.startCloudSync = function() {
     });
 };
 
-// --- THE FIX: PURE ATOMIC SCALPEL WITH SERVER TIMESTAMP ---
+// --- PURE ATOMIC SCALPEL WITH SMART MODE MEMORY ---
 window.pushLaneToCloud = function(idx) {
     if (!dbRef_Store || window.isOfflineMode) return;
     document.getElementById('statusDot').className = "status-dot status-syncing";
     
     const updates = {};
-    // We strictly update the individual fields of this single lane, avoiding object overwrites
-    updates[`lanes/${idx-1}/d`] = store.lanes[idx-1].d;
-    updates[`lanes/${idx-1}/w`] = store.lanes[idx-1].w;
-    updates[`lanes/${idx-1}/locked`] = store.lanes[idx-1].locked;
+    const lane = store.lanes[idx-1]; // Clean reference
     
-    // Apply Firebase Server Timestamp so it registers the exact moment it reconnects to the cloud
+    // Core data
+    updates[`lanes/${idx-1}/d`] = lane.d;
+    updates[`lanes/${idx-1}/w`] = lane.w;
+    updates[`lanes/${idx-1}/locked`] = lane.locked;
+    
+    // Smart Mode State (The Memory Fix)
+    updates[`lanes/${idx-1}/attempts`] = lane.attempts ?? 0;
+    updates[`lanes/${idx-1}/smartActive`] = lane.smartActive ?? false;
+    updates[`lanes/${idx-1}/lastD`] = lane.lastD ?? null;
+    updates[`lanes/${idx-1}/lastW`] = lane.lastW ?? null;
+    
+    // Apply Firebase Server Timestamp 
     updates[`lanes/${idx-1}/lastUpdated`] = serverTimestamp();
     updates[`lastUpdated`] = serverTimestamp();
     
