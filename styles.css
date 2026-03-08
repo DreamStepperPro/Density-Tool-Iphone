@@ -131,11 +131,12 @@
         .sup-title { font-size: 1.1rem; font-weight: 800; margin: 0; }
         .sup-meta { font-size: 0.72rem; color: gray; text-align: right; line-height: 1.5; }
         .sup-meta strong { color: var(--text); font-size: 0.85rem; display: block; }
-        .sup-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+        .sup-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 7px; }
         .sup-lane { text-align: center; padding: 9px 4px; border-radius: 9px; border: 1.5px solid var(--border); font-weight: bold; transition: background 0.3s, border-color 0.3s; }
         .sup-lane-lbl { font-size: 0.58rem; text-transform: uppercase; opacity: 0.75; display: block; margin-bottom: 4px; }
         .sup-lane-wt { font-size: 1.05rem; display: block; }
         .sup-lane-dens { font-size: 0.65rem; opacity: 0.75; }
+        .lane-stability { font-size: 0.68rem; margin-top: 6px; padding-top: 4px; border-top: 1px solid rgba(128,128,128,0.2); font-weight: 900; letter-spacing: 0.5px; }
 
         .sup-trend { display: flex; gap: 4px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
         .sup-trend-lbl { font-size: 0.62rem; opacity: 0.6; text-transform: uppercase; margin-right: 4px; }
