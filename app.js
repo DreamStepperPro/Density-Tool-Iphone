@@ -12,6 +12,7 @@ const firebaseConfig = {
     appId: "1:545898401770:web:01928966d9415a9cc82c93"
 };
 
+// SECURE LOCALS (Not exposed to window)
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
@@ -20,6 +21,8 @@ const ADMIN_UID = 'm510406lBidDf7qCzqXEHmIKxBu2';
 let currentUserUid = null;
 let isAdmin = false;
 let appInitialized = false;
+
+// GLOBALS
 window.isOfflineMode = false;
 window.currentUserData = {};
 
@@ -41,7 +44,7 @@ signInAnonymously(auth).then((result) => {
     }
 
     const userRef = ref(db, `users/${currentUserUid}`);
-    update(userRef, { lastLogin: new Date().toLocaleString() }).catch(e => console.warn(e));
+    update(userRef, { lastLogin: new Date().toLocaleString() }).catch(e => console.warn("Admin check-in ignored", e));
 
     onValue(userRef, (snap) => {
         window.currentUserData = snap.val() || {};
@@ -188,6 +191,8 @@ window.sendCommsMsg = function(code, customText = "") {
     const name = config.displayName || window.currentUserData.adminName || 'Unknown';
     const isAdminUser = (window.currentUserData && window.currentUserData.role === 'supervisor') || role === 'supervisor' || window.myUid === 'm510406lBidDf7qCzqXEHmIKxBu2';
     const machineStr = isAdminUser ? 'ADMIN' : `DSI ${config.currentMachine}`;
+    
+    // NEW: Error Catcher for Messages
     push(ref(db, 'messages'), {
         senderUid: window.myUid, senderName: name, role, machine: machineStr,
         code, text: customText, timestamp: Date.now()
@@ -203,6 +208,9 @@ window.sendCommsMsg = function(code, customText = "") {
                 update(ref(db, '/'), updates).catch(e => console.warn('Prune failed:', e));
             }
         }, { onlyOnce: true });
+    }).catch((error) => {
+        console.error(error);
+        window.showAdminToast("❌ Network Error: Message not sent.");
     });
 };
 
@@ -445,7 +453,9 @@ window.startCloudSync = function() {
             if (!store.target) {
                 const defaultTarget = config.product === 'bfast' ? '63' : '102';
                 store = { target: defaultTarget, lastUpdated: Date.now(), lanes: Array(config.lanes).fill().map(() => ({ d:'', w:'', attempts:0, smartActive:false, lastD:null, lastW:null, locked:true })) };
-                set(dbRef_Store, store);
+                
+                // NEW: Error Catcher
+                set(dbRef_Store, store).catch(e => window.showAdminToast("❌ Network Error: Could not initialize machine data."));
             }
         }
     });
@@ -463,14 +473,24 @@ window.pushLaneToCloud = function(idx) {
     const updates = {};
     updates[`lanes/${idx-1}`] = { ...store.lanes[idx-1], lastUpdated: now };
     updates[`lastUpdated`] = now;
+    
+    // NEW: Error Catcher for Scalpel Write
     update(dbRef_Store, updates).then(() => {
         document.getElementById('statusDot').className = "status-dot status-online";
-    }).catch(() => { document.getElementById('statusDot').className = "status-dot status-offline"; });
+    }).catch((error) => { 
+        console.error(error);
+        document.getElementById('statusDot').className = "status-dot status-offline"; 
+        window.showAdminToast("❌ Network Error: Data not saved.");
+    });
 };
 
 window.pushTargetToCloud = function() {
     if (!dbRef_Store || window.isOfflineMode) return;
-    update(dbRef_Store, { target: store.target, lastUpdated: Date.now() }).catch(e => console.error(e));
+    // NEW: Error Catcher
+    update(dbRef_Store, { target: store.target, lastUpdated: Date.now() }).catch(e => {
+        console.error(e);
+        window.showAdminToast("❌ Network Error: Target not saved.");
+    });
 };
 
 // =====================================================================
@@ -700,14 +720,21 @@ window.saveToHistory = function() {
     if (!Array.isArray(history)) history = [];
     history.unshift(row);
     if (history.length > 50) history.pop();
-    if (!window.isOfflineMode && dbRef_History) set(dbRef_History, history);
+    
+    // NEW: Error Catcher
+    if (!window.isOfflineMode && dbRef_History) {
+        set(dbRef_History, history).catch(e => window.showAdminToast("❌ Network Error: History not saved."));
+    }
     window.renderHistoryCards();
 };
 
 window.clearHistory = function() {
     if (confirm("Clear shift history?")) {
         history = [];
-        if (!window.isOfflineMode && dbRef_History) set(dbRef_History, history);
+        // NEW: Error Catcher
+        if (!window.isOfflineMode && dbRef_History) {
+            set(dbRef_History, history).catch(e => window.showAdminToast("❌ Network Error: History not cleared."));
+        }
         window.renderHistoryCards();
     }
 };
@@ -795,7 +822,15 @@ window.saveLocalSettings = function() {
     localStorage.setItem('dsi_config_v11', JSON.stringify(config));
 };
 window.toggleTheme = function() { config.theme = document.getElementById('setTheme').value; window.applyTheme(); window.saveLocalSettings(); };
-window.saveDisplayName = function() { const name = document.getElementById('setDispName').value; config.displayName = name; window.saveLocalSettings(); if (window.myUid && !window.isOfflineMode && db) update(ref(db, `users/${window.myUid}`), { displayName: name }).catch(e=>{}); };
+window.saveDisplayName = function() { 
+    const name = document.getElementById('setDispName').value; 
+    config.displayName = name; 
+    window.saveLocalSettings(); 
+    // NEW: Error Catcher
+    if (window.myUid && !window.isOfflineMode && db) {
+        update(ref(db, `users/${window.myUid}`), { displayName: name }).catch(e => window.showAdminToast("❌ Network Error: Name not saved."));
+    }
+};
 window.applyTheme = function() { if (config.theme === 'dark') document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); };
 window.completeSetup = function() { config.machines = parseInt(document.getElementById('setupMachines').value); config.lanes = parseInt(document.getElementById('setupLanes').value); config.product = document.getElementById('setupProd').value; localStorage.setItem('dsi_setup_done', 'true'); window.saveLocalSettings(); document.getElementById('setupWizard').style.display = 'none'; window.routeUserByRole(); };
 window.factoryReset = function() { if (confirm("Erase LOCAL settings? Cloud data remains.")) { localStorage.clear(); location.reload(); } };
@@ -853,19 +888,25 @@ window.buildAdminUserCard = function(key, data, highlight) {
 };
 
 window.closeAdmin = function() { document.getElementById('adminModal').style.display = 'none'; };
-window.updateAdminName = function(uid, name) { update(ref(db, `users/${uid}`), { adminName: name }); };
-window.updateUserRole = function(uid, role) { update(ref(db, `users/${uid}`), { role }); };
+
+// NEW: Error Catchers for all Admin commands
+window.updateAdminName = function(uid, name) { update(ref(db, `users/${uid}`), { adminName: name }).catch(e => window.showAdminToast("❌ Error: Could not update name.")); };
+window.updateUserRole = function(uid, role) { update(ref(db, `users/${uid}`), { role }).catch(e => window.showAdminToast("❌ Error: Could not update role.")); };
 window.toggleUserApprove = function(uid, isAppr) {
-    update(ref(db, `users/${uid}`), { approved: isAppr, requestPending: false });
-    if (isAppr) { notifiedSet.delete(uid); persistNotifiedSet(); }
+    update(ref(db, `users/${uid}`), { approved: isAppr, requestPending: false })
+    .then(() => { if (isAppr) { notifiedSet.delete(uid); persistNotifiedSet(); } })
+    .catch(e => window.showAdminToast("❌ Error: Could not update approval."));
 };
-window.deleteUser = function(uid) { set(ref(db, `users/${uid}`), null); };
+window.deleteUser = function(uid) { set(ref(db, `users/${uid}`), null).catch(e => window.showAdminToast("❌ Error: Could not delete user.")); };
 
 window.pingAdmin = function() {
     const nameInput = document.getElementById('reqName').value.trim();
     if (!nameInput) { alert("Please enter your name."); return; }
+    
+    // NEW: Error Catcher
     update(ref(db, `users/${window.myUid}`), { displayName: nameInput, requestPending: true, requestTime: Date.now() })
-        .then(() => { document.getElementById('requestForm').innerHTML = `<div style="color:var(--success); font-weight:bold; font-size:1.1rem; padding:10px;">✅ Flare Sent!<br><span style="font-size:0.8rem; color:var(--text); font-weight:normal;">Admin has been notified.</span></div>`; });
+        .then(() => { document.getElementById('requestForm').innerHTML = `<div style="color:var(--success); font-weight:bold; font-size:1.1rem; padding:10px;">✅ Flare Sent!<br><span style="font-size:0.8rem; color:var(--text); font-weight:normal;">Admin has been notified.</span></div>`; })
+        .catch(e => window.showAdminToast("❌ Network Error: Could not send request."));
 };
 
 let notifiedSet = new Set(JSON.parse(sessionStorage.getItem('dsi_notified') || '[]'));
