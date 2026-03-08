@@ -479,42 +479,34 @@ window.startCloudSync = function() {
 window.pushLaneToCloud = function(idx) {
     if (!dbRef_Store || window.isOfflineMode) return;
     
-    // THE KILL SWITCH
-    if (!window.isFirebaseConnected) {
-        window.showAdminToast("❌ Network Error: You are offline. Change discarded.");
-        document.getElementById('statusDot').className = "status-dot status-offline";
-        window.updateUIFromCloud(); // Snap the screen back to reality
-        return;
-    }
-
+    // Change dot to yellow to show it is attempting to sync (or queuing)
     document.getElementById('statusDot').className = "status-dot status-syncing";
+    
     const now = Date.now();
     const updates = {};
     updates[`lanes/${idx-1}`] = { ...store.lanes[idx-1], lastUpdated: now };
     updates[`lastUpdated`] = now;
     
+    // Firebase will queue this if offline, and resolve/reject when it reconnects
     update(dbRef_Store, updates).then(() => {
         document.getElementById('statusDot').className = "status-dot status-online";
     }).catch((e) => { 
-        console.error(e);
-        window.showAdminToast("❌ Server Error: Data rejected.");
-        window.updateUIFromCloud();
+        // This only fires if the Bouncer explicitly rejects the queued data
+        console.warn("Bouncer Rejected Data:", e);
+        window.showAdminToast("⚠️ Sync Failed: Newer data exists on the server.");
+        document.getElementById('statusDot').className = "status-dot status-online";
+        // Force the screen to snap back to the actual, newer cloud state
+        if (store && store.lanes) window.updateUIFromCloud();
     });
 };
 
 window.pushTargetToCloud = function() {
     if (!dbRef_Store || window.isOfflineMode) return;
     
-    // THE KILL SWITCH
-    if (!window.isFirebaseConnected) {
-        window.showAdminToast("❌ Network Error: You are offline. Target not saved.");
-        window.updateUIFromCloud();
-        return;
-    }
-
     update(dbRef_Store, { target: store.target, lastUpdated: Date.now() }).catch(e => {
-        console.error(e);
-        window.showAdminToast("❌ Server Error: Target rejected.");
+        console.warn("Bouncer Rejected Target:", e);
+        window.showAdminToast("⚠️ Sync Failed: Target was changed by someone else.");
+        if (store && store.lanes) window.updateUIFromCloud();
     });
 };
 // =====================================================================
