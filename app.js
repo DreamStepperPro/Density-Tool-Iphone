@@ -25,6 +25,16 @@ let appInitialized = false;
 // GLOBALS
 window.isOfflineMode = false;
 window.currentUserData = {};
+window.isFirebaseConnected = false; // THE NEW KILL SWITCH VARIABLE
+
+// Listen to the Firebase Heartbeat
+onValue(ref(db, '.info/connected'), (snap) => {
+    window.isFirebaseConnected = snap.val() === true;
+    const dot = document.getElementById('statusDot');
+    if (dot && appInitialized && !window.isOfflineMode) {
+        dot.className = window.isFirebaseConnected ? "status-dot status-online" : "status-dot status-offline";
+    }
+});
 
 window.forceOfflineMode = function() {
     window.isOfflineMode = true;
@@ -468,31 +478,45 @@ window.startCloudSync = function() {
 
 window.pushLaneToCloud = function(idx) {
     if (!dbRef_Store || window.isOfflineMode) return;
+    
+    // THE KILL SWITCH
+    if (!window.isFirebaseConnected) {
+        window.showAdminToast("❌ Network Error: You are offline. Change discarded.");
+        document.getElementById('statusDot').className = "status-dot status-offline";
+        window.updateUIFromCloud(); // Snap the screen back to reality
+        return;
+    }
+
     document.getElementById('statusDot').className = "status-dot status-syncing";
     const now = Date.now();
     const updates = {};
     updates[`lanes/${idx-1}`] = { ...store.lanes[idx-1], lastUpdated: now };
     updates[`lastUpdated`] = now;
     
-    // NEW: Error Catcher for Scalpel Write
     update(dbRef_Store, updates).then(() => {
         document.getElementById('statusDot').className = "status-dot status-online";
-    }).catch((error) => { 
-        console.error(error);
-        document.getElementById('statusDot').className = "status-dot status-offline"; 
-        window.showAdminToast("❌ Network Error: Data not saved.");
+    }).catch((e) => { 
+        console.error(e);
+        window.showAdminToast("❌ Server Error: Data rejected.");
+        window.updateUIFromCloud();
     });
 };
 
 window.pushTargetToCloud = function() {
     if (!dbRef_Store || window.isOfflineMode) return;
-    // NEW: Error Catcher
+    
+    // THE KILL SWITCH
+    if (!window.isFirebaseConnected) {
+        window.showAdminToast("❌ Network Error: You are offline. Target not saved.");
+        window.updateUIFromCloud();
+        return;
+    }
+
     update(dbRef_Store, { target: store.target, lastUpdated: Date.now() }).catch(e => {
         console.error(e);
-        window.showAdminToast("❌ Network Error: Target not saved.");
+        window.showAdminToast("❌ Server Error: Target rejected.");
     });
 };
-
 // =====================================================================
 // RENDER INTERFACE
 // =====================================================================
