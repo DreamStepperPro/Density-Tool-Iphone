@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, onValue, update, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set, onValue, update, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -12,7 +12,6 @@ const firebaseConfig = {
     appId: "1:545898401770:web:01928966d9415a9cc82c93"
 };
 
-// SECURE LOCALS (Not exposed to window)
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
@@ -22,19 +21,8 @@ let currentUserUid = null;
 let isAdmin = false;
 let appInitialized = false;
 
-// GLOBALS
 window.isOfflineMode = false;
 window.currentUserData = {};
-window.isFirebaseConnected = false; // THE NEW KILL SWITCH VARIABLE
-
-// Listen to the Firebase Heartbeat
-onValue(ref(db, '.info/connected'), (snap) => {
-    window.isFirebaseConnected = snap.val() === true;
-    const dot = document.getElementById('statusDot');
-    if (dot && appInitialized && !window.isOfflineMode) {
-        dot.className = window.isFirebaseConnected ? "status-dot status-online" : "status-dot status-offline";
-    }
-});
 
 window.forceOfflineMode = function() {
     window.isOfflineMode = true;
@@ -54,7 +42,7 @@ signInAnonymously(auth).then((result) => {
     }
 
     const userRef = ref(db, `users/${currentUserUid}`);
-    update(userRef, { lastLogin: new Date().toLocaleString() }).catch(e => console.warn("Admin check-in ignored", e));
+    update(userRef, { lastLogin: new Date().toLocaleString() }).catch(e => console.warn(e));
 
     onValue(userRef, (snap) => {
         window.currentUserData = snap.val() || {};
@@ -83,7 +71,7 @@ signInAnonymously(auth).then((result) => {
 });
 
 // =====================================================================
-// i18n
+// i18n TRANSLATION ENGINE
 // =====================================================================
 const i18n = {
     en: {
@@ -202,7 +190,6 @@ window.sendCommsMsg = function(code, customText = "") {
     const isAdminUser = (window.currentUserData && window.currentUserData.role === 'supervisor') || role === 'supervisor' || window.myUid === 'm510406lBidDf7qCzqXEHmIKxBu2';
     const machineStr = isAdminUser ? 'ADMIN' : `DSI ${config.currentMachine}`;
     
-    // NEW: Error Catcher for Messages
     push(ref(db, 'messages'), {
         senderUid: window.myUid, senderName: name, role, machine: machineStr,
         code, text: customText, timestamp: Date.now()
@@ -455,6 +442,7 @@ window.startCloudSync = function() {
     if (unsubHistory) unsubHistory();
     dbRef_Store = ref(db, `stores/${cloudPathKey}`);
     dbRef_History = ref(db, `histories/${cloudPathKey}`);
+    
     unsubStore = onValue(dbRef_Store, (snapshot) => {
         dot.className = "status-dot status-online";
         const val = snapshot.val();
@@ -463,12 +451,11 @@ window.startCloudSync = function() {
             if (!store.target) {
                 const defaultTarget = config.product === 'bfast' ? '63' : '102';
                 store = { target: defaultTarget, lastUpdated: Date.now(), lanes: Array(config.lanes).fill().map(() => ({ d:'', w:'', attempts:0, smartActive:false, lastD:null, lastW:null, locked:true })) };
-                
-                // NEW: Error Catcher
-                set(dbRef_Store, store).catch(e => window.showAdminToast("❌ Network Error: Could not initialize machine data."));
+                set(dbRef_Store, store).catch(e => window.showAdminToast("❌ Error initializing machine."));
             }
         }
     });
+    
     unsubHistory = onValue(dbRef_History, (snapshot) => {
         const val = snapshot.val();
         history = val ? (Array.isArray(val) ? val : Object.values(val)) : [];
@@ -476,39 +463,36 @@ window.startCloudSync = function() {
     });
 };
 
+// --- THE FIX: PURE ATOMIC SCALPEL WITH SERVER TIMESTAMP ---
 window.pushLaneToCloud = function(idx) {
     if (!dbRef_Store || window.isOfflineMode) return;
-    
-    // Change dot to yellow to show it is attempting to sync (or queuing)
     document.getElementById('statusDot').className = "status-dot status-syncing";
     
-    const now = Date.now();
     const updates = {};
-    updates[`lanes/${idx-1}`] = { ...store.lanes[idx-1], lastUpdated: now };
-    updates[`lastUpdated`] = now;
+    // We strictly update the individual fields of this single lane, avoiding object overwrites
+    updates[`lanes/${idx-1}/d`] = store.lanes[idx-1].d;
+    updates[`lanes/${idx-1}/w`] = store.lanes[idx-1].w;
+    updates[`lanes/${idx-1}/locked`] = store.lanes[idx-1].locked;
     
-    // Firebase will queue this if offline, and resolve/reject when it reconnects
+    // Apply Firebase Server Timestamp so it registers the exact moment it reconnects to the cloud
+    updates[`lanes/${idx-1}/lastUpdated`] = serverTimestamp();
+    updates[`lastUpdated`] = serverTimestamp();
+    
     update(dbRef_Store, updates).then(() => {
         document.getElementById('statusDot').className = "status-dot status-online";
     }).catch((e) => { 
-        // This only fires if the Bouncer explicitly rejects the queued data
-        console.warn("Bouncer Rejected Data:", e);
-        window.showAdminToast("⚠️ Sync Failed: Newer data exists on the server.");
-        document.getElementById('statusDot').className = "status-dot status-online";
-        // Force the screen to snap back to the actual, newer cloud state
-        if (store && store.lanes) window.updateUIFromCloud();
+        console.error(e);
+        document.getElementById('statusDot').className = "status-dot status-offline"; 
+        window.showAdminToast("❌ Network Error: Sync failed.");
     });
 };
 
 window.pushTargetToCloud = function() {
     if (!dbRef_Store || window.isOfflineMode) return;
-    
-    update(dbRef_Store, { target: store.target, lastUpdated: Date.now() }).catch(e => {
-        console.warn("Bouncer Rejected Target:", e);
-        window.showAdminToast("⚠️ Sync Failed: Target was changed by someone else.");
-        if (store && store.lanes) window.updateUIFromCloud();
-    });
+    update(dbRef_Store, { target: store.target, lastUpdated: serverTimestamp() })
+        .catch(e => window.showAdminToast("❌ Network Error: Target not saved."));
 };
+
 // =====================================================================
 // RENDER INTERFACE
 // =====================================================================
@@ -737,7 +721,6 @@ window.saveToHistory = function() {
     history.unshift(row);
     if (history.length > 50) history.pop();
     
-    // NEW: Error Catcher
     if (!window.isOfflineMode && dbRef_History) {
         set(dbRef_History, history).catch(e => window.showAdminToast("❌ Network Error: History not saved."));
     }
@@ -747,7 +730,6 @@ window.saveToHistory = function() {
 window.clearHistory = function() {
     if (confirm("Clear shift history?")) {
         history = [];
-        // NEW: Error Catcher
         if (!window.isOfflineMode && dbRef_History) {
             set(dbRef_History, history).catch(e => window.showAdminToast("❌ Network Error: History not cleared."));
         }
@@ -842,7 +824,6 @@ window.saveDisplayName = function() {
     const name = document.getElementById('setDispName').value; 
     config.displayName = name; 
     window.saveLocalSettings(); 
-    // NEW: Error Catcher
     if (window.myUid && !window.isOfflineMode && db) {
         update(ref(db, `users/${window.myUid}`), { displayName: name }).catch(e => window.showAdminToast("❌ Network Error: Name not saved."));
     }
@@ -904,8 +885,6 @@ window.buildAdminUserCard = function(key, data, highlight) {
 };
 
 window.closeAdmin = function() { document.getElementById('adminModal').style.display = 'none'; };
-
-// NEW: Error Catchers for all Admin commands
 window.updateAdminName = function(uid, name) { update(ref(db, `users/${uid}`), { adminName: name }).catch(e => window.showAdminToast("❌ Error: Could not update name.")); };
 window.updateUserRole = function(uid, role) { update(ref(db, `users/${uid}`), { role }).catch(e => window.showAdminToast("❌ Error: Could not update role.")); };
 window.toggleUserApprove = function(uid, isAppr) {
@@ -919,7 +898,6 @@ window.pingAdmin = function() {
     const nameInput = document.getElementById('reqName').value.trim();
     if (!nameInput) { alert("Please enter your name."); return; }
     
-    // NEW: Error Catcher
     update(ref(db, `users/${window.myUid}`), { displayName: nameInput, requestPending: true, requestTime: Date.now() })
         .then(() => { document.getElementById('requestForm').innerHTML = `<div style="color:var(--success); font-weight:bold; font-size:1.1rem; padding:10px;">✅ Flare Sent!<br><span style="font-size:0.8rem; color:var(--text); font-weight:normal;">Admin has been notified.</span></div>`; })
         .catch(e => window.showAdminToast("❌ Network Error: Could not send request."));
