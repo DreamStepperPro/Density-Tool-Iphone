@@ -12,7 +12,6 @@ const firebaseConfig = {
     appId: "1:545898401770:web:01928966d9415a9cc82c93"
 };
 
-// SECURE LOCALS (Not exposed to window)
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
@@ -21,8 +20,6 @@ const ADMIN_UID = 'm510406lBidDf7qCzqXEHmIKxBu2';
 let currentUserUid = null;
 let isAdmin = false;
 let appInitialized = false;
-
-// GLOBALS (Exposed for UI interaction)
 window.isOfflineMode = false;
 window.currentUserData = {};
 
@@ -798,7 +795,7 @@ window.saveLocalSettings = function() {
     localStorage.setItem('dsi_config_v11', JSON.stringify(config));
 };
 window.toggleTheme = function() { config.theme = document.getElementById('setTheme').value; window.applyTheme(); window.saveLocalSettings(); };
-window.saveDisplayName = function() { const name = document.getElementById('setDispName').value; config.displayName = name; window.saveLocalSettings(); if (window.myUid && !window.isOfflineMode && window.db) update(ref(window.db, `users/${window.myUid}`), { displayName: name }).catch(e=>{}); };
+window.saveDisplayName = function() { const name = document.getElementById('setDispName').value; config.displayName = name; window.saveLocalSettings(); if (window.myUid && !window.isOfflineMode && db) update(ref(db, `users/${window.myUid}`), { displayName: name }).catch(e=>{}); };
 window.applyTheme = function() { if (config.theme === 'dark') document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); };
 window.completeSetup = function() { config.machines = parseInt(document.getElementById('setupMachines').value); config.lanes = parseInt(document.getElementById('setupLanes').value); config.product = document.getElementById('setupProd').value; localStorage.setItem('dsi_setup_done', 'true'); window.saveLocalSettings(); document.getElementById('setupWizard').style.display = 'none'; window.routeUserByRole(); };
 window.factoryReset = function() { if (confirm("Erase LOCAL settings? Cloud data remains.")) { localStorage.clear(); location.reload(); } };
