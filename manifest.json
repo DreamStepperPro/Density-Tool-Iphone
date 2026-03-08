@@ -1,20 +1,23 @@
 {
-  "name": "DSI Pro",
-  "short_name": "DSI Pro",
+  "name": "The Night Shift Advantage",
+  "short_name": "Advantage",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#333333",
-  "theme_color": "#333333",
+  "orientation": "portrait",
+  "background_color": "#1a1a22",
+  "theme_color": "#1a1a22",
   "icons": [
     {
-      "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Black_check.svg/192px-Black_check.svg.png",
+      "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Black_check.svg/512px-Black_check.svg.png",
+      "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
