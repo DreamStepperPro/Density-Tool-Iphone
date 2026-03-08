@@ -22,6 +22,21 @@ let isAdmin = false;
 let appInitialized = false;
 
 window.isOfflineMode = false;
+// =====================================================================
+// TRUE NETWORK HEARTBEAT
+// =====================================================================
+const connectedRef = ref(db, ".info/connected");
+onValue(connectedRef, (snap) => {
+    if (snap.val() === true) {
+        // We are physically connected to the server
+        if(document.getElementById('statusDot')) document.getElementById('statusDot').className = "status-dot status-online";
+        if(document.getElementById('supStatusDot')) document.getElementById('supStatusDot').className = "status-dot status-online";
+    } else {
+        // We lost the websocket (Airplane mode, bad Wi-Fi)
+        if(document.getElementById('statusDot')) document.getElementById('statusDot').className = "status-dot status-offline";
+        if(document.getElementById('supStatusDot')) document.getElementById('supStatusDot').className = "status-dot status-offline";
+    }
+});
 window.currentUserData = {};
 
 window.forceOfflineMode = function() {
@@ -444,7 +459,6 @@ window.startCloudSync = function() {
     dbRef_History = ref(db, `histories/${cloudPathKey}`);
     
     unsubStore = onValue(dbRef_Store, (snapshot) => {
-        dot.className = "status-dot status-online";
         const val = snapshot.val();
         if (val) { store = val; window.updateUIFromCloud(); }
         else {
