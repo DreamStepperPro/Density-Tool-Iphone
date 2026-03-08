@@ -333,7 +333,7 @@ window.routeUserByRole = function() {
 };
 
 // =====================================================================
-// SUPERVISOR ENGINE
+// SUPERVISOR ENGINE (v12.5 - Lane Stability Update)
 // =====================================================================
 let unsubSupHistories = null;
 window.startSupervisorSync = function() {
@@ -348,10 +348,13 @@ window.renderSupervisorDashboard = function(allHistories) {
     const container = document.getElementById('supCardsContainer');
     container.innerHTML = '';
     let allWeightsGlobal = [];
+    
     for (let m = 1; m <= config.machines; m++) {
         const machHistories = allHistories[`M${m}`];
         const latest = window.getAbsoluteLatest(machHistories);
-        const recentChecks = window.getRecentChecks(machHistories, 3);
+        // INCREASED TO 5: We pull the last 5 checks to get a highly accurate Standard Deviation
+        const recentChecks = window.getRecentChecks(machHistories, 5); 
+        
         if (latest) {
             container.innerHTML += window.buildSupCard(`DSI ${m}`, latest, recentChecks);
             allWeightsGlobal = allWeightsGlobal.concat(window.extractWeights(latest.entry));
@@ -359,6 +362,7 @@ window.renderSupervisorDashboard = function(allHistories) {
             container.innerHTML += `<div class="sup-card"><h3 style="color:gray;">DSI ${m}: No Data</h3></div>`;
         }
     }
+    
     if (allWeightsGlobal.length > 0) {
         const mean = allWeightsGlobal.reduce((a, b) => a + b, 0) / allWeightsGlobal.length;
         document.getElementById('machAvg').innerText = mean.toFixed(1);
@@ -404,8 +408,44 @@ window.buildSupCard = function(title, dataObj, recentChecks) {
     const opName = entry.operator || 'Unknown';
     const isStale = (Date.now() - (entry.timestamp || 0)) > 180000;
     let lanesHtml = '';
+    
     entry.lanes.forEach((l, idx) => {
         let weightVal = parseFloat(l.w), colorClass = '';
+        
+        // ==========================================
+        // 🧠 THE PREDICTIVE STABILITY ENGINE
+        // ==========================================
+        let laneWeights = [];
+        // Scoop up the weights for THIS specific lane from the last 5 checks
+        recentChecks.forEach(check => {
+            if (check.lanes && check.lanes[idx]) {
+                let cw = parseFloat(check.lanes[idx].w);
+                if (!isNaN(cw)) laneWeights.push(cw);
+            }
+        });
+
+        let stabilityHtml = '';
+        if (laneWeights.length > 1) {
+            // Calculate Variance & Standard Deviation
+            const lMean = laneWeights.reduce((a, b) => a + b, 0) / laneWeights.length;
+            const lVar = laneWeights.reduce((a, b) => a + Math.pow(b - lMean, 2), 0) / laneWeights.length;
+            const lSd = Math.sqrt(lVar);
+            
+            // Map standard deviation to a 0-100% health score (15% drop per gram of SD)
+            let score = Math.round(Math.max(0, 100 - (lSd * 15)));
+            
+            let sColor = 'var(--success)';
+            let sIcon = '🟢';
+            if (score < 80 && score >= 60) { sColor = 'var(--warning)'; sIcon = '🟡'; }
+            else if (score < 60) { sColor = 'var(--danger)'; sIcon = '🔴'; }
+            
+            // Inject the score badge
+            stabilityHtml = `<div style="font-size:0.68rem; margin-top:6px; padding-top:4px; border-top:1px solid rgba(128,128,128,0.2); color:${sColor}; font-weight:900; letter-spacing:0.5px;">${sIcon} ${score}%</div>`;
+        } else {
+            stabilityHtml = `<div style="font-size:0.68rem; margin-top:6px; padding-top:4px; border-top:1px solid rgba(128,128,128,0.2); color:gray;">--%</div>`;
+        }
+        // ==========================================
+
         if (!isNaN(weightVal) && target > 0 && !isStale) {
             let diff = Math.abs(weightVal - target);
             if (diff <= 0.5) colorClass = 'bg-perfect';
@@ -413,12 +453,15 @@ window.buildSupCard = function(title, dataObj, recentChecks) {
             else if (diff <= 3) colorClass = 'bg-warning';
             else colorClass = 'bg-danger';
         }
-        lanesHtml += `<div class="sup-lane ${colorClass}"><span class="sup-lane-lbl">${window.t('lane')} ${idx+1}</span><span class="sup-lane-wt">${l.w}</span><span class="sup-lane-dens">${l.d}</span></div>`;
+        
+        // Add the stability badge to the bottom of the lane card
+        lanesHtml += `<div class="sup-lane ${colorClass}"><span class="sup-lane-lbl">${window.t('lane')} ${idx+1}</span><span class="sup-lane-wt">${l.w}</span><span class="sup-lane-dens">${l.d}</span>${stabilityHtml}</div>`;
     });
+    
     let trendHtml = `<div class="sup-trend"><span class="sup-trend-lbl">Trend:</span>`;
-    for (let i = 0; i < 3; i++) {
+    // We only display the 3 most recent trend chips to keep the UI clean, even though the engine uses 5 checks
+    for (let i = 0; i < Math.min(3, recentChecks.length); i++) {
         const check = recentChecks[i];
-        if (!check) { trendHtml += `<span class="trend-chip trend-empty">·</span>`; continue; }
         const wts = window.extractWeights(check);
         if (wts.length === 0) { trendHtml += `<span class="trend-chip trend-empty">·</span>`; continue; }
         const mean = wts.reduce((a, b) => a + b, 0) / wts.length;
@@ -430,7 +473,14 @@ window.buildSupCard = function(title, dataObj, recentChecks) {
         else { cls = 'trend-danger'; symbol = '✗'; }
         trendHtml += `<span class="trend-chip ${cls}" title="Avg: ${mean.toFixed(1)}g">${symbol}</span>`;
     }
+    
+    // Fill empty chips if there are fewer than 3 checks
+    for(let i = recentChecks.length; i < 3; i++) {
+         trendHtml += `<span class="trend-chip trend-empty">·</span>`;
+    }
+
     trendHtml += `<span style="font-size:0.62rem; opacity:0.5; margin-left:4px;">(newest → oldest)</span></div>`;
+    
     return `
     <div class="sup-card ${isStale ? 'stale' : ''}">
         <div class="sup-header">
@@ -442,7 +492,6 @@ window.buildSupCard = function(title, dataObj, recentChecks) {
         ${trendHtml}
     </div>`;
 };
-
 // =====================================================================
 // OPERATOR ENGINE
 // =====================================================================
