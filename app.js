@@ -13,12 +13,7 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    window.db = getDatabase(app);
-    window.ref = ref;
-    window.set = set;
-    window.onValue = onValue;
-    window.update = update;
-    window.push = push;
+    const db = getDatabase(app);
     const auth = getAuth(app);
 
     const ADMIN_UID = 'm510406lBidDf7qCzqXEHmIKxBu2';
@@ -45,10 +40,10 @@
             window.startAdminRadar();
         }
 
-        const userRef = window.ref(window.db, `users/${currentUserUid}`);
-        window.update(userRef, { lastLogin: new Date().toLocaleString() }).catch(e => console.warn(e));
+        const userRef = ref(db, `users/${currentUserUid}`);
+        update(userRef, { lastLogin: new Date().toLocaleString() }).catch(e => console.warn(e));
 
-        window.onValue(userRef, (snap) => {
+        onValue(userRef, (snap) => {
             window.currentUserData = snap.val() || {};
             const isApproved = window.currentUserData.approved === true;
             if (isAdmin || isApproved) {
@@ -136,9 +131,9 @@
         if (document.getElementById('lanesContainer') && document.getElementById('lanesContainer').children.length > 0) {
             window.renderInterface();
         }
-        if (store && store.lanes) window.updateUIFromCloud();
+        if (store && store.lanes) updateUIFromCloud();
         if (history && history.length > 0) window.renderHistoryCards();
-        if (window.db && !window.isOfflineMode) window.startCommsListener();
+        if (db && !window.isOfflineMode) window.startCommsListener();
     };
 
     let config = {
@@ -188,17 +183,17 @@
     };
 
     window.sendCommsMsg = function(code, customText = "") {
-        if (window.isOfflineMode || !window.db) return;
+        if (window.isOfflineMode || !db) return;
         const role = window.currentUserData.role || 'operator';
         const name = config.displayName || window.currentUserData.adminName || 'Unknown';
         const isAdminUser = (window.currentUserData && window.currentUserData.role === 'supervisor') || role === 'supervisor' || window.myUid === 'm510406lBidDf7qCzqXEHmIKxBu2';
         const machineStr = isAdminUser ? 'ADMIN' : `DSI ${config.currentMachine}`;
-        window.push(window.ref(window.db, 'messages'), {
+        push(ref(db, 'messages'), {
             senderUid: window.myUid, senderName: name, role, machine: machineStr,
             code, text: customText, timestamp: Date.now()
         }).then(() => {
             // Prune: after every send, trim messages node to last 100 entries
-            window.onValue(window.ref(window.db, 'messages'), (snap) => {
+            onValue(ref(db, 'messages'), (snap) => {
                 const msgs = snap.val();
                 if (!msgs) return;
                 const keys = Object.keys(msgs).sort((a, b) => (msgs[a].timestamp || 0) - (msgs[b].timestamp || 0));
@@ -206,7 +201,7 @@
                     const toDelete = keys.slice(0, keys.length - 100);
                     const updates = {};
                     toDelete.forEach(k => { updates[`messages/${k}`] = null; });
-                    window.update(window.ref(window.db, '/'), updates).catch(e => console.warn('Prune failed:', e));
+                    update(ref(db, '/'), updates).catch(e => console.warn('Prune failed:', e));
                 }
             }, { onlyOnce: true });
         });
@@ -214,10 +209,10 @@
 
     let unsubComms = null;
     window.startCommsListener = function() {
-        if (window.isOfflineMode || !window.db) return;
+        if (window.isOfflineMode || !db) return;
         // Unsub existing listener before re-registering (prevents stacking on language toggle)
         if (unsubComms) { unsubComms(); unsubComms = null; }
-        unsubComms = window.onValue(window.ref(window.db, 'messages'), (snap) => {
+        unsubComms = onValue(ref(db, 'messages'), (snap) => {
             const msgs = snap.val() || {};
             const sorted = Object.values(msgs).sort((a, b) => a.timestamp - b.timestamp).slice(-30);
             window.renderChat(sorted);
@@ -324,9 +319,9 @@
     // =====================================================================
     let unsubSupHistories = null;
     window.startSupervisorSync = function() {
-        if (!window.db) { setTimeout(window.startSupervisorSync, 500); return; }
+        if (!db) { setTimeout(window.startSupervisorSync, 500); return; }
         if (unsubSupHistories) unsubSupHistories();
-        unsubSupHistories = window.onValue(window.ref(window.db, 'histories'), (snap) => {
+        unsubSupHistories = onValue(ref(db, 'histories'), (snap) => {
             window.renderSupervisorDashboard(snap.val() || {});
         });
     };
@@ -437,47 +432,47 @@
     let dbRef_Store = null, dbRef_History = null;
 
     window.startCloudSync = function() {
-        if (!window.db) { setTimeout(window.startCloudSync, 500); return; }
+        if (!db) { setTimeout(window.startCloudSync, 500); return; }
         cloudPathKey = `M${config.currentMachine}/${config.product}_${config.lanes}L`;
         const dot = document.getElementById('statusDot');
         if (unsubStore) unsubStore();
         if (unsubHistory) unsubHistory();
-        dbRef_Store = window.ref(window.db, `stores/${cloudPathKey}`);
-        dbRef_History = window.ref(window.db, `histories/${cloudPathKey}`);
-        unsubStore = window.onValue(dbRef_Store, (snapshot) => {
+        dbRef_Store = ref(db, `stores/${cloudPathKey}`);
+        dbRef_History = ref(db, `histories/${cloudPathKey}`);
+        unsubStore = onValue(dbRef_Store, (snapshot) => {
             dot.className = "status-dot status-online";
             const val = snapshot.val();
-            if (val) { store = val; window.updateUIFromCloud(); }
+            if (val) { store = val; updateUIFromCloud(); }
             else {
                 if (!store.target) {
                     const defaultTarget = config.product === 'bfast' ? '63' : '102';
                     store = { target: defaultTarget, lastUpdated: Date.now(), lanes: Array(config.lanes).fill().map(() => ({ d:'', w:'', attempts:0, smartActive:false, lastD:null, lastW:null, locked:true })) };
-                    window.set(dbRef_Store, store);
+                    set(dbRef_Store, store);
                 }
             }
         });
-        unsubHistory = window.onValue(dbRef_History, (snapshot) => {
+        unsubHistory = onValue(dbRef_History, (snapshot) => {
             const val = snapshot.val();
             history = val ? (Array.isArray(val) ? val : Object.values(val)) : [];
             window.renderHistoryCards();
         });
     };
 
-    window.pushLaneToCloud = function(idx) {
+    pushLaneToCloud = function(idx) {
         if (!dbRef_Store || window.isOfflineMode) return;
         document.getElementById('statusDot').className = "status-dot status-syncing";
         const now = Date.now();
         const updates = {};
         updates[`lanes/${idx-1}`] = { ...store.lanes[idx-1], lastUpdated: now };
         updates[`lastUpdated`] = now;
-        window.update(dbRef_Store, updates).then(() => {
+        update(dbRef_Store, updates).then(() => {
             document.getElementById('statusDot').className = "status-dot status-online";
         }).catch(() => { document.getElementById('statusDot').className = "status-dot status-offline"; });
     };
 
-    window.pushTargetToCloud = function() {
+    pushTargetToCloud = function() {
         if (!dbRef_Store || window.isOfflineMode) return;
-        window.update(dbRef_Store, { target: store.target, lastUpdated: Date.now() }).catch(e => console.error(e));
+        update(dbRef_Store, { target: store.target, lastUpdated: Date.now() }).catch(e => console.error(e));
     };
 
     // =====================================================================
@@ -548,7 +543,7 @@
         }
     };
 
-    window.updateUIFromCloud = function() {
+    updateUIFromCloud = function() {
         if (!store || !store.lanes) return;
         const tEl = document.getElementById('setTarget');
         if (document.activeElement !== tEl) {
@@ -707,14 +702,14 @@
         if (!Array.isArray(history)) history = [];
         history.unshift(row);
         if (history.length > 50) history.pop();
-        if (!window.isOfflineMode && dbRef_History) window.set(dbRef_History, history);
+        if (!window.isOfflineMode && dbRef_History) set(dbRef_History, history);
         window.renderHistoryCards();
     };
 
     window.clearHistory = function() {
         if (confirm("Clear shift history?")) {
             history = [];
-            if (!window.isOfflineMode && dbRef_History) window.set(dbRef_History, history);
+            if (!window.isOfflineMode && dbRef_History) set(dbRef_History, history);
             window.renderHistoryCards();
         }
     };
@@ -739,7 +734,7 @@
             setTimeout(() => card.classList.remove('apply-flash'), 300);
             if (navigator.vibrate) navigator.vibrate([60]);
             window.calculateLocal();
-            window.pushLaneToCloud(idx);
+            pushLaneToCloud(idx);
         }
     };
 
@@ -747,7 +742,7 @@
         const el = document.getElementById(`currDens-${i}`);
         el.readOnly = false; el.focus(); el.style.borderColor = 'var(--info)';
         store.lanes[i-1].locked = false;
-        window.pushLaneToCloud(i);
+        pushLaneToCloud(i);
         if (config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓'; }
     };
 
@@ -756,13 +751,13 @@
         const el = document.getElementById(`currDens-${i}`);
         if (!store.lanes[i-1].locked) { el.readOnly = false; setTimeout(() => { el.focus(); el.style.borderColor = 'var(--info)'; }, 50); }
         else { el.readOnly = true; el.style.borderColor = 'var(--border)'; }
-        window.pushLaneToCloud(i);
+        pushLaneToCloud(i);
     };
 
     window.handleInput = function(i) { store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; window.calculateLocal(); };
-    window.handleWeightInput = function(i) { store.lanes[i-1].w = document.getElementById(`avgWt-${i}`).value; window.calculateLocal(); window.pushLaneToCloud(i); };
-    window.lockOnBlur = function(i) { setTimeout(() => { if (document.activeElement === document.getElementById(`currDens-${i}`)) return; store.lanes[i-1].locked = true; store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; window.pushLaneToCloud(i); }, 150); };
-    window.recheckLane = function(idx) { store.lanes[idx-1].w = ''; document.getElementById(`avgWt-${idx}`).value = ''; lastAutoSaveCombo = ""; document.getElementById(`avgWt-${idx}`).focus(); window.calculateLocal(); window.pushLaneToCloud(idx); };
+    window.handleWeightInput = function(i) { store.lanes[i-1].w = document.getElementById(`avgWt-${i}`).value; window.calculateLocal(); pushLaneToCloud(i); };
+    window.lockOnBlur = function(i) { setTimeout(() => { if (document.activeElement === document.getElementById(`currDens-${i}`)) return; store.lanes[i-1].locked = true; store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; pushLaneToCloud(i); }, 150); };
+    window.recheckLane = function(idx) { store.lanes[idx-1].w = ''; document.getElementById(`avgWt-${idx}`).value = ''; lastAutoSaveCombo = ""; document.getElementById(`avgWt-${idx}`).focus(); window.calculateLocal(); pushLaneToCloud(idx); };
 
     // =====================================================================
     // TARGET CONFIRMATION
@@ -776,7 +771,7 @@
     };
     window.confirmTargetChange = function() { if (pendingTargetValue !== null) { window.applyTargetNow(pendingTargetValue); pendingTargetValue = null; } document.getElementById('targetConfirm').classList.remove('show'); };
     window.cancelTargetChange = function() { document.getElementById('setTarget').value = store.target || ''; pendingTargetValue = null; document.getElementById('targetConfirm').classList.remove('show'); };
-    window.applyTargetNow = function(val) { store.target = val; document.getElementById('displayTarget').innerText = `${window.t('target')}: ${val}g`; document.getElementById('targetDisplay').innerText = `${val}g`; window.calculateLocal(); window.pushTargetToCloud(); };
+    window.applyTargetNow = function(val) { store.target = val; document.getElementById('displayTarget').innerText = `${window.t('target')}: ${val}g`; document.getElementById('targetDisplay').innerText = `${val}g`; window.calculateLocal(); pushTargetToCloud(); };
 
     // =====================================================================
     // SETTINGS
@@ -803,7 +798,7 @@
         localStorage.setItem('dsi_config_v11', JSON.stringify(config));
     };
     window.toggleTheme = function() { config.theme = document.getElementById('setTheme').value; window.applyTheme(); window.saveLocalSettings(); };
-    window.saveDisplayName = function() { const name = document.getElementById('setDispName').value; config.displayName = name; window.saveLocalSettings(); if (window.myUid && !window.isOfflineMode && window.update && window.db) window.update(window.ref(window.db, `users/${window.myUid}`), { displayName: name }).catch(e=>{}); };
+    window.saveDisplayName = function() { const name = document.getElementById('setDispName').value; config.displayName = name; window.saveLocalSettings(); if (window.myUid && !window.isOfflineMode && update && db) update(ref(db, `users/${window.myUid}`), { displayName: name }).catch(e=>{}); };
     window.applyTheme = function() { if (config.theme === 'dark') document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); };
     window.completeSetup = function() { config.machines = parseInt(document.getElementById('setupMachines').value); config.lanes = parseInt(document.getElementById('setupLanes').value); config.product = document.getElementById('setupProd').value; localStorage.setItem('dsi_setup_done', 'true'); window.saveLocalSettings(); document.getElementById('setupWizard').style.display = 'none'; window.routeUserByRole(); };
     window.factoryReset = function() { if (confirm("Erase LOCAL settings? Cloud data remains.")) { localStorage.clear(); location.reload(); } };
@@ -817,8 +812,8 @@
     window.openAdmin = function() {
         document.getElementById('adminModal').style.display = 'flex';
         if (!usersDbRef) {
-            usersDbRef = window.ref(window.db, 'users');
-            window.onValue(usersDbRef, (snap) => {
+            usersDbRef = ref(db, 'users');
+            onValue(usersDbRef, (snap) => {
                 const users = snap.val() || {};
                 const pending = [], approved = [];
                 for (const [key, data] of Object.entries(users)) {
@@ -844,9 +839,9 @@
         <div class="admin-user-card" style="${highlight ? 'border-color:var(--warning);' : ''}">
             <div class="admin-user-id">ID: ${key}</div>
             <div class="admin-user-name">Device: <strong>${dispName}</strong></div>
-            <input type="text" placeholder="Admin Name" value="${adminName}" onblur="window.updateAdminName('${key}', this.value)" style="margin-bottom:8px; padding:8px; font-size:0.85rem; width:100%; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text);">
+            <input type="text" placeholder="Admin Name" value="${adminName}" onblur="updateAdminName('${key}', this.value)" style="margin-bottom:8px; padding:8px; font-size:0.85rem; width:100%; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text);">
             <div class="admin-user-row">
-                <select onchange="window.updateUserRole('${key}', this.value)" style="padding:6px; font-size:0.8rem; width:40%; border-radius:6px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);">
+                <select onchange="updateUserRole('${key}', this.value)" style="padding:6px; font-size:0.8rem; width:40%; border-radius:6px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);">
                     <option value="operator" ${role === 'operator' ? 'selected' : ''}>Operator</option>
                     <option value="supervisor" ${role === 'supervisor' ? 'selected' : ''}>Supervisor</option>
                 </select>
@@ -861,18 +856,18 @@
     };
 
     window.closeAdmin = function() { document.getElementById('adminModal').style.display = 'none'; };
-    window.updateAdminName = function(uid, name) { window.update(window.ref(window.db, `users/${uid}`), { adminName: name }); };
-    window.updateUserRole = function(uid, role) { window.update(window.ref(window.db, `users/${uid}`), { role }); };
+    updateAdminName = function(uid, name) { update(ref(db, `users/${uid}`), { adminName: name }); };
+    updateUserRole = function(uid, role) { update(ref(db, `users/${uid}`), { role }); };
     window.toggleUserApprove = function(uid, isAppr) {
-        window.update(window.ref(window.db, `users/${uid}`), { approved: isAppr, requestPending: false });
+        update(ref(db, `users/${uid}`), { approved: isAppr, requestPending: false });
         if (isAppr) { notifiedSet.delete(uid); persistNotifiedSet(); }
     };
-    window.deleteUser = function(uid) { window.set(window.ref(window.db, `users/${uid}`), null); };
+    window.deleteUser = function(uid) { set(ref(db, `users/${uid}`), null); };
 
     window.pingAdmin = function() {
         const nameInput = document.getElementById('reqName').value.trim();
         if (!nameInput) { alert("Please enter your name."); return; }
-        window.update(window.ref(window.db, `users/${window.myUid}`), { displayName: nameInput, requestPending: true, requestTime: Date.now() })
+        update(ref(db, `users/${window.myUid}`), { displayName: nameInput, requestPending: true, requestTime: Date.now() })
             .then(() => { document.getElementById('requestForm').innerHTML = `<div style="color:var(--success); font-weight:bold; font-size:1.1rem; padding:10px;">✅ Flare Sent!<br><span style="font-size:0.8rem; color:var(--text); font-weight:normal;">Admin has been notified.</span></div>`; });
     };
 
@@ -880,7 +875,7 @@
     let notifiedSet = new Set(JSON.parse(sessionStorage.getItem('dsi_notified') || '[]'));
     function persistNotifiedSet() { sessionStorage.setItem('dsi_notified', JSON.stringify([...notifiedSet])); }
     window.startAdminRadar = function() {
-        window.onValue(window.ref(window.db, 'users'), (snap) => {
+        onValue(ref(db, 'users'), (snap) => {
             const users = snap.val() || {};
             for (let uid in users) {
                 const u = users[uid];
