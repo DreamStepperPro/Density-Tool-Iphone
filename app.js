@@ -16,7 +16,7 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 
-const ADMIN_UID = 'm510406lBidDf7qCzqXEHmIKxBu2';
+const ADMIN_UID = 'ArJkN0RNhQdgZ0ry8nclP9P4ALv2';
 let currentUserUid = null;
 let isAdmin = false;
 let appInitialized = false;
@@ -205,7 +205,7 @@ window.sendCommsMsg = function(code, customText = "") {
     if (window.isOfflineMode || !db) return;
     const role = window.currentUserData.role || 'operator';
     const name = config.displayName || window.currentUserData.adminName || 'Unknown';
-    const isAdminUser = (window.currentUserData && window.currentUserData.role === 'supervisor') || role === 'supervisor' || window.myUid === 'm510406lBidDf7qCzqXEHmIKxBu2';
+    const isAdminUser = (window.currentUserData && window.currentUserData.role === 'supervisor') || role === 'supervisor' || window.myUid === ADMIN_UID;
     const machineStr = isAdminUser ? 'ADMIN' : `DSI ${config.currentMachine}`;
     
     push(ref(db, 'messages'), {
@@ -263,7 +263,7 @@ window.renderChat = function(messages) {
             if (!isMe) {
                 newMsgsCount++;
                 const role = window.currentUserData ? window.currentUserData.role : '';
-                if (role === 'supervisor' || window.myUid === 'm510406lBidDf7qCzqXEHmIKxBu2') {
+                if (role === 'supervisor' || window.myUid === ADMIN_UID) {
                     window.fireNativeNotification(`DSI Alert: ${msg.machine}`, displayText);
                 } else if (!isSosOpen) {
                     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
