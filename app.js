@@ -150,7 +150,7 @@ window.applyTranslations = function() {
     if (store && store.lanes) window.updateUIFromCloud();
     if (history && history.length > 0) window.renderHistoryCards();
     const supDash = document.getElementById('supervisorDashboard');
-    if (supDash && supDash.style.display !== 'none' && !window.isOfflineMode) window.startSupervisorSync();
+    if (supDash && supDash.style.display !== 'none' && cachedHistories) window.renderSupervisorDashboard(cachedHistories);
     if (db && !window.isOfflineMode) window.startCommsListener();
 };
 
@@ -161,6 +161,7 @@ let config = {
 
 let store = {};
 let history = [];
+let cachedHistories = null;
 const FACTORS = { lunch: 0.01, bfast: 0.017 };
 let pressTimer;
 let lastAutoSaveCombo = "";
@@ -347,6 +348,7 @@ window.startSupervisorSync = function() {
 };
 
 window.renderSupervisorDashboard = function(allHistories) {
+    cachedHistories = allHistories;
     const container = document.getElementById('supCardsContainer');
     container.innerHTML = '';
     let allWeightsGlobal = [];
