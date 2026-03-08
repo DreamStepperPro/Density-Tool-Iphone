@@ -440,9 +440,9 @@ window.buildSupCard = function(title, dataObj, recentChecks) {
             else if (score < 60) { sColor = 'var(--danger)'; sIcon = '🔴'; }
             
             // Inject the score badge
-            stabilityHtml = `<div style="font-size:0.68rem; margin-top:6px; padding-top:4px; border-top:1px solid rgba(128,128,128,0.2); color:${sColor}; font-weight:900; letter-spacing:0.5px;">${sIcon} ${score}%</div>`;
+            stabilityHtml = `<div class="lane-stability" style="color:${sColor}">${sIcon} ${score}%</div>`;
         } else {
-            stabilityHtml = `<div style="font-size:0.68rem; margin-top:6px; padding-top:4px; border-top:1px solid rgba(128,128,128,0.2); color:gray;">--%</div>`;
+            stabilityHtml = `<div class="lane-stability" style="color:gray;">--%</div>`;
         }
         // ==========================================
 
