@@ -149,6 +149,7 @@ window.applyTranslations = function() {
     }
     if (store && store.lanes) window.updateUIFromCloud();
     if (history && history.length > 0) window.renderHistoryCards();
+    // Safe supervisor re-render: uses cached data, no Firebase unsub/resub
     const supDash = document.getElementById('supervisorDashboard');
     if (supDash && supDash.style.display !== 'none' && cachedHistories) window.renderSupervisorDashboard(cachedHistories);
     if (db && !window.isOfflineMode) window.startCommsListener();
@@ -322,7 +323,25 @@ window.initApp = function() {
 window.routeUserByRole = function() {
     const role = window.currentUserData.role || 'operator';
     document.getElementById('globalStatsBar').style.display = 'flex';
-    if (role === 'supervisor') {
+    
+    if (isAdmin) {
+        // 👑 GOD MODE: Load both interfaces simultaneously
+        document.getElementById('supervisorDashboard').style.display = 'block';
+        document.getElementById('supervisorDashboard').style.paddingBottom = '0px'; 
+        
+        document.getElementById('appContent').style.display = 'block';
+        document.getElementById('appContent').style.filter = 'none';
+        
+        // Hide the redundant secondary header to save screen space
+        const opHeader = document.querySelector('#appContent .header');
+        if (opHeader) opHeader.style.display = 'none';
+        
+        if (!window.isOfflineMode) {
+            window.startSupervisorSync();
+            window.startCloudSync();
+        }
+        window.renderInterface();
+    } else if (role === 'supervisor') {
         document.getElementById('appContent').style.display = 'none';
         document.getElementById('supervisorDashboard').style.display = 'block';
         if (!window.isOfflineMode) window.startSupervisorSync();
@@ -589,15 +608,26 @@ window.renderInterface = function() {
     const fieldMap = { setMachines:'machines', setLanes:'lanes', setProd:'product', setSmart:'smart', setInputMode:'inputMode', setTheme:'theme' };
     for (const [id, key] of Object.entries(fieldMap)) { const el = document.getElementById(id); if (el) el.value = config[key]; }
     if (document.getElementById('setDispName')) document.getElementById('setDispName').value = config.displayName || '';
+    
     const container = document.getElementById('lanesContainer');
     container.innerHTML = '';
+    
     for (let i = 1; i <= config.lanes; i++) {
         let labelText = window.t('density');
-        if (config.inputMode === 'longpress') labelText += " (HOLD)";
-        if (config.inputMode === 'doubletap') labelText += " (×2)";
-        const btnHtml = config.inputMode === 'button'
+        if (config.inputMode === 'longpress' && !isAdmin) labelText += " (HOLD)";
+        if ((config.inputMode === 'doubletap' && !isAdmin) || isAdmin) labelText += " (×2)";
+        
+        // If Admin, hide the lock button (double tap is forced)
+        let btnHtml = config.inputMode === 'button' && !isAdmin
             ? `<button class="btn-icon" id="lockDens-${i}" onmousedown="event.preventDefault()" onclick="window.toggleLock(${i})">🔒</button>`
             : `<button class="btn-icon btn-hidden" id="lockDens-${i}">🔒</button>`;
+            
+        // Armor plate the weight box if Admin
+        let weightHtml = `<input type="number" id="avgWt-${i}" inputmode="decimal" oninput="window.handleWeightInput(${i})" onblur="window.checkAutoSave()">`;
+        if (isAdmin) {
+            weightHtml = `<input type="number" id="avgWt-${i}" class="density-input" inputmode="decimal" readonly oninput="window.handleWeightInput(${i})" onblur="window.checkAutoSave(); window.lockWeightOnBlur(${i})">`;
+        }
+
         container.innerHTML += `
             <div class="lane-card" id="card-${i}">
                 <div class="lane-header">
@@ -612,9 +642,9 @@ window.renderInterface = function() {
                     </div>
                 </div>
                 <div>
-                    <label>${window.t('avgWt')}</label>
+                    <label>${window.t('avgWt')} ${isAdmin ? '(×2)' : ''}</label>
                     <div class="input-group">
-                        <input type="number" id="avgWt-${i}" inputmode="decimal" oninput="window.handleWeightInput(${i})" onblur="window.checkAutoSave()">
+                        ${weightHtml}
                         <button class="btn-icon btn-recheck" onclick="window.recheckLane(${i})">↻</button>
                     </div>
                 </div>
@@ -625,14 +655,27 @@ window.renderInterface = function() {
                 <input type="hidden" id="calcVal-${i}">
             </div>`;
     }
+    
+    // Bind the unlock listeners
     for (let i = 1; i <= config.lanes; i++) {
-        const el = document.getElementById(`currDens-${i}`);
-        if (config.inputMode === 'longpress') {
-            el.addEventListener('touchstart', () => { pressTimer = setTimeout(() => window.unlockAndFocus(i), 800); });
-            el.addEventListener('touchend', () => clearTimeout(pressTimer));
-            el.addEventListener('mousedown', () => { pressTimer = setTimeout(() => window.unlockAndFocus(i), 800); });
-            el.addEventListener('mouseup', () => clearTimeout(pressTimer));
-        } else if (config.inputMode === 'doubletap') { el.ondblclick = () => window.unlockAndFocus(i); }
+        const dEl = document.getElementById(`currDens-${i}`);
+        const wEl = document.getElementById(`avgWt-${i}`);
+        
+        if (isAdmin) {
+            // Admin God Mode: Double tap required for BOTH boxes
+            dEl.ondblclick = () => window.unlockAndFocus(i);
+            if (wEl) wEl.ondblclick = () => window.unlockWeightAndFocus(i);
+        } else {
+            // Standard Operator Settings
+            if (config.inputMode === 'longpress') {
+                dEl.addEventListener('touchstart', () => { pressTimer = setTimeout(() => window.unlockAndFocus(i), 800); });
+                dEl.addEventListener('touchend', () => clearTimeout(pressTimer));
+                dEl.addEventListener('mousedown', () => { pressTimer = setTimeout(() => window.unlockAndFocus(i), 800); });
+                dEl.addEventListener('mouseup', () => clearTimeout(pressTimer));
+            } else if (config.inputMode === 'doubletap') { 
+                dEl.ondblclick = () => window.unlockAndFocus(i); 
+            }
+        }
     }
 };
 
@@ -658,8 +701,17 @@ window.updateUIFromCloud = function() {
                 if (config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓'; }
             }
         }
+        
         const wEl = document.getElementById(`avgWt-${i}`);
-        if (document.activeElement !== wEl) wEl.value = lane.w || '';
+        if (document.activeElement !== wEl) {
+            wEl.value = lane.w || '';
+            // Ensure Admin weight boxes stay locked
+            if (isAdmin) {
+                wEl.readOnly = true;
+                wEl.style.borderColor = 'var(--border)';
+            }
+        }
+        
         const card = document.getElementById(`card-${i}`);
         if (config.smart === 'on' || (config.smart === 'auto' && lane.smartActive)) card.classList.add('smart-active');
         else card.classList.remove('smart-active');
@@ -856,6 +908,24 @@ window.handleInput = function(i) { store.lanes[i-1].d = document.getElementById(
 window.handleWeightInput = function(i) { store.lanes[i-1].w = document.getElementById(`avgWt-${i}`).value; window.calculateLocal(); window.pushLaneToCloud(i); };
 window.lockOnBlur = function(i) { setTimeout(() => { if (document.activeElement === document.getElementById(`currDens-${i}`)) return; store.lanes[i-1].locked = true; store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; window.pushLaneToCloud(i); }, 150); };
 window.recheckLane = function(idx) { store.lanes[idx-1].w = ''; document.getElementById(`avgWt-${idx}`).value = ''; lastAutoSaveCombo = ""; document.getElementById(`avgWt-${idx}`).focus(); window.calculateLocal(); window.pushLaneToCloud(idx); };
+
+window.unlockWeightAndFocus = function(i) {
+    if (!isAdmin) return;
+    const el = document.getElementById(`avgWt-${i}`);
+    el.readOnly = false; 
+    el.focus(); 
+    el.style.borderColor = 'var(--info)'; // Turns blue to show it's active
+};
+
+window.lockWeightOnBlur = function(i) {
+    if (!isAdmin) return;
+    setTimeout(() => { 
+        const el = document.getElementById(`avgWt-${i}`);
+        if (document.activeElement === el) return; // Don't lock if still typing
+        el.readOnly = true; 
+        el.style.borderColor = 'var(--border)'; 
+    }, 150);
+};
 
 // =====================================================================
 // TARGET CONFIRMATION
