@@ -6,16 +6,12 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#1a1a22">
-    <link rel="apple-touch-icon" href="icon.png.png">
-    
     <link rel="manifest" href="manifest.json">
     <title>The Night Shift Advantage v12.4</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<!-- ACCESS PENDING -->
 <div class="modal-overlay" id="accessDeniedOverlay" style="display:flex; z-index:300; background:var(--bg);">
     <div class="modal" style="text-align:center;">
         <h2 style="color:var(--danger);" data-i18n="accessPending">🔒 Access Pending</h2>
@@ -32,13 +28,11 @@
     </div>
 </div>
 
-<!-- ADMIN TOAST -->
 <div id="adminToast" onclick="window.openAdmin()">
     <span style="font-size:1.4rem;">🚨</span>
     <span id="toastMsg">New Access Request!</span>
 </div>
 
-<!-- ADMIN COMMAND CENTER -->
 <div class="modal-overlay" id="adminModal" style="display:none; z-index:250;">
     <div class="modal">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
@@ -54,7 +48,6 @@
     </div>
 </div>
 
-<!-- SETUP WIZARD -->
 <div class="modal-overlay" id="setupWizard" style="display:none;">
     <div class="modal">
         <h2>Initial Setup</h2>
@@ -74,7 +67,6 @@
     </div>
 </div>
 
-<!-- SETTINGS -->
 <div class="modal-overlay" id="settingsMenu">
     <div class="modal">
         <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -131,7 +123,6 @@
     </div>
 </div>
 
-<!-- SOS / LINE DISPATCH MODAL -->
 <div class="modal-overlay" id="sosModal" style="display:none; z-index:200;">
     <div class="modal" style="max-height:95vh; display:flex; flex-direction:column;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -152,13 +143,26 @@
     </div>
 </div>
 
-<!-- SOS FAB -->
 <div class="fab-sos" id="btnSos" onclick="window.openSos()" style="display:none;">
     🚨<div class="fab-badge" id="sosBadge" style="display:none;">0</div>
 </div>
 
-<!-- OPERATOR VIEW -->
-<div class="container" id="appContent" style="display:none; filter:blur(5px);">
+<div class="container" id="supervisorDashboard" style="display:none; padding-bottom:90px;">
+    <div class="header">
+        <div style="display:flex; align-items:center;">
+            <div id="supStatusDot" class="status-dot status-online"></div>
+            <h1 style="margin:0; font-size:1.35rem; font-weight:800; letter-spacing:-0.5px;">DSI Line <span style="font-size:0.78rem; color:var(--accent); vertical-align:middle;">(OEE VIEW)</span></h1>
+        </div>
+        <div class="header-btns">
+            <button class="lang-btn" id="langToggleBtnSup" onclick="window.toggleLanguage()">EN</button>
+            <button class="gear-btn btn-hidden" id="btnAdminSup" onclick="window.openAdmin()" style="color:var(--accent);">👑</button>
+            <button class="gear-btn" onclick="window.toggleSettings()">⚙️</button>
+        </div>
+    </div>
+    <div id="supCardsContainer" style="margin-top:14px;"></div>
+</div>
+
+<div class="container" id="appContent" style="display:none; filter:blur(5px); padding-bottom:90px;">
     <div class="header">
         <div style="display:flex; align-items:center;">
             <div id="statusDot" class="status-dot"></div>
@@ -184,23 +188,6 @@
     </div>
 </div>
 
-<!-- SUPERVISOR VIEW -->
-<div class="container" id="supervisorDashboard" style="display:none; padding-bottom:90px;">
-    <div class="header">
-        <div style="display:flex; align-items:center;">
-            <div id="supStatusDot" class="status-dot status-online"></div>
-            <h1 style="margin:0; font-size:1.35rem; font-weight:800; letter-spacing:-0.5px;">DSI Line <span style="font-size:0.78rem; color:var(--accent); vertical-align:middle;">(OEE VIEW)</span></h1>
-        </div>
-        <div class="header-btns">
-            <button class="lang-btn" id="langToggleBtnSup" onclick="window.toggleLanguage()">EN</button>
-            <button class="gear-btn btn-hidden" id="btnAdminSup" onclick="window.openAdmin()" style="color:var(--accent);">👑</button>
-            <button class="gear-btn" onclick="window.toggleSettings()">⚙️</button>
-        </div>
-    </div>
-    <div id="supCardsContainer" style="margin-top:14px;"></div>
-</div>
-
-<!-- GLOBAL STATS BAR -->
 <div class="stats-bar" id="globalStatsBar" style="display:none;">
     <div class="stat-box">
         <span class="stat-val"><span id="machAvg">--</span><span class="stat-delta" id="avgDelta"></span></span>
@@ -217,6 +204,7 @@
         <span class="stat-lbl" data-i18n="target">TARGET</span>
     </div>
 </div>
+
 <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
@@ -230,6 +218,3 @@
 <script type="module" src="app.js"></script>
 </body>
 </html>
-
-
-
