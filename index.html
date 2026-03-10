@@ -130,6 +130,65 @@
     </div>
 </div>
 
+<!-- YIELD CALCULATOR MODAL -->
+<div class="modal-overlay" id="yieldModal" style="display:none; z-index:250;">
+    <div class="modal" style="max-width:500px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h2 style="color:var(--success); margin:0;">📊 Yield Calculator</h2>
+            <button onclick="window.closeYield()" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
+        </div>
+
+        <div class="yield-dash">
+            <div class="yield-stat">Input<br><span id="yInput">0.0</span> <span style="font-size:0.6rem; opacity:0.5; font-weight:normal; display:inline;">lbs</span></div>
+            <div class="yield-stat">Output<br><span id="yOutput">0.0</span> <span style="font-size:0.6rem; opacity:0.5; font-weight:normal; display:inline;">lbs</span></div>
+            <div class="yield-stat">Target<br><span style="color:var(--perfect)">97.08%</span></div>
+        </div>
+
+        <div class="yield-breakdown">
+            <div class="yb-item">Fillet: <span id="yPctFillet">0.0%</span></div>
+            <div class="yb-item">Nugget: <span id="yPctNugget">0.0%</span></div>
+            <div class="yb-item">Trim: <span id="yPctTrim">0.0%</span></div>
+        </div>
+
+        <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
+
+        <div style="max-height:40vh; overflow-y:auto; padding-right:5px;">
+            <h3 class="y-sec-title">🥩 Fillets</h3>
+            <div class="y-grid">
+                <div><label>10130 (Lunch)</label><input type="number" id="y10130" oninput="window.calcYield()" placeholder="lbs" inputmode="decimal"></div>
+                <div><label>10070 (Bfast)</label><input type="number" id="y10070" oninput="window.calcYield()" placeholder="lbs" inputmode="decimal"></div>
+            </div>
+            <h3 class="y-sec-title">🍗 Nuggets</h3>
+            <div class="y-grid">
+                <div><label>10114</label><input type="number" id="y10114" oninput="window.calcYield()" placeholder="lbs" inputmode="decimal"></div>
+            </div>
+            <h3 class="y-sec-title">🔪 Trim</h3>
+            <div class="y-grid">
+                <div><label>30212</label><input type="number" id="y30212" oninput="window.calcYield()" placeholder="lbs" inputmode="decimal"></div>
+                <div><label>30211</label><input type="number" id="y30211" oninput="window.calcYield()" placeholder="lbs" inputmode="decimal"></div>
+                <div><label>15530</label><input type="number" id="y15530" oninput="window.calcYield()" placeholder="lbs" inputmode="decimal"></div>
+                <div><label>15531</label><input type="number" id="y15531" oninput="window.calcYield()" placeholder="lbs" inputmode="decimal"></div>
+                <div style="grid-column:span 2;">
+                    <label>40030 (BOXES — 40 lbs ea)</label>
+                    <input type="number" id="y40030boxes" oninput="window.calcYield()" placeholder="# of boxes" inputmode="numeric">
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <button class="modal-btn secondary" onclick="window.clearYieldInputs()">CLEAR CURRENT</button>
+            <button class="modal-btn" onclick="window.saveEosYield()">SAVE EOS YIELD</button>
+        </div>
+
+        <hr style="border:0; border-top:1px solid var(--border); margin:20px 0 10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin:0; font-size:1rem;">Weekly History</h3>
+            <button class="btn-icon" style="border:none; color:var(--danger); font-size:1rem;" onclick="window.wipeYieldHistory()">🗑️ WIPE</button>
+        </div>
+        <div id="yieldHistoryList" style="margin-top:10px; display:flex; flex-direction:column; gap:8px;"></div>
+    </div>
+</div>
+
 <!-- SOS / LINE DISPATCH MODAL -->
 <div class="modal-overlay" id="sosModal" style="display:none; z-index:200;">
     <div class="modal" style="max-height:95vh; display:flex; flex-direction:column;">
@@ -165,6 +224,7 @@
         </div>
         <div class="header-btns">
             <button class="lang-btn" id="langToggleBtnSup" onclick="window.toggleLanguage()">EN</button>
+            <button class="gear-btn btn-hidden" id="btnYieldSup" onclick="window.openYield()" style="color:var(--success);">📊</button>
             <button class="gear-btn btn-hidden" id="btnAdminSup" onclick="window.openAdmin()" style="color:var(--accent);">👑</button>
             <button class="gear-btn" onclick="window.toggleSettings()">⚙️</button>
         </div>
@@ -181,6 +241,7 @@
         </div>
         <div class="header-btns">
             <button class="lang-btn" id="langToggleBtnOp" onclick="window.toggleLanguage()">EN</button>
+            <button class="gear-btn btn-hidden" id="btnYieldOp" onclick="window.openYield()" style="color:var(--success);">📊</button>
             <button class="gear-btn btn-hidden" id="btnAdmin" onclick="window.openAdmin()" style="color:var(--accent);">👑</button>
             <button class="gear-btn" onclick="window.toggleSettings()">⚙️</button>
         </div>
