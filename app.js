@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, onValue, update, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set, onValue, update, push, serverTimestamp, goOnline } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -1180,3 +1180,30 @@ window.wipeYieldHistory = function() {
             .then(() => window.showAdminToast("🗑️ Yield history wiped."));
     }
 };
+
+// =====================================================================
+// INSTANT WAKE / BACKGROUND RECONNECT ENGINE
+// =====================================================================
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && !window.isOfflineMode && db) {
+
+        // Force the Firebase websocket awake immediately
+        goOnline(db);
+
+        // Re-sync based on role — each function handles its own unsub safely
+        if (isAdmin) {
+            window.startSupervisorSync();
+            window.startCloudSync();
+        } else {
+            const role = window.currentUserData ? window.currentUserData.role : 'operator';
+            if (role === 'supervisor') {
+                window.startSupervisorSync();
+            } else {
+                window.startCloudSync();
+            }
+        }
+
+        // Re-connect Line Dispatch radio
+        window.startCommsListener();
+    }
+});
