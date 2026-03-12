@@ -34,7 +34,8 @@
         .gear-btn { font-size: 1.5rem; background: none; border: none; cursor: pointer; padding: 5px; color: var(--text); }
         .lang-btn { background: var(--info); color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem; box-shadow: var(--shadow); }
 
-        .status-dot { width: 9px; height: 9px; background: #ccc; border-radius: 50%; display: inline-block; margin-right: 6px; flex-shrink: 0; transition: background 0.3s, box-shadow 0.3s; }
+        .status-dot { width: 9px; height: 9px; background: #ccc; border-radius: 50%; display: inline-block; margin-right: 6px; flex-shrink: 0; transition: background 0.3s, box-shadow 0.3s, transform 0.2s; cursor: pointer; }
+        .status-dot:active { transform: scale(1.6); }
         .status-online { background: var(--success); box-shadow: 0 0 6px var(--success); }
         .status-offline { background: var(--danger); }
         .status-syncing { background: var(--warning); box-shadow: 0 0 6px var(--warning); animation: pulse-dot 1s infinite; }
