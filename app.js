@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, onValue, update, push, serverTimestamp, goOnline } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set, onValue, update, push, serverTimestamp, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -1207,3 +1207,36 @@ document.addEventListener("visibilitychange", () => {
         window.startCommsListener();
     }
 });
+
+// =====================================================================
+// NETWORK JUMPSTART ENGINE (Manual Radio Reset)
+// =====================================================================
+window.jumpstartNetwork = function() {
+    if (!db) return;
+
+    const dot = document.getElementById('statusDot');
+    if (dot) dot.style.transform = 'scale(1.5)';
+    window.showAdminToast('🔄 Reconnecting Radio...');
+
+    // Kill the zombie connection
+    goOffline(db);
+
+    // After 1 second, force a fresh handshake and re-sync
+    setTimeout(() => {
+        goOnline(db);
+        if (dot) dot.style.transform = 'scale(1)';
+
+        if (isAdmin) {
+            window.startSupervisorSync();
+            window.startCloudSync();
+        } else {
+            const role = window.currentUserData ? window.currentUserData.role : 'operator';
+            if (role === 'supervisor') {
+                window.startSupervisorSync();
+            } else {
+                window.startCloudSync();
+            }
+        }
+        window.startCommsListener();
+    }, 1000);
+};
