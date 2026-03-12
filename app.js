@@ -1181,6 +1181,39 @@ window.wipeYieldHistory = function() {
     }
 };
 
+window.broadcastMidShiftYield = function() {
+    const v = (id) => parseFloat(document.getElementById(id).value) || 0;
+    const totalOutput = v('y10130')+v('y10070')+v('y10114')+v('y30212')+v('y30211')+v('y15530')+v('y15531')+(v('y40030boxes')*40);
+
+    if (totalOutput <= 0) { alert("Please enter product weights first."); return; }
+
+    const trim   = document.getElementById('yPctTrim').innerText;
+    const fillet = document.getElementById('yPctFillet').innerText;
+    const nugget = document.getElementById('yPctNugget').innerText;
+
+    // Push to Line Dispatch so every operator sees it
+    const msg = `📊 LIVE YIELD UPDATE\n🔪 Trim: ${trim}\n🥩 Fillets: ${fillet}\n🍗 Nuggets: ${nugget}`;
+    window.sendCommsMsg('TEXT', msg);
+
+    // Save to Weekly History with Mid-Shift tag
+    const timeStr = new Date().toLocaleString([], { weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    const yieldData = {
+        timestamp: Date.now(),
+        timeStr: timeStr + ' (Mid-Shift)',
+        input:    document.getElementById('yInput').innerText,
+        output:   totalOutput.toFixed(1),
+        fillet, nugget, trim,
+        operator: window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Supervisor') : 'Supervisor'
+    };
+
+    push(ref(db, 'yieldHistory'), yieldData)
+        .then(() => {
+            window.showAdminToast("📣 Yield Broadcasted to Team!");
+            window.clearYieldInputs();
+        })
+        .catch(() => window.showAdminToast("❌ Error saving mid-shift yield."));
+};
+
 // =====================================================================
 // INSTANT WAKE / BACKGROUND RECONNECT ENGINE
 // =====================================================================
