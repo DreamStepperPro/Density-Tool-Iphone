@@ -28,11 +28,9 @@ window.isOfflineMode = false;
 const connectedRef = ref(db, ".info/connected");
 onValue(connectedRef, (snap) => {
     if (snap.val() === true) {
-        // We are physically connected to the server
         if(document.getElementById('statusDot')) document.getElementById('statusDot').className = "status-dot status-online";
         if(document.getElementById('supStatusDot')) document.getElementById('supStatusDot').className = "status-dot status-online";
     } else {
-        // We lost the websocket (Airplane mode, bad Wi-Fi)
         if(document.getElementById('statusDot')) document.getElementById('statusDot').className = "status-dot status-offline";
         if(document.getElementById('supStatusDot')) document.getElementById('supStatusDot').className = "status-dot status-offline";
     }
@@ -151,7 +149,6 @@ window.applyTranslations = function() {
     }
     if (store && store.lanes) window.updateUIFromCloud();
     if (history && history.length > 0) window.renderHistoryCards();
-    // Safe supervisor re-render: uses cached data, no Firebase unsub/resub
     const supDash = document.getElementById('supervisorDashboard');
     if (supDash && supDash.style.display !== 'none' && cachedHistories) window.renderSupervisorDashboard(cachedHistories);
     if (db && !window.isOfflineMode) window.startCommsListener();
@@ -167,7 +164,10 @@ let history = [];
 let cachedHistories = null;
 const FACTORS = { lunch: 0.01, bfast: 0.017 };
 let pressTimer;
-let weightDebounceTimers = {};
+
+// Weekend Fix 1: Global scope for debounce timers (fixes auto-save)
+window.weightDebounceTimers = {};
+
 let lastAutoSaveCombo = "";
 let cloudPathKey = "";
 let prevAvg = null;
@@ -327,24 +327,18 @@ window.routeUserByRole = function() {
     const role = window.currentUserData.role || 'operator';
     document.getElementById('globalStatsBar').style.display = 'flex';
     
-    // Yield button visible to admin and supervisor
     if (isAdmin || role === 'supervisor') {
         if (document.getElementById('btnYieldOp')) document.getElementById('btnYieldOp').classList.remove('btn-hidden');
         if (document.getElementById('btnYieldSup')) document.getElementById('btnYieldSup').classList.remove('btn-hidden');
     }
 
     if (isAdmin) {
-        // 👑 GOD MODE: Load both interfaces simultaneously
         document.getElementById('supervisorDashboard').style.display = 'block';
-        document.getElementById('supervisorDashboard').style.paddingBottom = '0px'; 
-        
+        document.getElementById('supervisorDashboard').style.paddingBottom = '0px';
         document.getElementById('appContent').style.display = 'block';
         document.getElementById('appContent').style.filter = 'none';
-        
-        // Hide the redundant secondary header to save screen space
         const opHeader = document.querySelector('#appContent .header');
         if (opHeader) opHeader.style.display = 'none';
-        
         if (!window.isOfflineMode) {
             window.startSupervisorSync();
             window.startCloudSync();
@@ -364,7 +358,7 @@ window.routeUserByRole = function() {
 };
 
 // =====================================================================
-// SUPERVISOR ENGINE (v12.5 - Lane Stability Update)
+// SUPERVISOR ENGINE
 // =====================================================================
 let unsubSupHistories = null;
 window.startSupervisorSync = function() {
@@ -384,8 +378,7 @@ window.renderSupervisorDashboard = function(allHistories) {
     for (let m = 1; m <= config.machines; m++) {
         const machHistories = allHistories[`M${m}`];
         const latest = window.getAbsoluteLatest(machHistories);
-        // INCREASED TO 5: We pull the last 5 checks to get a highly accurate Standard Deviation
-        const recentChecks = window.getRecentChecks(machHistories, 5); 
+        const recentChecks = window.getRecentChecks(machHistories, 5);
         
         if (latest) {
             container.innerHTML += window.buildSupCard(`DSI ${m}`, latest, recentChecks);
@@ -443,12 +436,7 @@ window.buildSupCard = function(title, dataObj, recentChecks) {
     
     entry.lanes.forEach((l, idx) => {
         let weightVal = parseFloat(l.w), colorClass = '';
-        
-        // ==========================================
-        // 🧠 THE PREDICTIVE STABILITY ENGINE
-        // ==========================================
         let laneWeights = [];
-        // Scoop up the weights for THIS specific lane from the last 5 checks
         recentChecks.forEach(check => {
             if (check.lanes && check.lanes[idx]) {
                 let cw = parseFloat(check.lanes[idx].w);
@@ -458,25 +446,17 @@ window.buildSupCard = function(title, dataObj, recentChecks) {
 
         let stabilityHtml = '';
         if (laneWeights.length > 1) {
-            // Calculate Variance & Standard Deviation
             const lMean = laneWeights.reduce((a, b) => a + b, 0) / laneWeights.length;
             const lVar = laneWeights.reduce((a, b) => a + Math.pow(b - lMean, 2), 0) / laneWeights.length;
             const lSd = Math.sqrt(lVar);
-            
-            // Map standard deviation to a 0-100% health score (15% drop per gram of SD)
             let score = Math.round(Math.max(0, 100 - (lSd * 15)));
-            
-            let sColor = 'var(--success)';
-            let sIcon = '🟢';
+            let sColor = 'var(--success)'; let sIcon = '🟢';
             if (score < 80 && score >= 60) { sColor = 'var(--warning)'; sIcon = '🟡'; }
             else if (score < 60) { sColor = 'var(--danger)'; sIcon = '🔴'; }
-            
-            // Inject the score badge
             stabilityHtml = `<div class="lane-stability" style="color:${sColor}">${sIcon} ${score}%</div>`;
         } else {
             stabilityHtml = `<div class="lane-stability" style="color:gray;">--%</div>`;
         }
-        // ==========================================
 
         if (!isNaN(weightVal) && target > 0 && !isStale) {
             let diff = Math.abs(weightVal - target);
@@ -485,13 +465,10 @@ window.buildSupCard = function(title, dataObj, recentChecks) {
             else if (diff <= 3) colorClass = 'bg-warning';
             else colorClass = 'bg-danger';
         }
-        
-        // Add the stability badge to the bottom of the lane card
         lanesHtml += `<div class="sup-lane ${colorClass}"><span class="sup-lane-lbl">${window.t('lane')} ${idx+1}</span><span class="sup-lane-wt">${l.w}</span><span class="sup-lane-dens">${l.d}</span>${stabilityHtml}</div>`;
     });
     
     let trendHtml = `<div class="sup-trend"><span class="sup-trend-lbl">Trend:</span>`;
-    // We only display the 3 most recent trend chips to keep the UI clean, even though the engine uses 5 checks
     for (let i = 0; i < Math.min(3, recentChecks.length); i++) {
         const check = recentChecks[i];
         const wts = window.extractWeights(check);
@@ -505,12 +482,7 @@ window.buildSupCard = function(title, dataObj, recentChecks) {
         else { cls = 'trend-danger'; symbol = '✗'; }
         trendHtml += `<span class="trend-chip ${cls}" title="Avg: ${mean.toFixed(1)}g">${symbol}</span>`;
     }
-    
-    // Fill empty chips if there are fewer than 3 checks
-    for(let i = recentChecks.length; i < 3; i++) {
-         trendHtml += `<span class="trend-chip trend-empty">·</span>`;
-    }
-
+    for(let i = recentChecks.length; i < 3; i++) { trendHtml += `<span class="trend-chip trend-empty">·</span>`; }
     trendHtml += `<span style="font-size:0.62rem; opacity:0.5; margin-left:4px;">(newest → oldest)</span></div>`;
     
     return `
@@ -524,6 +496,7 @@ window.buildSupCard = function(title, dataObj, recentChecks) {
         ${trendHtml}
     </div>`;
 };
+
 // =====================================================================
 // OPERATOR ENGINE
 // =====================================================================
@@ -533,7 +506,6 @@ let dbRef_Store = null, dbRef_History = null;
 window.startCloudSync = function() {
     if (!db) { setTimeout(window.startCloudSync, 500); return; }
     cloudPathKey = `M${config.currentMachine}/${config.product}_${config.lanes}L`;
-    const dot = document.getElementById('statusDot');
     if (unsubStore) unsubStore();
     if (unsubHistory) unsubHistory();
     dbRef_Store = ref(db, `stores/${cloudPathKey}`);
@@ -558,34 +530,25 @@ window.startCloudSync = function() {
     });
 };
 
-// --- PURE ATOMIC SCALPEL WITH SMART MODE MEMORY ---
 window.pushLaneToCloud = function(idx) {
     if (!dbRef_Store || window.isOfflineMode) return;
     document.getElementById('statusDot').className = "status-dot status-syncing";
-    
     const updates = {};
-    const lane = store.lanes[idx-1]; // Clean reference
-    
-    // Core data
+    const lane = store.lanes[idx-1];
     updates[`lanes/${idx-1}/d`] = lane.d;
     updates[`lanes/${idx-1}/w`] = lane.w;
     updates[`lanes/${idx-1}/locked`] = lane.locked;
-    
-    // Smart Mode State (The Memory Fix)
     updates[`lanes/${idx-1}/attempts`] = lane.attempts ?? 0;
     updates[`lanes/${idx-1}/smartActive`] = lane.smartActive ?? false;
     updates[`lanes/${idx-1}/lastD`] = lane.lastD ?? null;
     updates[`lanes/${idx-1}/lastW`] = lane.lastW ?? null;
-    
-    // Apply Firebase Server Timestamp 
     updates[`lanes/${idx-1}/lastUpdated`] = serverTimestamp();
     updates[`lastUpdated`] = serverTimestamp();
-    
     update(dbRef_Store, updates).then(() => {
         document.getElementById('statusDot').className = "status-dot status-online";
-    }).catch((e) => { 
+    }).catch((e) => {
         console.error(e);
-        document.getElementById('statusDot').className = "status-dot status-offline"; 
+        document.getElementById('statusDot').className = "status-dot status-offline";
         window.showAdminToast("❌ Network Error: Sync failed.");
     });
 };
@@ -626,13 +589,12 @@ window.renderInterface = function() {
         if (config.inputMode === 'longpress' && !isAdmin) labelText += " (HOLD)";
         if ((config.inputMode === 'doubletap' && !isAdmin) || isAdmin) labelText += " (×2)";
         
-        // If Admin, hide the lock button (double tap is forced)
         let btnHtml = config.inputMode === 'button' && !isAdmin
             ? `<button class="btn-icon" id="lockDens-${i}" onmousedown="event.preventDefault()" onclick="window.toggleLock(${i})">🔒</button>`
             : `<button class="btn-icon btn-hidden" id="lockDens-${i}">🔒</button>`;
-            
-        // Armor plate the weight box if Admin
-        let weightHtml = `<input type="number" id="avgWt-${i}" inputmode="decimal" oninput="window.handleWeightInput(${i})" onblur="clearTimeout(weightDebounceTimers[${i}]); window.pushLaneToCloud(${i}); window.checkAutoSave()">`;
+
+        // Weekend Fix 1: uses window.weightDebounceTimers (global scope)
+        let weightHtml = `<input type="number" id="avgWt-${i}" inputmode="decimal" oninput="window.handleWeightInput(${i})" onblur="clearTimeout(window.weightDebounceTimers[${i}]); window.pushLaneToCloud(${i}); window.checkAutoSave()">`;
         if (isAdmin) {
             weightHtml = `<input type="number" id="avgWt-${i}" class="density-input" inputmode="decimal" readonly oninput="window.handleWeightInput(${i})" onblur="window.checkAutoSave(); window.lockWeightOnBlur(${i})">`;
         }
@@ -665,24 +627,20 @@ window.renderInterface = function() {
             </div>`;
     }
     
-    // Bind the unlock listeners
     for (let i = 1; i <= config.lanes; i++) {
         const dEl = document.getElementById(`currDens-${i}`);
         const wEl = document.getElementById(`avgWt-${i}`);
-        
         if (isAdmin) {
-            // Admin God Mode: Double tap required for BOTH boxes
             dEl.ondblclick = () => window.unlockAndFocus(i);
             if (wEl) wEl.ondblclick = () => window.unlockWeightAndFocus(i);
         } else {
-            // Standard Operator Settings
             if (config.inputMode === 'longpress') {
                 dEl.addEventListener('touchstart', () => { pressTimer = setTimeout(() => window.unlockAndFocus(i), 800); });
                 dEl.addEventListener('touchend', () => clearTimeout(pressTimer));
                 dEl.addEventListener('mousedown', () => { pressTimer = setTimeout(() => window.unlockAndFocus(i), 800); });
                 dEl.addEventListener('mouseup', () => clearTimeout(pressTimer));
-            } else if (config.inputMode === 'doubletap') { 
-                dEl.ondblclick = () => window.unlockAndFocus(i); 
+            } else if (config.inputMode === 'doubletap') {
+                dEl.ondblclick = () => window.unlockAndFocus(i);
             }
         }
     }
@@ -710,17 +668,11 @@ window.updateUIFromCloud = function() {
                 if (config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓'; }
             }
         }
-        
         const wEl = document.getElementById(`avgWt-${i}`);
         if (document.activeElement !== wEl) {
             wEl.value = lane.w || '';
-            // Ensure Admin weight boxes stay locked
-            if (isAdmin) {
-                wEl.readOnly = true;
-                wEl.style.borderColor = 'var(--border)';
-            }
+            if (isAdmin) { wEl.readOnly = true; wEl.style.borderColor = 'var(--border)'; }
         }
-        
         const card = document.getElementById(`card-${i}`);
         if (config.smart === 'on' || (config.smart === 'auto' && lane.smartActive)) card.classList.add('smart-active');
         else card.classList.remove('smart-active');
@@ -742,6 +694,7 @@ window.calculateLocal = function() {
         const card = document.getElementById(`card-${i}`);
         const resBox = document.getElementById(`resBox-${i}`);
         const trendEl = document.getElementById(`trend-${i}`);
+        
         if (!isNaN(target) && !isNaN(currD) && !isNaN(currW)) {
             const diff = currW - target;
             let activeK = baseK;
@@ -754,7 +707,10 @@ window.calculateLocal = function() {
                     activeK = (observedK * 0.6) + (baseK * 0.4);
                 }
             }
-            const newD = currD + (diff * activeK);
+            // Weekend Fix 3: Density clamp — machine physical limit
+            let newD = currD + (diff * activeK);
+            newD = Math.max(-0.500, Math.min(0.500, newD));
+            
             hiddenVal.value = newD.toFixed(3);
             resText.innerText = `${window.t('newDens')} ${newD.toFixed(3)}`;
             resBox.classList.add('has-value');
@@ -856,7 +812,6 @@ window.saveToHistory = function() {
     if (!Array.isArray(history)) history = [];
     history.unshift(row);
     if (history.length > 50) history.pop();
-    
     if (!window.isOfflineMode && dbRef_History) {
         set(dbRef_History, history).catch(e => window.showAdminToast("❌ Network Error: History not saved."));
     }
@@ -914,32 +869,44 @@ window.toggleLock = function(i) {
 };
 
 window.handleInput = function(i) { store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; window.calculateLocal(); };
+
 window.handleWeightInput = function(i) {
     store.lanes[i-1].w = document.getElementById(`avgWt-${i}`).value;
     window.calculateLocal();
-    // Debounce: cancel any pending push and wait 600ms after last keystroke
-    clearTimeout(weightDebounceTimers[i]);
-    weightDebounceTimers[i] = setTimeout(() => window.pushLaneToCloud(i), 600);
+    clearTimeout(window.weightDebounceTimers[i]);
+    window.weightDebounceTimers[i] = setTimeout(() => window.pushLaneToCloud(i), 600);
 };
+
 window.lockOnBlur = function(i) { setTimeout(() => { if (document.activeElement === document.getElementById(`currDens-${i}`)) return; store.lanes[i-1].locked = true; store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; window.pushLaneToCloud(i); }, 150); };
-window.recheckLane = function(idx) { store.lanes[idx-1].w = ''; document.getElementById(`avgWt-${idx}`).value = ''; lastAutoSaveCombo = ""; document.getElementById(`avgWt-${idx}`).focus(); window.calculateLocal(); window.pushLaneToCloud(idx); };
+
+// Weekend Fix 2: God Mode safety catch on recheckLane
+window.recheckLane = function(idx) {
+    if (isAdmin) {
+        if (!confirm(`⚠️ WIPE WEIGHT DATA?\nAre you sure you want to delete the operator's weight for Lane ${idx}?`)) {
+            return;
+        }
+    }
+    store.lanes[idx-1].w = '';
+    document.getElementById(`avgWt-${idx}`).value = '';
+    lastAutoSaveCombo = "";
+    if (!isAdmin) { document.getElementById(`avgWt-${idx}`).focus(); }
+    window.calculateLocal();
+    window.pushLaneToCloud(idx);
+};
 
 window.unlockWeightAndFocus = function(i) {
     if (!isAdmin) return;
     const el = document.getElementById(`avgWt-${i}`);
-    el.readOnly = false; 
-    el.focus(); 
-    el.style.borderColor = 'var(--info)'; // Turns blue to show it's active
+    el.readOnly = false; el.focus(); el.style.borderColor = 'var(--info)';
 };
 
 window.lockWeightOnBlur = function(i) {
     if (!isAdmin) return;
-    clearTimeout(weightDebounceTimers[i]);
-    setTimeout(() => { 
+    clearTimeout(window.weightDebounceTimers[i]);
+    setTimeout(() => {
         const el = document.getElementById(`avgWt-${i}`);
-        if (document.activeElement === el) return; // Don't lock if still typing
-        el.readOnly = true; 
-        el.style.borderColor = 'var(--border)'; 
+        if (document.activeElement === el) return;
+        el.readOnly = true; el.style.borderColor = 'var(--border)';
     }, 150);
 };
 
@@ -981,10 +948,10 @@ window.saveLocalSettings = function() {
     localStorage.setItem('dsi_config_v11', JSON.stringify(config));
 };
 window.toggleTheme = function() { config.theme = document.getElementById('setTheme').value; window.applyTheme(); window.saveLocalSettings(); };
-window.saveDisplayName = function() { 
-    const name = document.getElementById('setDispName').value; 
-    config.displayName = name; 
-    window.saveLocalSettings(); 
+window.saveDisplayName = function() {
+    const name = document.getElementById('setDispName').value;
+    config.displayName = name;
+    window.saveLocalSettings();
     if (window.myUid && !window.isOfflineMode && db) {
         update(ref(db, `users/${window.myUid}`), { displayName: name }).catch(e => window.showAdminToast("❌ Network Error: Name not saved."));
     }
@@ -1058,7 +1025,6 @@ window.deleteUser = function(uid) { set(ref(db, `users/${uid}`), null).catch(e =
 window.pingAdmin = function() {
     const nameInput = document.getElementById('reqName').value.trim();
     if (!nameInput) { alert("Please enter your name."); return; }
-    
     update(ref(db, `users/${window.myUid}`), { displayName: nameInput, requestPending: true, requestTime: Date.now() })
         .then(() => { document.getElementById('requestForm').innerHTML = `<div style="color:var(--success); font-weight:bold; font-size:1.1rem; padding:10px;">✅ Flare Sent!<br><span style="font-size:0.8rem; color:var(--text); font-weight:normal;">Admin has been notified.</span></div>`; })
         .catch(e => window.showAdminToast("❌ Network Error: Could not send request."));
@@ -1101,7 +1067,6 @@ window.openYield = function() {
 
 window.closeYield = function() {
     document.getElementById('yieldModal').style.display = 'none';
-    // Unsubscribe when modal closes to prevent listener accumulation
     if (unsubYieldHistory) { unsubYieldHistory(); unsubYieldHistory = null; }
 };
 
@@ -1112,10 +1077,8 @@ window.calcYield = function() {
     const trim    = v('y30212') + v('y30211') + v('y15530') + v('y15531') + (v('y40030boxes') * 40);
     const totalOutput = fillet + nugget + trim;
     const totalInput  = totalOutput * 1.03;
-
     document.getElementById('yOutput').innerText = totalOutput.toFixed(1);
     document.getElementById('yInput').innerText  = totalInput.toFixed(1);
-
     if (totalInput > 0) {
         document.getElementById('yPctFillet').innerText = ((fillet  / totalInput) * 100).toFixed(2) + '%';
         document.getElementById('yPctNugget').innerText = ((nugget  / totalInput) * 100).toFixed(2) + '%';
@@ -1137,11 +1100,9 @@ window.saveEosYield = function() {
     const v = (id) => parseFloat(document.getElementById(id).value) || 0;
     const totalOutput = v('y10130')+v('y10070')+v('y10114')+v('y30212')+v('y30211')+v('y15530')+v('y15531')+(v('y40030boxes')*40);
     if (totalOutput <= 0) { alert("Please enter product weights first."); return; }
-
     const timeStr = new Date().toLocaleString([], { weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
     const yieldData = {
-        timestamp: Date.now(),
-        timeStr,
+        timestamp: Date.now(), timeStr,
         input:    document.getElementById('yInput').innerText,
         output:   totalOutput.toFixed(1),
         fillet:   document.getElementById('yPctFillet').innerText,
@@ -1149,14 +1110,12 @@ window.saveEosYield = function() {
         trim:     document.getElementById('yPctTrim').innerText,
         operator: window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Supervisor') : 'Supervisor'
     };
-
     push(ref(db, 'yieldHistory'), yieldData)
         .then(() => { window.showAdminToast("✅ EOS Yield Saved!"); window.clearYieldInputs(); })
         .catch(() => window.showAdminToast("❌ Error saving yield."));
 };
 
 window.loadYieldHistory = function() {
-    // Always unsub first — prevents duplicate listeners on repeated opens
     if (unsubYieldHistory) { unsubYieldHistory(); unsubYieldHistory = null; }
     unsubYieldHistory = onValue(ref(db, 'yieldHistory'), (snap) => {
         const list = document.getElementById('yieldHistoryList');
@@ -1192,18 +1151,12 @@ window.wipeYieldHistory = function() {
 window.broadcastMidShiftYield = function() {
     const v = (id) => parseFloat(document.getElementById(id).value) || 0;
     const totalOutput = v('y10130')+v('y10070')+v('y10114')+v('y30212')+v('y30211')+v('y15530')+v('y15531')+(v('y40030boxes')*40);
-
     if (totalOutput <= 0) { alert("Please enter product weights first."); return; }
-
     const trim   = document.getElementById('yPctTrim').innerText;
     const fillet = document.getElementById('yPctFillet').innerText;
     const nugget = document.getElementById('yPctNugget').innerText;
-
-    // Push to Line Dispatch so every operator sees it
     const msg = `📊 LIVE YIELD UPDATE\n🔪 Trim: ${trim}\n🥩 Fillets: ${fillet}\n🍗 Nuggets: ${nugget}`;
     window.sendCommsMsg('TEXT', msg);
-
-    // Save to Weekly History with Mid-Shift tag
     const timeStr = new Date().toLocaleString([], { weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
     const yieldData = {
         timestamp: Date.now(),
@@ -1213,12 +1166,8 @@ window.broadcastMidShiftYield = function() {
         fillet, nugget, trim,
         operator: window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Supervisor') : 'Supervisor'
     };
-
     push(ref(db, 'yieldHistory'), yieldData)
-        .then(() => {
-            window.showAdminToast("📣 Yield Broadcasted to Team!");
-            window.clearYieldInputs();
-        })
+        .then(() => { window.showAdminToast("📣 Yield Broadcasted to Team!"); window.clearYieldInputs(); })
         .catch(() => window.showAdminToast("❌ Error saving mid-shift yield."));
 };
 
@@ -1227,24 +1176,14 @@ window.broadcastMidShiftYield = function() {
 // =====================================================================
 document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible" && !window.isOfflineMode && db) {
-
-        // Force the Firebase websocket awake immediately
         goOnline(db);
-
-        // Re-sync based on role — each function handles its own unsub safely
         if (isAdmin) {
             window.startSupervisorSync();
             window.startCloudSync();
         } else {
             const role = window.currentUserData ? window.currentUserData.role : 'operator';
-            if (role === 'supervisor') {
-                window.startSupervisorSync();
-            } else {
-                window.startCloudSync();
-            }
+            if (role === 'supervisor') { window.startSupervisorSync(); } else { window.startCloudSync(); }
         }
-
-        // Re-connect Line Dispatch radio
         window.startCommsListener();
     }
 });
@@ -1254,29 +1193,19 @@ document.addEventListener("visibilitychange", () => {
 // =====================================================================
 window.jumpstartNetwork = function() {
     if (!db) return;
-
     const dot = document.getElementById('statusDot');
     if (dot) dot.style.transform = 'scale(1.5)';
     window.showAdminToast('🔄 Reconnecting Radio...');
-
-    // Kill the zombie connection
     goOffline(db);
-
-    // After 1 second, force a fresh handshake and re-sync
     setTimeout(() => {
         goOnline(db);
         if (dot) dot.style.transform = 'scale(1)';
-
         if (isAdmin) {
             window.startSupervisorSync();
             window.startCloudSync();
         } else {
             const role = window.currentUserData ? window.currentUserData.role : 'operator';
-            if (role === 'supervisor') {
-                window.startSupervisorSync();
-            } else {
-                window.startCloudSync();
-            }
+            if (role === 'supervisor') { window.startSupervisorSync(); } else { window.startCloudSync(); }
         }
         window.startCommsListener();
     }, 1000);
