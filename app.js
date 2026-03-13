@@ -167,6 +167,7 @@ let history = [];
 let cachedHistories = null;
 const FACTORS = { lunch: 0.01, bfast: 0.017 };
 let pressTimer;
+let weightDebounceTimers = {};
 let lastAutoSaveCombo = "";
 let cloudPathKey = "";
 let prevAvg = null;
@@ -631,7 +632,7 @@ window.renderInterface = function() {
             : `<button class="btn-icon btn-hidden" id="lockDens-${i}">🔒</button>`;
             
         // Armor plate the weight box if Admin
-        let weightHtml = `<input type="number" id="avgWt-${i}" inputmode="decimal" oninput="window.handleWeightInput(${i})" onblur="window.checkAutoSave()">`;
+        let weightHtml = `<input type="number" id="avgWt-${i}" inputmode="decimal" oninput="window.handleWeightInput(${i})" onblur="clearTimeout(weightDebounceTimers[${i}]); window.pushLaneToCloud(${i}); window.checkAutoSave()">`;
         if (isAdmin) {
             weightHtml = `<input type="number" id="avgWt-${i}" class="density-input" inputmode="decimal" readonly oninput="window.handleWeightInput(${i})" onblur="window.checkAutoSave(); window.lockWeightOnBlur(${i})">`;
         }
@@ -913,7 +914,13 @@ window.toggleLock = function(i) {
 };
 
 window.handleInput = function(i) { store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; window.calculateLocal(); };
-window.handleWeightInput = function(i) { store.lanes[i-1].w = document.getElementById(`avgWt-${i}`).value; window.calculateLocal(); window.pushLaneToCloud(i); };
+window.handleWeightInput = function(i) {
+    store.lanes[i-1].w = document.getElementById(`avgWt-${i}`).value;
+    window.calculateLocal();
+    // Debounce: cancel any pending push and wait 600ms after last keystroke
+    clearTimeout(weightDebounceTimers[i]);
+    weightDebounceTimers[i] = setTimeout(() => window.pushLaneToCloud(i), 600);
+};
 window.lockOnBlur = function(i) { setTimeout(() => { if (document.activeElement === document.getElementById(`currDens-${i}`)) return; store.lanes[i-1].locked = true; store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; window.pushLaneToCloud(i); }, 150); };
 window.recheckLane = function(idx) { store.lanes[idx-1].w = ''; document.getElementById(`avgWt-${idx}`).value = ''; lastAutoSaveCombo = ""; document.getElementById(`avgWt-${idx}`).focus(); window.calculateLocal(); window.pushLaneToCloud(idx); };
 
@@ -927,6 +934,7 @@ window.unlockWeightAndFocus = function(i) {
 
 window.lockWeightOnBlur = function(i) {
     if (!isAdmin) return;
+    clearTimeout(weightDebounceTimers[i]);
     setTimeout(() => { 
         const el = document.getElementById(`avgWt-${i}`);
         if (document.activeElement === el) return; // Don't lock if still typing
