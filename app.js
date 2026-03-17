@@ -732,8 +732,14 @@ window.calculateLocal = function() {
                             if (runway > 0) {
                                 const minsToDrift = Math.round(runway / Math.abs(velocity));
                                 if (minsToDrift < 120) {
-                                    const driftColor = minsToDrift <= 15 ? 'var(--danger)' : (minsToDrift <= 30 ? 'var(--warning)' : 'var(--perfect)');
-                                    driftHtml = `<span style="font-size:0.7rem; margin-left:8px; font-weight:900; color:${driftColor};">⏳ ${minsToDrift}m</span>`;
+                                    if (minsToDrift <= 15) {
+                                        // The Red Zone: Explicit command with a flashing animation
+                                        driftHtml = `<span style="font-size:0.7rem; margin-left:8px; font-weight:900; color:var(--danger); animation: pulseWarning 1.5s infinite;">⚠️ WEIGH NOW</span>`;
+                                    } else {
+                                        // The Safe Zone: Standard countdown
+                                        const driftColor = minsToDrift <= 30 ? 'var(--warning)' : 'var(--perfect)';
+                                        driftHtml = `<span style="font-size:0.7rem; margin-left:8px; font-weight:900; color:${driftColor};">⏳ ${minsToDrift}m</span>`;
+                                    }
                                 }
                             }
                         }
