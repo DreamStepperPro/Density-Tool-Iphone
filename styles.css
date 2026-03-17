@@ -40,6 +40,7 @@
         .status-offline { background: var(--danger); }
         .status-syncing { background: var(--warning); box-shadow: 0 0 6px var(--warning); animation: pulse-dot 1s infinite; }
         @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        @keyframes pulseWarning { 0%,100%{opacity:1} 50%{opacity:0.2} }
 
         .machine-nav { display: flex; gap: 8px; margin-bottom: 12px; }
         .m-btn { flex: 1; padding: 11px; font-weight: bold; border: 2px solid var(--border); border-radius: 10px; background: var(--card-bg); color: var(--text); transition: 0.2s; font-size: 0.95rem; cursor: pointer; }
@@ -193,9 +194,3 @@
 .y-grid input { padding:8px 10px; font-size:1rem; }
 .yield-hist-card { background:var(--input-bg); border:1px solid var(--border); border-radius:8px; padding:10px; font-size:0.85rem; }
 .yield-hist-card strong { color:var(--accent); }
-/* Predictive Velocity Engine: Flashing Warning */
-@keyframes pulseWarning {
-    0% { opacity: 1; }
-    50% { opacity: 0.3; }
-    100% { opacity: 1; }
-}
