@@ -608,6 +608,7 @@ window.renderInterface = function() {
                 <div>
                     <label>${labelText}</label>
                     <div class="input-group">
+                        <button class="btn-icon" tabindex="-1" onclick="window.toggleDensitySign(${i})" style="min-width:38px; padding:0; font-weight:bold; background:var(--input-bg);">±</button>
                         <input type="number" id="currDens-${i}" class="density-input" step="0.001" readonly inputmode="decimal" oninput="window.handleInput(${i})" onblur="window.lockOnBlur(${i})">
                         ${btnHtml}
                     </div>
@@ -831,6 +832,18 @@ window.clearHistory = function() {
 // =====================================================================
 // LANE ACTIONS
 // =====================================================================
+window.toggleDensitySign = function(i) {
+    const el = document.getElementById(`currDens-${i}`);
+    if (el.readOnly) { window.showAdminToast("⚠️ Unlock density to change sign."); return; }
+    let val = parseFloat(el.value);
+    if (isNaN(val) || val === 0) return;
+    val = val * -1;
+    el.value = val.toFixed(3);
+    store.lanes[i-1].d = String(val.toFixed(3));
+    window.calculateLocal();
+    window.pushLaneToCloud(i);
+};
+
 window.applyResult = function(idx) {
     const val = document.getElementById(`calcVal-${idx}`).value;
     const lane = store.lanes[idx-1];
