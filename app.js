@@ -104,7 +104,8 @@ const i18n = {
         lockBtn: "Lock Button (Default)", longPress: "Long Press (1s)", doubleTap: "Double Tap",
         dualLane: "Dual Lane", quadLane: "Quad Lane", changeTarget: "⚠️ Change target weight mid-shift?",
         enterName: "Enter your name / role...", typeMsg: "Type message...",
-        errWt: "⚖️ WEIGHT OFF: Need calibration.", errMech: "🔧 MAINTENANCE: Mechanical failure."
+        errWt: "⚖️ WEIGHT OFF: Need calibration.", errMech: "🔧 MAINTENANCE: Mechanical failure.",
+        weighNow: "⚠️ WEIGH NOW"
     },
     es: {
         title: "La Ventaja", target: "Objetivo", lane: "CARRIL", density: "DENSIDAD", avgWt: "PESO PROM",
@@ -121,7 +122,8 @@ const i18n = {
         lockBtn: "Botón Bloqueo", longPress: "Pulsar 1s", doubleTap: "Doble Toque",
         dualLane: "Dos Carriles", quadLane: "Cuatro Carriles", changeTarget: "⚠️ ¿Cambiar objetivo en medio turno?",
         enterName: "Ingresa tu nombre...", typeMsg: "Escribe un mensaje...",
-        errWt: "⚖️ PESO INCORRECTO: Requiere calibración.", errMech: "🔧 MANTENIMIENTO: Falla mecánica."
+        errWt: "⚖️ PESO INCORRECTO: Requiere calibración.", errMech: "🔧 MANTENIMIENTO: Falla mecánica.",
+        weighNow: "⚠️ PESAR AHORA"
     }
 };
 
@@ -542,6 +544,7 @@ window.pushLaneToCloud = function(idx) {
     updates[`lanes/${idx-1}/smartActive`] = lane.smartActive ?? false;
     updates[`lanes/${idx-1}/lastD`] = lane.lastD ?? null;
     updates[`lanes/${idx-1}/lastW`] = lane.lastW ?? null;
+    updates[`lanes/${idx-1}/stableCount`] = lane.stableCount ?? 0;
     updates[`lanes/${idx-1}/lastUpdated`] = serverTimestamp();
     updates[`lastUpdated`] = serverTimestamp();
     update(dbRef_Store, updates).then(() => {
@@ -734,7 +737,7 @@ window.calculateLocal = function() {
                                 if (minsToDrift < 120) {
                                     if (minsToDrift <= 15) {
                                         // The Red Zone: Explicit command with a flashing animation
-                                        driftHtml = `<span style="font-size:0.7rem; margin-left:8px; font-weight:900; color:var(--danger); animation: pulseWarning 1.5s infinite;">⚠️ WEIGH NOW</span>`;
+                                        driftHtml = `<span style="font-size:0.7rem; margin-left:8px; font-weight:900; color:var(--danger); animation: pulseWarning 1.5s infinite;">${window.t('weighNow')}</span>`;
                                     } else {
                                         // The Safe Zone: Standard countdown
                                         const driftColor = minsToDrift <= 30 ? 'var(--warning)' : 'var(--perfect)';
@@ -893,8 +896,32 @@ window.applyResult = function(idx) {
         window.saveToHistory();
         lane.lastD = currD; lane.lastW = currW;
         const target = parseFloat(store.target);
-        if (Math.abs(currW - target) > 2) { lane.attempts++; if (config.smart === 'auto' && lane.attempts >= 2) lane.smartActive = true; }
-        else { lane.attempts = 0; }
+
+        // --- SMART ADAPT LOGIC & COOL-DOWN ---
+        if (Math.abs(currW - target) > 2) {
+            // BAD CHECK: drifting hard — increment failures, reset stability counter
+            lane.attempts++;
+            lane.stableCount = 0;
+            if (config.smart === 'auto' && lane.attempts >= 2) lane.smartActive = true;
+        } else {
+            // GOOD CHECK: in safe zone — reset failure counter
+            lane.attempts = 0;
+            if (Math.abs(currW - target) <= 1.0) {
+                // PERFECT ZONE: track consecutive perfect hits
+                lane.stableCount = (lane.stableCount || 0) + 1;
+                if (config.smart === 'auto' && lane.smartActive && lane.stableCount >= 2) {
+                    // Machine stabilized — hand off back to standard physics
+                    lane.smartActive = false;
+                    lane.lastD = null;
+                    lane.lastW = null;
+                    if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
+                }
+            } else {
+                // MEDIOCRE: not bad enough to trigger Smart, not good enough to turn it off
+                lane.stableCount = 0;
+            }
+        }
+
         lane.d = val; lane.w = ''; lane.locked = true;
         lastAutoSaveCombo = "";
         const card = document.getElementById(`card-${idx}`);
