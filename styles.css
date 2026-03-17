@@ -193,3 +193,9 @@
 .y-grid input { padding:8px 10px; font-size:1rem; }
 .yield-hist-card { background:var(--input-bg); border:1px solid var(--border); border-radius:8px; padding:10px; font-size:0.85rem; }
 .yield-hist-card strong { color:var(--accent); }
+/* Predictive Velocity Engine: Flashing Warning */
+@keyframes pulseWarning {
+    0% { opacity: 1; }
+    50% { opacity: 0.3; }
+    100% { opacity: 1; }
+}
