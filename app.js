@@ -170,6 +170,7 @@ let pressTimer;
 // Weekend Fix 1: Global scope for debounce timers (fixes auto-save)
 window.weightDebounceTimers = {};
 
+let autoSaveTimer = null;
 let lastAutoSaveCombo = "";
 let cloudPathKey = "";
 let prevAvg = null;
@@ -838,7 +839,16 @@ window.checkAutoSave = function() {
         if (!w) { allFilled = false; break; }
         currentCombo += w + ",";
     }
-    if (allFilled && currentCombo !== lastAutoSaveCombo) { lastAutoSaveCombo = currentCombo; window.saveToHistory(); }
+    if (allFilled && currentCombo !== lastAutoSaveCombo) {
+        // Cancel any pending save — operator may still be correcting a typo
+        if (autoSaveTimer) clearTimeout(autoSaveTimer);
+        // 2.5-second grace period before committing to permanent history
+        autoSaveTimer = setTimeout(() => {
+            lastAutoSaveCombo = currentCombo;
+            window.saveToHistory();
+            autoSaveTimer = null;
+        }, 2500);
+    }
 };
 
 window.saveToHistory = function() {
@@ -923,6 +933,7 @@ window.applyResult = function(idx) {
         }
 
         lane.d = val; lane.w = ''; lane.locked = true;
+        if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveTimer = null; }
         lastAutoSaveCombo = "";
         const card = document.getElementById(`card-${idx}`);
         card.classList.add('apply-flash');
@@ -969,6 +980,7 @@ window.recheckLane = function(idx) {
     }
     store.lanes[idx-1].w = '';
     document.getElementById(`avgWt-${idx}`).value = '';
+    if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveTimer = null; }
     lastAutoSaveCombo = "";
     if (!isAdmin) { document.getElementById(`avgWt-${idx}`).focus(); }
     window.calculateLocal();
