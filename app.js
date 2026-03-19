@@ -333,6 +333,7 @@ window.routeUserByRole = function() {
     if (isAdmin || role === 'supervisor') {
         if (document.getElementById('btnYieldOp')) document.getElementById('btnYieldOp').classList.remove('btn-hidden');
         if (document.getElementById('btnYieldSup')) document.getElementById('btnYieldSup').classList.remove('btn-hidden');
+        if (document.getElementById('btnMaintSup')) document.getElementById('btnMaintSup').classList.remove('btn-hidden');
     }
 
     if (isAdmin) {
@@ -1302,4 +1303,100 @@ window.jumpstartNetwork = function() {
         }
         window.startCommsListener();
     }, 1000);
+};
+
+// =====================================================================
+// DOWNTIME & RCA SYSTEM — STRIKE 1 (UI Shell)
+// =====================================================================
+window.openMaintenance = function() {
+    const m = config.currentMachine;
+    document.getElementById('maintModalTitle').innerText = `🔧 M${m} Hardware Matrix`;
+    document.getElementById('maintenanceModal').style.display = 'flex';
+    window.cancelFault();
+    window.cancelReEnable();
+};
+
+window.closeMaintenance = function() {
+    document.getElementById('maintenanceModal').style.display = 'none';
+    window.cancelFault();
+    window.cancelReEnable();
+};
+
+window.toggleComponent = function(id, name) {
+    const btn = document.getElementById(`comp-${id}`);
+    window.cancelFault();
+    window.cancelReEnable();
+    if (btn.classList.contains('down')) {
+        // Component is currently down — show re-enable confirmation before clearing
+        document.getElementById('reEnableTitle').innerText = `Mark ${name} as Repaired?`;
+        document.getElementById('pendingCompId').value = id;
+        document.getElementById('reEnableDrawer').classList.add('active');
+        setTimeout(() => document.getElementById('reEnableDrawer').scrollIntoView({behavior:'smooth', block:'nearest'}), 50);
+    } else {
+        // Component is running — open fault drawer to disable it
+        document.getElementById('faultTitle').innerText = `Disable ${name}`;
+        document.getElementById('pendingCompId').value = id;
+        document.getElementById('faultReason').value = '';
+        document.getElementById('faultNotes').value = '';
+        document.getElementById('faultDrawer').classList.add('active');
+        setTimeout(() => document.getElementById('faultDrawer').scrollIntoView({behavior:'smooth', block:'nearest'}), 50);
+    }
+};
+
+window.cancelFault = function() {
+    document.getElementById('faultDrawer').classList.remove('active');
+};
+
+window.cancelReEnable = function() {
+    document.getElementById('reEnableDrawer').classList.remove('active');
+};
+
+window.confirmFault = function() {
+    const reason = document.getElementById('faultReason').value;
+    if (!reason) { alert("Please select a fault reason."); return; }
+    const id = document.getElementById('pendingCompId').value;
+    const btn = document.getElementById(`comp-${id}`);
+    btn.classList.remove('running');
+    btn.classList.add('down');
+    window.cancelFault();
+    window.updateBannerState();
+};
+
+window.confirmReEnable = function() {
+    const id = document.getElementById('pendingCompId').value;
+    const btn = document.getElementById(`comp-${id}`);
+    btn.classList.remove('down');
+    btn.classList.add('running');
+    window.cancelReEnable();
+    window.updateBannerState();
+};
+
+window.updateBannerState = function() {
+    const m = config.currentMachine;
+    const banner = document.getElementById('statusBanner');
+    const title  = document.getElementById('bannerTitle');
+    const sub    = document.getElementById('bannerSub');
+    if (!banner) return;
+    const downCount = document.querySelectorAll('.matrix-btn.down').length;
+    if (downCount === 0) {
+        banner.className = 'system-banner banner-running';
+        title.innerText  = `🟢 M${m}: RUNNING`;
+        sub.innerText    = 'All components active. Tap for Maintenance.';
+    } else {
+        banner.className = 'system-banner banner-degraded';
+        title.innerText  = `⚠️ M${m}: DEGRADED`;
+        sub.innerText    = `${downCount} component(s) down. TAP TO VIEW.`;
+    }
+};
+
+// Reset matrix and banner when switching machines
+const _origSwitchMachine = window.switchMachine;
+window.switchMachine = function(m) {
+    _origSwitchMachine(m);
+    // Reset all matrix buttons to running state for the new machine
+    document.querySelectorAll('.matrix-btn').forEach(btn => {
+        btn.classList.remove('down');
+        btn.classList.add('running');
+    });
+    window.updateBannerState();
 };
