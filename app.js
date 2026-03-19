@@ -422,7 +422,7 @@ window.renderSupervisorDashboard = function(allHistories) {
         const recentChecks = window.getRecentChecks(machHistories, 5);
         
         if (latest) {
-            container.innerHTML += window.buildSupCard(`DSI ${m}`, latest, recentChecks);
+            container.innerHTML += window.buildSupCard(`DSI ${m}`, latest, recentChecks, m);
             allWeightsGlobal = allWeightsGlobal.concat(window.extractWeights(latest.entry));
         } else {
             container.innerHTML += `<div class="sup-card"><h3 style="color:gray;">DSI ${m}: No Data</h3></div>`;
@@ -468,7 +468,7 @@ window.extractWeights = function(entry) {
     return wts;
 };
 
-window.buildSupCard = function(title, dataObj, recentChecks) {
+window.buildSupCard = function(title, dataObj, recentChecks, m) {
     const entry = dataObj.entry;
     const target = parseFloat(entry.target || 0);
     const opName = entry.operator || 'Unknown';
@@ -528,9 +528,12 @@ window.buildSupCard = function(title, dataObj, recentChecks) {
     
     return `
     <div class="sup-card ${isStale ? 'stale' : ''}">
-        <div class="sup-header">
-            <h2 class="sup-title">${title} <span style="font-size:0.8rem; color:gray; font-weight:normal;">• ${window.t(dataObj.product)}</span></h2>
-            <div class="sup-meta">${window.t('target')}: ${target}g<strong>${entry.time}${isStale ? ' ⚠️' : ''}</strong></div>
+        <div class="sup-header" style="align-items:center;">
+            <div>
+                <h2 class="sup-title">${title} <span style="font-size:0.8rem; color:gray; font-weight:normal;">• ${window.t(dataObj.product)}</span></h2>
+                <div class="sup-meta" style="text-align:left;">${window.t('target')}: ${target}g<strong style="display:inline-block; margin-left:6px;">${entry.time}${isStale ? ' ⚠️' : ''}</strong></div>
+            </div>
+            <button class="btn-icon" style="border:none; font-size:1.3rem; height:40px; width:40px; background:rgba(128,128,128,0.1); flex-shrink:0;" onclick="window.openSupHistory(${m})" title="View Detailed Logs">📋</button>
         </div>
         <div class="sup-operator">👤 ${opName}</div>
         <div class="sup-grid">${lanesHtml}</div>
@@ -1537,4 +1540,59 @@ window.renderMaintHistory = function() {
                 Repaired by ${log.clearedBy}
             </div>
         </div>`).join('');
+};
+
+// =====================================================================
+// SUPERVISOR DEEP DIVE LEDGER
+// =====================================================================
+window.openSupHistory = function(machineNum) {
+    document.getElementById('supHistoryTitle').innerText = `📋 DSI ${machineNum} Ledger`;
+    const container = document.getElementById('supHistoryList');
+    const machKey = `M${machineNum}`;
+
+    if (!cachedHistories || !cachedHistories[machKey]) {
+        container.innerHTML = '<div style="text-align:center; opacity:0.5; padding:20px;">No data available.</div>';
+    } else {
+        // Combine all product histories (Lunch + Bfast) for this machine
+        let allChecks = [];
+        for (let prodKey in cachedHistories[machKey]) {
+            let entries = Array.isArray(cachedHistories[machKey][prodKey])
+                ? cachedHistories[machKey][prodKey]
+                : Object.values(cachedHistories[machKey][prodKey]);
+            allChecks = allChecks.concat(entries);
+        }
+        allChecks.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+        if (allChecks.length === 0) {
+            container.innerHTML = '<div style="text-align:center; opacity:0.5; padding:20px;">No shift history found.</div>';
+        } else {
+            container.innerHTML = allChecks.map(r => {
+                const laneGrid = r.lanes.map((l, li) => `
+                    <div class="hist-lane-cell">
+                        <span class="hist-lane-lbl">L${li+1}</span>
+                        <span class="hist-lane-wt">${l.w}</span>
+                        <span class="hist-lane-dens">${l.d}</span>
+                    </div>`).join('');
+                return `
+                <div class="hist-card expanded" style="margin-bottom:8px;">
+                    <div class="hist-card-header" style="cursor:default;">
+                        <div>
+                            <span class="hist-card-time">${r.time}</span>
+                            ${r.operator ? `<span style="font-size:0.72rem; opacity:0.6; margin-left:8px;">by ${r.operator}</span>` : ''}
+                        </div>
+                        <span class="hist-card-avg">Avg: <strong>${r.avg}g</strong></span>
+                    </div>
+                    <div class="hist-card-body" style="display:block;">
+                        <div style="font-size:0.72rem; opacity:0.55; margin-bottom:4px;">${window.t('target')}: ${r.target || '--'}g</div>
+                        <div class="hist-lane-grid">${laneGrid}</div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+    }
+    document.getElementById('supHistoryModal').style.display = 'flex';
+};
+
+window.closeSupHistory = function() {
+    document.getElementById('supHistoryModal').style.display = 'none';
 };
