@@ -105,7 +105,21 @@ const i18n = {
         dualLane: "Dual Lane", quadLane: "Quad Lane", changeTarget: "⚠️ Change target weight mid-shift?",
         enterName: "Enter your name / role...", typeMsg: "Type message...",
         errWt: "⚖️ WEIGHT OFF: Need calibration.", errMech: "🔧 MAINTENANCE: Mechanical failure.",
-        weighNow: "⚠️ WEIGH NOW"
+        weighNow: "⚠️ WEIGH NOW",
+        maintMatrix: "Hardware Matrix", maintHint: "Tap a component to toggle its status.",
+        waterjets: "Waterjet Cutters", belts: "Transport Belts",
+        infeed: "Infeed", outfeed: "Outfeed", nuggetBelt: "Nuggets", filletBelt: "Fillets",
+        faultReason: "Fault Reason", notesOpt: "Notes (Optional)",
+        disable: "DISABLE", repair: "REPAIR", close: "CLOSE",
+        maintLogs: "Maintenance Logs", backToMatrix: "BACK TO MATRIX",
+        noLogs: "No downtime logged yet.", loadingLogs: "Loading logs...",
+        sysRunning: "RUNNING", sysDegraded: "DEGRADED",
+        allActive: "All components active. Tap for Maintenance.",
+        compsDown: "component(s) down. TAP TO VIEW.", selectReason: "-- Select Reason --",
+        comp_bin: "Infeed Belt", comp_bout: "Outfeed Belt", comp_bnug: "Nugget Belt", comp_bfil: "Fillet Belt",
+        f_orifice: "Orifice", f_blocker: "Blocker", f_water: "Water Line",
+        f_tracking: "Belt Tracking", f_broken: "Belt Broken", f_motor: "Motor Failure",
+        f_jam: "Product Jam", f_other: "Other"
     },
     es: {
         title: "La Ventaja", target: "Objetivo", lane: "CARRIL", density: "DENSIDAD", avgWt: "PESO PROM",
@@ -123,7 +137,21 @@ const i18n = {
         dualLane: "Dos Carriles", quadLane: "Cuatro Carriles", changeTarget: "⚠️ ¿Cambiar objetivo en medio turno?",
         enterName: "Ingresa tu nombre...", typeMsg: "Escribe un mensaje...",
         errWt: "⚖️ PESO INCORRECTO: Requiere calibración.", errMech: "🔧 MANTENIMIENTO: Falla mecánica.",
-        weighNow: "⚠️ PESAR AHORA"
+        weighNow: "⚠️ PESAR AHORA",
+        maintMatrix: "Matriz de Hardware", maintHint: "Toca un componente para cambiar su estado.",
+        waterjets: "Cortadoras de Agua", belts: "Cintas de Transporte",
+        infeed: "Entrada", outfeed: "Salida", nuggetBelt: "Nuggets", filletBelt: "Filetes",
+        faultReason: "Razón de Falla", notesOpt: "Notas (Opcional)",
+        disable: "DESACTIVAR", repair: "REPARAR", close: "CERRAR",
+        maintLogs: "Registros de Mantenimiento", backToMatrix: "VOLVER A LA MATRIZ",
+        noLogs: "Sin registros de inactividad.", loadingLogs: "Cargando registros...",
+        sysRunning: "ACTIVO", sysDegraded: "DEGRADADO",
+        allActive: "Todos activos. Toca para Mantenimiento.",
+        compsDown: "comp. inactivos. TOCA PARA VER.", selectReason: "-- Seleccionar Razón --",
+        comp_bin: "Cinta de Entrada", comp_bout: "Cinta de Salida", comp_bnug: "Cinta de Nuggets", comp_bfil: "Cinta de Filetes",
+        f_orifice: "Orificio", f_blocker: "Bloqueador", f_water: "Línea de Agua",
+        f_tracking: "Alineación de Cinta", f_broken: "Cinta Rota", f_motor: "Falla de Motor",
+        f_jam: "Atasco de Producto", f_other: "Otro"
     }
 };
 
@@ -1354,7 +1382,7 @@ window.syncMatrixToCloud = function() {
 };
 
 window.openMaintenance = function() {
-    document.getElementById('maintModalTitle').innerText = `🔧 M${config.currentMachine} Hardware Matrix`;
+    document.getElementById('maintModalTitle').innerText = `🔧 M${config.currentMachine} ${window.t('maintMatrix')}`;
     document.getElementById('maintenanceModal').style.display = 'flex';
     window.cancelFault();
     window.cancelReEnable();
@@ -1447,12 +1475,12 @@ window.updateBannerState = function() {
     const downCount = Object.keys(currentActiveDowntimes).length;
     if (downCount === 0) {
         banner.className = 'system-banner banner-running';
-        title.innerText  = `🟢 M${m}: RUNNING`;
-        sub.innerText    = 'All components active. Tap for Maintenance.';
+        title.innerText  = `🟢 M${m}: ${window.t('sysRunning')}`;
+        sub.innerText    = window.t('allActive');
     } else {
         banner.className = 'system-banner banner-degraded';
-        title.innerText  = `⚠️ M${m}: DEGRADED`;
-        sub.innerText    = `${downCount} component(s) down. TAP TO VIEW.`;
+        title.innerText  = `⚠️ M${m}: ${window.t('sysDegraded')}`;
+        sub.innerText    = `${downCount} ${window.t('compsDown')}`;
     }
 };
 
@@ -1486,7 +1514,7 @@ window.renderMaintHistory = function() {
     const container = document.getElementById('maintHistoryList');
     if (!container) return;
     if (!cachedMaintLogs || cachedMaintLogs.length === 0) {
-        container.innerHTML = '<div style="text-align:center; opacity:0.5; padding:20px; font-size:0.85rem;">No downtime logged yet.</div>';
+        container.innerHTML = `<div style="text-align:center; opacity:0.5; padding:20px; font-size:0.85rem;">${window.t('noLogs')}</div>`;
         return;
     }
     container.innerHTML = cachedMaintLogs.map(log => `
@@ -1497,8 +1525,8 @@ window.renderMaintHistory = function() {
             </div>
             <div class="maint-log-body">
                 <div class="maint-log-fault">
-                    <span class="maint-log-comp">${log.component}</span>
-                    <span class="maint-log-reason">⚠️ ${log.reason}</span>
+                    <span class="maint-log-comp">${window.t(log.component) || log.component}</span>
+                    <span class="maint-log-reason">⚠️ ${window.t(log.reason) || log.reason}</span>
                 </div>
                 <div class="maint-log-duration">
                     ${log.durationMins}<span style="font-size:0.8rem; font-weight:normal; opacity:0.7;">m</span>
