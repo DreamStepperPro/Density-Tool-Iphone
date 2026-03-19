@@ -204,7 +204,7 @@
         </div>
         <p style="font-size:0.75rem; color:gray; margin-top:0; margin-bottom:15px;">Tap a component to toggle its status.</p>
 
-        <div class="matrix-section-title">Waterjet Cutters</div>
+        <div class="matrix-section-title" data-i18n="waterjets">Waterjet Cutters</div>
         <div class="matrix-grid">
             <div class="matrix-btn running" id="comp-c1" onclick="window.toggleComponent('c1','Cutter 1')"><div class="matrix-dot"></div>C1</div>
             <div class="matrix-btn running" id="comp-c2" onclick="window.toggleComponent('c2','Cutter 2')"><div class="matrix-dot"></div>C2</div>
@@ -216,27 +216,27 @@
             <div class="matrix-btn running" id="comp-c8" onclick="window.toggleComponent('c8','Cutter 8')"><div class="matrix-dot"></div>C8</div>
         </div>
 
-        <div class="matrix-section-title">Transport Belts</div>
+        <div class="matrix-section-title" data-i18n="belts">Transport Belts</div>
         <div class="matrix-grid" style="grid-template-columns: repeat(2, 1fr);">
-            <div class="matrix-btn running" id="comp-bin"  onclick="window.toggleComponent('bin','Infeed Belt')"><div class="matrix-dot"></div>Infeed</div>
-            <div class="matrix-btn running" id="comp-bout" onclick="window.toggleComponent('bout','Outfeed Belt')"><div class="matrix-dot"></div>Outfeed</div>
-            <div class="matrix-btn running" id="comp-bnug" onclick="window.toggleComponent('bnug','Nugget Belt')"><div class="matrix-dot"></div>Nuggets</div>
-            <div class="matrix-btn running" id="comp-bfil" onclick="window.toggleComponent('bfil','Fillet Belt')"><div class="matrix-dot"></div>Fillets</div>
+            <div class="matrix-btn running" id="comp-bin"  onclick="window.toggleComponent('bin','comp_bin')"><div class="matrix-dot"></div><span data-i18n="infeed">Infeed</span></div>
+            <div class="matrix-btn running" id="comp-bout" onclick="window.toggleComponent('bout','comp_bout')"><div class="matrix-dot"></div><span data-i18n="outfeed">Outfeed</span></div>
+            <div class="matrix-btn running" id="comp-bnug" onclick="window.toggleComponent('bnug','comp_bnug')"><div class="matrix-dot"></div><span data-i18n="nuggetBelt">Nuggets</span></div>
+            <div class="matrix-btn running" id="comp-bfil" onclick="window.toggleComponent('bfil','comp_bfil')"><div class="matrix-dot"></div><span data-i18n="filletBelt">Fillets</span></div>
         </div>
 
         <div id="faultDrawer" class="fault-drawer">
             <h3 id="faultTitle" style="margin-top:0; font-size:1rem; color:var(--danger);">Disable Component</h3>
             <label>Fault Reason</label>
             <select id="faultReason" style="margin-bottom:10px; width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);">
-                <option value="">-- Select Reason --</option>
-                <option value="Orifice">Orifice</option>
-                <option value="Blocker">Blocker</option>
-                <option value="Water Line">Water Line</option>
-                <option value="Belt Tracking">Belt Tracking</option>
-                <option value="Belt Broken">Belt Broken</option>
-                <option value="Motor Failure">Motor Failure</option>
-                <option value="Product Jam">Product Jam</option>
-                <option value="Other">Other</option>
+                <option value="" data-i18n="selectReason">-- Select Reason --</option>
+                <option value="f_orifice" data-i18n="f_orifice">Orifice</option>
+                <option value="f_blocker" data-i18n="f_blocker">Blocker</option>
+                <option value="f_water" data-i18n="f_water">Water Line</option>
+                <option value="f_tracking" data-i18n="f_tracking">Belt Tracking</option>
+                <option value="f_broken" data-i18n="f_broken">Belt Broken</option>
+                <option value="f_motor" data-i18n="f_motor">Motor Failure</option>
+                <option value="f_jam" data-i18n="f_jam">Product Jam</option>
+                <option value="f_other" data-i18n="f_other">Other</option>
             </select>
             <label>Notes (Optional)</label>
             <input type="text" id="faultNotes" placeholder="Describe the issue..." style="margin-bottom:10px; width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); box-sizing:border-box;">
