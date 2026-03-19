@@ -371,6 +371,15 @@ window.startSupervisorSync = function() {
     unsubSupHistories = onValue(ref(db, 'histories'), (snap) => {
         window.renderSupervisorDashboard(snap.val() || {});
     });
+    // RCA Ledger listener — only fires for supervisor/admin, matching security rules
+    if (unsubMaintLogs) { unsubMaintLogs(); unsubMaintLogs = null; }
+    unsubMaintLogs = onValue(ref(db, 'downtimeLogs'), (snap) => {
+        const data = snap.val();
+        cachedMaintLogs = data ? Object.values(data).sort((a, b) => b.endTime - a.endTime) : [];
+        if (document.getElementById('maintHistoryModal').style.display === 'flex') {
+            window.renderMaintHistory();
+        }
+    });
 };
 
 window.renderSupervisorDashboard = function(allHistories) {
@@ -1454,4 +1463,50 @@ window.switchMachine = function(m) {
     currentActiveDowntimes = {};
     _origSwitchMachine(m);
     // startCloudSync (called inside _origSwitchMachine) will re-fire startDowntimeListener
+};
+
+// =====================================================================
+// RCA LEDGER ENGINE (SUPERVISOR SECURED)
+// =====================================================================
+let unsubMaintLogs = null;
+let cachedMaintLogs = [];
+
+window.openMaintHistory = function() {
+    document.getElementById('maintenanceModal').style.display = 'none';
+    document.getElementById('maintHistoryModal').style.display = 'flex';
+    window.renderMaintHistory();
+};
+
+window.closeMaintHistory = function() {
+    document.getElementById('maintHistoryModal').style.display = 'none';
+    document.getElementById('maintenanceModal').style.display = 'flex';
+};
+
+window.renderMaintHistory = function() {
+    const container = document.getElementById('maintHistoryList');
+    if (!container) return;
+    if (!cachedMaintLogs || cachedMaintLogs.length === 0) {
+        container.innerHTML = '<div style="text-align:center; opacity:0.5; padding:20px; font-size:0.85rem;">No downtime logged yet.</div>';
+        return;
+    }
+    container.innerHTML = cachedMaintLogs.map(log => `
+        <div class="maint-log-card">
+            <div class="maint-log-header">
+                <span>${log.timeStr} • ${log.machine}</span>
+                <span>Logged by ${log.loggedBy}</span>
+            </div>
+            <div class="maint-log-body">
+                <div class="maint-log-fault">
+                    <span class="maint-log-comp">${log.component}</span>
+                    <span class="maint-log-reason">⚠️ ${log.reason}</span>
+                </div>
+                <div class="maint-log-duration">
+                    ${log.durationMins}<span style="font-size:0.8rem; font-weight:normal; opacity:0.7;">m</span>
+                </div>
+            </div>
+            ${log.notes ? `<div class="maint-log-notes">"${log.notes}"</div>` : ''}
+            <div style="font-size:0.7rem; opacity:0.5; margin-top:8px; text-align:right;">
+                Repaired by ${log.clearedBy}
+            </div>
+        </div>`).join('');
 };
