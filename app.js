@@ -1305,12 +1305,47 @@ window.jumpstartNetwork = function() {
     }, 1000);
 };
 
+
 // =====================================================================
-// DOWNTIME & RCA SYSTEM — STRIKE 1 (UI Shell)
+// DOWNTIME & RCA ENGINE (CLOUD SYNCED — Strike 2)
 // =====================================================================
+let unsubDowntime = null;
+let currentActiveDowntimes = {};
+
+// Hook downtime listener directly into startCloudSync (no wrapper needed)
+const _origStartCloudSync = window.startCloudSync;
+window.startCloudSync = function() {
+    _origStartCloudSync();
+    window.startDowntimeListener();
+};
+
+window.startDowntimeListener = function() {
+    if (!db || window.isOfflineMode) return;
+    if (unsubDowntime) { unsubDowntime(); unsubDowntime = null; }
+    unsubDowntime = onValue(ref(db, `activeDowntimes/M${config.currentMachine}`), (snapshot) => {
+        currentActiveDowntimes = snapshot.val() || {};
+        window.syncMatrixToCloud();
+    });
+};
+
+window.syncMatrixToCloud = function() {
+    const allIds = ['c1','c2','c3','c4','c5','c6','c7','c8','bin','bout','bnug','bfil'];
+    allIds.forEach(id => {
+        const btn = document.getElementById(`comp-${id}`);
+        if (!btn) return;
+        if (currentActiveDowntimes[id]) {
+            btn.classList.remove('running');
+            btn.classList.add('down');
+        } else {
+            btn.classList.remove('down');
+            btn.classList.add('running');
+        }
+    });
+    window.updateBannerState();
+};
+
 window.openMaintenance = function() {
-    const m = config.currentMachine;
-    document.getElementById('maintModalTitle').innerText = `🔧 M${m} Hardware Matrix`;
+    document.getElementById('maintModalTitle').innerText = `🔧 M${config.currentMachine} Hardware Matrix`;
     document.getElementById('maintenanceModal').style.display = 'flex';
     window.cancelFault();
     window.cancelReEnable();
@@ -1323,19 +1358,19 @@ window.closeMaintenance = function() {
 };
 
 window.toggleComponent = function(id, name) {
-    const btn = document.getElementById(`comp-${id}`);
     window.cancelFault();
     window.cancelReEnable();
-    if (btn.classList.contains('down')) {
-        // Component is currently down — show re-enable confirmation before clearing
-        document.getElementById('reEnableTitle').innerText = `Mark ${name} as Repaired?`;
+    if (currentActiveDowntimes[id]) {
+        // Already down in the cloud — open repair confirmation
+        document.getElementById('reEnableTitle').innerText = `Repair ${name}?`;
         document.getElementById('pendingCompId').value = id;
         document.getElementById('reEnableDrawer').classList.add('active');
         setTimeout(() => document.getElementById('reEnableDrawer').scrollIntoView({behavior:'smooth', block:'nearest'}), 50);
     } else {
-        // Component is running — open fault drawer to disable it
+        // Running — open fault drawer
         document.getElementById('faultTitle').innerText = `Disable ${name}`;
         document.getElementById('pendingCompId').value = id;
+        document.getElementById('pendingCompName').value = name;
         document.getElementById('faultReason').value = '';
         document.getElementById('faultNotes').value = '';
         document.getElementById('faultDrawer').classList.add('active');
@@ -1343,41 +1378,64 @@ window.toggleComponent = function(id, name) {
     }
 };
 
-window.cancelFault = function() {
-    document.getElementById('faultDrawer').classList.remove('active');
-};
-
-window.cancelReEnable = function() {
-    document.getElementById('reEnableDrawer').classList.remove('active');
-};
+window.cancelFault    = function() { document.getElementById('faultDrawer').classList.remove('active'); };
+window.cancelReEnable = function() { document.getElementById('reEnableDrawer').classList.remove('active'); };
 
 window.confirmFault = function() {
     const reason = document.getElementById('faultReason').value;
     if (!reason) { alert("Please select a fault reason."); return; }
-    const id = document.getElementById('pendingCompId').value;
-    const btn = document.getElementById(`comp-${id}`);
-    btn.classList.remove('running');
-    btn.classList.add('down');
-    window.cancelFault();
-    window.updateBannerState();
+    const id    = document.getElementById('pendingCompId').value;
+    const name  = document.getElementById('pendingCompName').value;
+    const notes = document.getElementById('faultNotes').value.trim();
+    const payload = {
+        name, reason, notes,
+        startTime: Date.now(),
+        loggedBy: window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator'
+    };
+    update(ref(db, `activeDowntimes/M${config.currentMachine}`), { [id]: payload })
+        .then(() => {
+            window.cancelFault();
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+        })
+        .catch(() => window.showAdminToast("❌ Network Error: Could not disable component."));
 };
 
 window.confirmReEnable = function() {
-    const id = document.getElementById('pendingCompId').value;
-    const btn = document.getElementById(`comp-${id}`);
-    btn.classList.remove('down');
-    btn.classList.add('running');
-    window.cancelReEnable();
-    window.updateBannerState();
+    const id        = document.getElementById('pendingCompId').value;
+    const faultData = currentActiveDowntimes[id];
+    if (!faultData) { window.cancelReEnable(); return; }
+    const endTime      = Date.now();
+    const durationMins = Math.max(1, Math.round((endTime - faultData.startTime) / 60000));
+    const timeStr      = new Date(faultData.startTime).toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    const permanentRecord = {
+        machine:    `M${config.currentMachine}`,
+        component:  faultData.name,
+        reason:     faultData.reason,
+        notes:      faultData.notes || '',
+        durationMins,
+        startTime:  faultData.startTime,
+        endTime,
+        timeStr,
+        loggedBy:   faultData.loggedBy,
+        clearedBy:  window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator'
+    };
+    push(ref(db, 'downtimeLogs'), permanentRecord)
+        .then(() => {
+            set(ref(db, `activeDowntimes/M${config.currentMachine}/${id}`), null);
+            window.cancelReEnable();
+            if (navigator.vibrate) navigator.vibrate([50, 50]);
+            window.showAdminToast(`✅ Repaired. Downtime: ${durationMins}m logged.`);
+        })
+        .catch(() => window.showAdminToast("❌ Network Error: Could not save log."));
 };
 
 window.updateBannerState = function() {
-    const m = config.currentMachine;
+    const m      = config.currentMachine;
     const banner = document.getElementById('statusBanner');
     const title  = document.getElementById('bannerTitle');
     const sub    = document.getElementById('bannerSub');
     if (!banner) return;
-    const downCount = document.querySelectorAll('.matrix-btn.down').length;
+    const downCount = Object.keys(currentActiveDowntimes).length;
     if (downCount === 0) {
         banner.className = 'system-banner banner-running';
         title.innerText  = `🟢 M${m}: RUNNING`;
@@ -1389,14 +1447,11 @@ window.updateBannerState = function() {
     }
 };
 
-// Reset matrix and banner when switching machines
+// Machine switch: unsub old listener, reset UI, start new listener for new machine
 const _origSwitchMachine = window.switchMachine;
 window.switchMachine = function(m) {
+    if (unsubDowntime) { unsubDowntime(); unsubDowntime = null; }
+    currentActiveDowntimes = {};
     _origSwitchMachine(m);
-    // Reset all matrix buttons to running state for the new machine
-    document.querySelectorAll('.matrix-btn').forEach(btn => {
-        btn.classList.remove('down');
-        btn.classList.add('running');
-    });
-    window.updateBannerState();
+    // startCloudSync (called inside _origSwitchMachine) will re-fire startDowntimeListener
 };
