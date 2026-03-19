@@ -1553,13 +1553,12 @@ window.openSupHistory = function(machineNum) {
     if (!cachedHistories || !cachedHistories[machKey]) {
         container.innerHTML = '<div style="text-align:center; opacity:0.5; padding:20px;">No data available.</div>';
     } else {
-        // Combine all product histories (Lunch + Bfast) for this machine
         let allChecks = [];
         for (let prodKey in cachedHistories[machKey]) {
             let entries = Array.isArray(cachedHistories[machKey][prodKey])
                 ? cachedHistories[machKey][prodKey]
                 : Object.values(cachedHistories[machKey][prodKey]);
-            allChecks = allChecks.concat(entries);
+            allChecks = allChecks.concat(entries.filter(e => e));
         }
         allChecks.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
@@ -1574,7 +1573,7 @@ window.openSupHistory = function(machineNum) {
                         <span class="hist-lane-dens">${l.d}</span>
                     </div>`).join('');
                 return `
-                <div class="hist-card expanded" style="margin-bottom:8px;">
+                <div class="hist-card expanded" style="margin-bottom:8px; flex-shrink:0;">
                     <div class="hist-card-header" style="cursor:default;">
                         <div>
                             <span class="hist-card-time">${r.time}</span>
