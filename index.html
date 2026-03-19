@@ -193,6 +193,70 @@
 </div>
 
 <!-- SOS / LINE DISPATCH MODAL -->
+<div class="modal-overlay" id="maintenanceModal" style="display:none; z-index:220;">
+    <div class="modal">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+            <h2 style="margin:0;" id="maintModalTitle">🔧 M1 Hardware Matrix</h2>
+            <button class="btn-icon" onclick="window.closeMaintenance()" style="border:none; font-size:1.5rem;">×</button>
+        </div>
+        <p style="font-size:0.75rem; color:gray; margin-top:0; margin-bottom:15px;">Tap a component to toggle its status.</p>
+
+        <div class="matrix-section-title">Waterjet Cutters</div>
+        <div class="matrix-grid">
+            <div class="matrix-btn running" id="comp-c1" onclick="window.toggleComponent('c1','Cutter 1')"><div class="matrix-dot"></div>C1</div>
+            <div class="matrix-btn running" id="comp-c2" onclick="window.toggleComponent('c2','Cutter 2')"><div class="matrix-dot"></div>C2</div>
+            <div class="matrix-btn running" id="comp-c3" onclick="window.toggleComponent('c3','Cutter 3')"><div class="matrix-dot"></div>C3</div>
+            <div class="matrix-btn running" id="comp-c4" onclick="window.toggleComponent('c4','Cutter 4')"><div class="matrix-dot"></div>C4</div>
+            <div class="matrix-btn running" id="comp-c5" onclick="window.toggleComponent('c5','Cutter 5')"><div class="matrix-dot"></div>C5</div>
+            <div class="matrix-btn running" id="comp-c6" onclick="window.toggleComponent('c6','Cutter 6')"><div class="matrix-dot"></div>C6</div>
+            <div class="matrix-btn running" id="comp-c7" onclick="window.toggleComponent('c7','Cutter 7')"><div class="matrix-dot"></div>C7</div>
+            <div class="matrix-btn running" id="comp-c8" onclick="window.toggleComponent('c8','Cutter 8')"><div class="matrix-dot"></div>C8</div>
+        </div>
+
+        <div class="matrix-section-title">Transport Belts</div>
+        <div class="matrix-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="matrix-btn running" id="comp-bin"  onclick="window.toggleComponent('bin','Infeed Belt')"><div class="matrix-dot"></div>Infeed</div>
+            <div class="matrix-btn running" id="comp-bout" onclick="window.toggleComponent('bout','Outfeed Belt')"><div class="matrix-dot"></div>Outfeed</div>
+            <div class="matrix-btn running" id="comp-bnug" onclick="window.toggleComponent('bnug','Nugget Belt')"><div class="matrix-dot"></div>Nuggets</div>
+            <div class="matrix-btn running" id="comp-bfil" onclick="window.toggleComponent('bfil','Fillet Belt')"><div class="matrix-dot"></div>Fillets</div>
+        </div>
+
+        <div id="faultDrawer" class="fault-drawer">
+            <h3 id="faultTitle" style="margin-top:0; font-size:1rem; color:var(--danger);">Disable Component</h3>
+            <label>Fault Reason</label>
+            <select id="faultReason" style="margin-bottom:10px; width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);">
+                <option value="">-- Select Reason --</option>
+                <option value="Orifice">Orifice</option>
+                <option value="Blocker">Blocker</option>
+                <option value="Water Line">Water Line</option>
+                <option value="Belt Tracking">Belt Tracking</option>
+                <option value="Belt Broken">Belt Broken</option>
+                <option value="Motor Failure">Motor Failure</option>
+                <option value="Product Jam">Product Jam</option>
+                <option value="Other">Other</option>
+            </select>
+            <label>Notes (Optional)</label>
+            <input type="text" id="faultNotes" placeholder="Describe the issue..." style="margin-bottom:10px; width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); box-sizing:border-box;">
+            <div style="display:flex; gap:10px;">
+                <button class="modal-btn danger" onclick="window.confirmFault()" style="margin-top:0;">DISABLE</button>
+                <button class="modal-btn secondary" onclick="window.cancelFault()" style="margin-top:0;">CANCEL</button>
+            </div>
+        </div>
+
+        <div id="reEnableDrawer" class="fault-drawer" style="border-color:var(--success);">
+            <h3 id="reEnableTitle" style="margin-top:0; font-size:1rem; color:var(--success);">Mark as Repaired?</h3>
+            <p style="font-size:0.8rem; color:var(--text); margin:0 0 10px;">Confirm this component is back online before clearing its downtime.</p>
+            <div style="display:flex; gap:10px;">
+                <button class="modal-btn" onclick="window.confirmReEnable()" style="margin-top:0; background:var(--success);">✅ BACK ONLINE</button>
+                <button class="modal-btn secondary" onclick="window.cancelReEnable()" style="margin-top:0;">CANCEL</button>
+            </div>
+        </div>
+
+        <input type="hidden" id="pendingCompId">
+        <button class="modal-btn secondary" onclick="window.closeMaintenance()" style="margin-top:15px;">CLOSE</button>
+    </div>
+</div>
+
 <div class="modal-overlay" id="sosModal" style="display:none; z-index:200;">
     <div class="modal" style="max-height:95vh; display:flex; flex-direction:column;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -228,6 +292,7 @@
         <div class="header-btns">
             <button class="lang-btn" id="langToggleBtnSup" onclick="window.toggleLanguage()">EN</button>
             <button class="gear-btn btn-hidden" id="btnYieldSup" onclick="window.openYield()" style="color:var(--success);">📊</button>
+            <button class="gear-btn btn-hidden" id="btnMaintSup" onclick="window.openMaintenance()" style="color:var(--warning);">🔧</button>
             <button class="gear-btn btn-hidden" id="btnAdminSup" onclick="window.openAdmin()" style="color:var(--accent);">👑</button>
             <button class="gear-btn" onclick="window.toggleSettings()">⚙️</button>
         </div>
@@ -250,6 +315,12 @@
         </div>
     </div>
     <div class="machine-nav" id="machineNav"></div>
+    <div id="systemStatusContainer" class="system-status-container" style="margin-top:8px;">
+        <div id="statusBanner" class="system-banner banner-running" onclick="window.openMaintenance()">
+            <span id="bannerTitle">🟢 M1: RUNNING</span>
+            <span id="bannerSub" class="banner-subtext">All components active. Tap for Maintenance.</span>
+        </div>
+    </div>
     <div class="info-bar">
         <span id="displayConfig">Quad Lane • Lunch</span>
         <span id="displayTarget">Target: --g</span>
