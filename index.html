@@ -261,6 +261,17 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="supHistoryModal" style="display:none; z-index:230;">
+    <div class="modal">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h2 style="margin:0;" id="supHistoryTitle">📋 DSI 1 Ledger</h2>
+            <button class="btn-icon" onclick="window.closeSupHistory()" style="border:none; font-size:1.5rem;">×</button>
+        </div>
+        <div id="supHistoryList" class="history-cards" style="max-height:65vh; overflow-y:auto; padding-right:5px;"></div>
+        <button class="modal-btn secondary" onclick="window.closeSupHistory()" style="margin-top:15px;">CLOSE</button>
+    </div>
+</div>
+
 <div class="modal-overlay" id="maintHistoryModal" style="display:none; z-index:225;">
     <div class="modal">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
