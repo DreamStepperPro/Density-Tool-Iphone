@@ -194,3 +194,27 @@
 .y-grid input { padding:8px 10px; font-size:1rem; }
 .yield-hist-card { background:var(--input-bg); border:1px solid var(--border); border-radius:8px; padding:10px; font-size:0.85rem; }
 .yield-hist-card strong { color:var(--accent); }
+
+/* =====================================================================
+   DOWNTIME & RCA SYSTEM (MATRIX LAYOUT)
+   ===================================================================== */
+.system-status-container { margin-bottom: 12px; }
+.system-banner { width: 100%; padding: 12px; border-radius: 10px; text-align: center; font-weight: 900; font-size: 0.95rem; cursor: pointer; transition: all 0.3s ease; border: 2px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: var(--shadow); text-transform: uppercase; letter-spacing: 0.5px; box-sizing: border-box; }
+.system-banner:active { transform: scale(0.98); }
+.banner-running { background: rgba(40, 167, 69, 0.12); color: var(--success); border-color: var(--success); }
+.banner-degraded { background: rgba(255, 193, 7, 0.15); color: #c98f00; border-color: var(--warning); animation: pulseWarning 2s infinite; }
+.banner-down { background: rgba(255, 77, 77, 0.15); color: var(--danger); border-color: var(--danger); animation: pulse-danger 1.5s infinite; }
+.banner-subtext { font-size: 0.75rem; opacity: 0.8; font-weight: bold; margin-top: 4px; color: var(--text); text-transform: none; }
+@keyframes pulse-danger { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,77,77,0.0); } 50% { box-shadow: 0 0 0 8px rgba(255,77,77,0.3); } }
+.matrix-section-title { font-size: 0.8rem; font-weight: bold; text-transform: uppercase; color: gray; margin: 15px 0 8px 0; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+.matrix-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 15px; }
+.matrix-btn { padding: 12px 5px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 0.85rem; border: 2px solid var(--border); background: var(--input-bg); color: var(--text); cursor: pointer; transition: 0.2s; box-shadow: var(--shadow); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; user-select: none; }
+.matrix-btn:active { transform: scale(0.95); }
+.matrix-btn.running { border-color: var(--success); background: rgba(40, 167, 69, 0.05); }
+.matrix-btn.down { border-color: var(--danger); background: rgba(255,77,77,0.1); color: var(--danger); }
+.matrix-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+.running .matrix-dot { background: var(--success); }
+.down .matrix-dot { background: var(--danger); box-shadow: 0 0 5px var(--danger); }
+.fault-drawer { display: none; background: rgba(128,128,128,0.05); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px; margin-top: 10px; }
+.fault-drawer.active { display: block; animation: slideDown 0.2s ease-out; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
