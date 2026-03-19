@@ -119,7 +119,10 @@ const i18n = {
         comp_bin: "Infeed Belt", comp_bout: "Outfeed Belt", comp_bnug: "Nugget Belt", comp_bfil: "Fillet Belt",
         f_orifice: "Orifice", f_blocker: "Blocker", f_water: "Water Line",
         f_tracking: "Belt Tracking", f_broken: "Belt Broken", f_motor: "Motor Failure",
-        f_jam: "Product Jam", f_other: "Other"
+        f_jam: "Product Jam", f_other: "Other",
+        disableComp: "Disable", repairComp: "Repair",
+        confirmRepair: "Confirm this component is back online before clearing its downtime.",
+        cancel: "CANCEL", backOnline: "✅ BACK ONLINE", close: "CLOSE"
     },
     es: {
         title: "La Ventaja", target: "Objetivo", lane: "CARRIL", density: "DENSIDAD", avgWt: "PESO PROM",
@@ -151,7 +154,10 @@ const i18n = {
         comp_bin: "Cinta de Entrada", comp_bout: "Cinta de Salida", comp_bnug: "Cinta de Nuggets", comp_bfil: "Cinta de Filetes",
         f_orifice: "Orificio", f_blocker: "Bloqueador", f_water: "Línea de Agua",
         f_tracking: "Alineación de Cinta", f_broken: "Cinta Rota", f_motor: "Falla de Motor",
-        f_jam: "Atasco de Producto", f_other: "Otro"
+        f_jam: "Atasco de Producto", f_other: "Otro",
+        disableComp: "Desactivar", repairComp: "Reparar",
+        confirmRepair: "Confirma que el componente está en línea antes de borrar el tiempo.",
+        cancel: "CANCELAR", backOnline: "✅ EN LÍNEA", close: "CERRAR"
     }
 };
 
@@ -182,6 +188,7 @@ window.applyTranslations = function() {
     const supDash = document.getElementById('supervisorDashboard');
     if (supDash && supDash.style.display !== 'none' && cachedHistories) window.renderSupervisorDashboard(cachedHistories);
     if (db && !window.isOfflineMode) window.startCommsListener();
+    if (typeof window.updateBannerState === 'function') window.updateBannerState();
 };
 
 let config = {
@@ -1401,16 +1408,14 @@ window.toggleComponent = function(id, name) {
     window.cancelFault();
     window.cancelReEnable();
     if (currentActiveDowntimes[id]) {
-        // Already down in the cloud — open repair confirmation
-        document.getElementById('reEnableTitle').innerText = `Repair ${name}?`;
+        document.getElementById('reEnableTitle').innerText = `${window.t('repairComp')} ${window.t(name) || name}?`;
         document.getElementById('pendingCompId').value = id;
         document.getElementById('reEnableDrawer').classList.add('active');
         setTimeout(() => document.getElementById('reEnableDrawer').scrollIntoView({behavior:'smooth', block:'nearest'}), 50);
     } else {
-        // Running — open fault drawer
-        document.getElementById('faultTitle').innerText = `Disable ${name}`;
+        document.getElementById('faultTitle').innerText = `${window.t('disableComp')} ${window.t(name) || name}`;
         document.getElementById('pendingCompId').value = id;
-        document.getElementById('pendingCompName').value = name;
+        document.getElementById('pendingCompName').value = name; // needed by confirmFault for Firebase
         document.getElementById('faultReason').value = '';
         document.getElementById('faultNotes').value = '';
         document.getElementById('faultDrawer').classList.add('active');
