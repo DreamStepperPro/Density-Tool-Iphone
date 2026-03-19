@@ -197,7 +197,10 @@
     <div class="modal">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
             <h2 style="margin:0;" id="maintModalTitle">🔧 M1 Hardware Matrix</h2>
-            <button class="btn-icon" onclick="window.closeMaintenance()" style="border:none; font-size:1.5rem;">×</button>
+            <div>
+                <button class="btn-icon" onclick="window.openMaintHistory()" style="border:none; font-size:1.2rem; margin-right:8px;" title="View Logs">📋</button>
+                <button class="btn-icon" onclick="window.closeMaintenance()" style="border:none; font-size:1.5rem;">×</button>
+            </div>
         </div>
         <p style="font-size:0.75rem; color:gray; margin-top:0; margin-bottom:15px;">Tap a component to toggle its status.</p>
 
@@ -255,6 +258,19 @@
         <input type="hidden" id="pendingCompId">
         <input type="hidden" id="pendingCompName">
         <button class="modal-btn secondary" onclick="window.closeMaintenance()" style="margin-top:15px;">CLOSE</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="maintHistoryModal" style="display:none; z-index:225;">
+    <div class="modal">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h2 style="margin:0;">📋 Maintenance Logs</h2>
+            <button class="btn-icon" onclick="window.closeMaintHistory()" style="border:none; font-size:1.5rem;">×</button>
+        </div>
+        <div id="maintHistoryList" style="max-height:60vh; overflow-y:auto; display:flex; flex-direction:column; gap:10px;">
+            <div style="text-align:center; opacity:0.5; padding:20px; font-size:0.85rem;">Loading logs...</div>
+        </div>
+        <button class="modal-btn secondary" onclick="window.closeMaintHistory()" style="margin-top:15px;">BACK TO MATRIX</button>
     </div>
 </div>
 
