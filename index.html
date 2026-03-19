@@ -202,7 +202,7 @@
                 <button class="btn-icon" onclick="window.closeMaintenance()" style="border:none; font-size:1.5rem;">×</button>
             </div>
         </div>
-        <p style="font-size:0.75rem; color:gray; margin-top:0; margin-bottom:15px;">Tap a component to toggle its status.</p>
+        <p style="font-size:0.75rem; color:gray; margin-top:0; margin-bottom:15px;" data-i18n="maintHint">Tap a component to toggle its status.</p>
 
         <div class="matrix-section-title" data-i18n="waterjets">Waterjet Cutters</div>
         <div class="matrix-grid">
@@ -226,7 +226,7 @@
 
         <div id="faultDrawer" class="fault-drawer">
             <h3 id="faultTitle" style="margin-top:0; font-size:1rem; color:var(--danger);">Disable Component</h3>
-            <label>Fault Reason</label>
+            <label data-i18n="faultReason">Fault Reason</label>
             <select id="faultReason" style="margin-bottom:10px; width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);">
                 <option value="" data-i18n="selectReason">-- Select Reason --</option>
                 <option value="f_orifice" data-i18n="f_orifice">Orifice</option>
@@ -238,26 +238,26 @@
                 <option value="f_jam" data-i18n="f_jam">Product Jam</option>
                 <option value="f_other" data-i18n="f_other">Other</option>
             </select>
-            <label>Notes (Optional)</label>
-            <input type="text" id="faultNotes" placeholder="Describe the issue..." style="margin-bottom:10px; width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); box-sizing:border-box;">
+            <label data-i18n="notesOpt">Notes (Optional)</label>
+            <input type="text" id="faultNotes" placeholder="Describe the issue..." data-i18n-ph="notesOpt" style="margin-bottom:10px; width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); box-sizing:border-box;">
             <div style="display:flex; gap:10px;">
-                <button class="modal-btn danger" onclick="window.confirmFault()" style="margin-top:0;">DISABLE</button>
-                <button class="modal-btn secondary" onclick="window.cancelFault()" style="margin-top:0;">CANCEL</button>
+                <button class="modal-btn danger" onclick="window.confirmFault()" style="margin-top:0;" data-i18n="disable">DISABLE</button>
+                <button class="modal-btn secondary" onclick="window.cancelFault()" style="margin-top:0;" data-i18n="cancel">CANCEL</button>
             </div>
         </div>
 
         <div id="reEnableDrawer" class="fault-drawer" style="border-color:var(--success);">
             <h3 id="reEnableTitle" style="margin-top:0; font-size:1rem; color:var(--success);">Mark as Repaired?</h3>
-            <p style="font-size:0.8rem; color:var(--text); margin:0 0 10px;">Confirm this component is back online before clearing its downtime.</p>
+            <p style="font-size:0.8rem; color:var(--text); margin:0 0 10px;" data-i18n="confirmRepair">Confirm this component is back online before clearing its downtime.</p>
             <div style="display:flex; gap:10px;">
-                <button class="modal-btn" onclick="window.confirmReEnable()" style="margin-top:0; background:var(--success);">✅ BACK ONLINE</button>
-                <button class="modal-btn secondary" onclick="window.cancelReEnable()" style="margin-top:0;">CANCEL</button>
+                <button class="modal-btn" onclick="window.confirmReEnable()" style="margin-top:0; background:var(--success);" data-i18n="backOnline">✅ BACK ONLINE</button>
+                <button class="modal-btn secondary" onclick="window.cancelReEnable()" style="margin-top:0;" data-i18n="cancel">CANCEL</button>
             </div>
         </div>
 
         <input type="hidden" id="pendingCompId">
         <input type="hidden" id="pendingCompName">
-        <button class="modal-btn secondary" onclick="window.closeMaintenance()" style="margin-top:15px;">CLOSE</button>
+        <button class="modal-btn secondary" onclick="window.closeMaintenance()" style="margin-top:15px;" data-i18n="close">CLOSE</button>
     </div>
 </div>
 
