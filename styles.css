@@ -230,3 +230,12 @@
 .maint-log-reason { font-size: 0.85rem; color: var(--danger); font-weight: bold; margin-top: 2px; }
 .maint-log-duration { font-size: 1.4rem; font-weight: 900; color: var(--text); text-align: right; }
 .maint-log-notes { font-size: 0.8rem; color: var(--text); opacity: 0.8; margin-top: 8px; background: rgba(0,0,0,0.05); padding: 6px; border-radius: 4px; font-style: italic; }
+
+/* =====================================================================
+   SUPERVISOR LEDGER FOLDERS
+   ===================================================================== */
+.shift-folder { background: rgba(128,128,128,0.03); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+.shift-folder-header { padding: 12px 15px; font-weight: 900; font-size: 0.95rem; color: var(--text); cursor: pointer; background: var(--card-bg); list-style: none; border-bottom: 1px solid transparent; display: flex; justify-content: space-between; align-items: center; }
+.shift-folder-header::-webkit-details-marker { display: none; }
+.shift-folder[open] .shift-folder-header { border-bottom: 1px solid var(--border); background: rgba(128,128,128,0.08); }
+.shift-folder-content { padding: 10px; }
