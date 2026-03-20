@@ -1570,28 +1570,56 @@ window.openSupHistory = function(machineNum) {
         if (allChecks.length === 0) {
             container.innerHTML = '<div style="text-align:center; opacity:0.5; padding:20px;">No shift history found.</div>';
         } else {
-            container.innerHTML = allChecks.map(r => {
-                const laneGrid = r.lanes.map((l, li) => `
-                    <div class="hist-lane-cell">
-                        <span class="hist-lane-lbl">L${li+1}</span>
-                        <span class="hist-lane-wt">${l.w}</span>
-                        <span class="hist-lane-dens">${l.d}</span>
-                    </div>`).join('');
-                return `
-                <div class="hist-card expanded" style="margin-bottom:8px; flex-shrink:0;">
-                    <div class="hist-card-header" style="cursor:default;">
-                        <div>
-                            <span class="hist-card-time">${r.time}</span>
-                            ${r.operator ? `<span style="font-size:0.72rem; opacity:0.6; margin-left:8px;">by ${r.operator}</span>` : ''}
+            // --- FACTORY CLOCK: 11PM (23:00) onward belongs to the next production day ---
+            const groupedByDate = {};
+            allChecks.forEach(r => {
+                const d = new Date(r.timestamp || 0);
+                const prodDate = new Date(d.getTime());
+                if (d.getHours() >= 23) prodDate.setDate(prodDate.getDate() + 1);
+                const dateStr = prodDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                if (!groupedByDate[dateStr]) groupedByDate[dateStr] = { checks: [], sortKey: prodDate.getTime() };
+                groupedByDate[dateStr].checks.push(r);
+            });
+
+            // Sort date groups newest first explicitly — don't rely on object key order
+            const sortedDates = Object.entries(groupedByDate)
+                .sort((a, b) => b[1].sortKey - a[1].sortKey);
+
+            let html = '';
+            sortedDates.forEach(([dateStr, group], folderIdx) => {
+                const cardsHtml = group.checks.map(r => {
+                    const laneGrid = r.lanes.map((l, li) => `
+                        <div class="hist-lane-cell">
+                            <span class="hist-lane-lbl">L${li+1}</span>
+                            <span class="hist-lane-wt">${l.w}</span>
+                            <span class="hist-lane-dens">${l.d}</span>
+                        </div>`).join('');
+                    return `
+                    <div class="hist-card expanded" style="margin-bottom:8px; flex-shrink:0;">
+                        <div class="hist-card-header" style="cursor:default;">
+                            <div>
+                                <span class="hist-card-time">${r.time}</span>
+                                ${r.operator ? `<span style="font-size:0.72rem; opacity:0.6; margin-left:8px;">by ${r.operator}</span>` : ''}
+                            </div>
+                            <span class="hist-card-avg">Avg: <strong>${r.avg}g</strong></span>
                         </div>
-                        <span class="hist-card-avg">Avg: <strong>${r.avg}g</strong></span>
-                    </div>
-                    <div class="hist-card-body" style="display:block;">
-                        <div style="font-size:0.72rem; opacity:0.55; margin-bottom:4px;">${window.t('target')}: ${r.target || '--'}g</div>
-                        <div class="hist-lane-grid">${laneGrid}</div>
-                    </div>
-                </div>`;
-            }).join('');
+                        <div class="hist-card-body" style="display:block;">
+                            <div style="font-size:0.72rem; opacity:0.55; margin-bottom:4px;">${window.t('target')}: ${r.target || '--'}g</div>
+                            <div class="hist-lane-grid">${laneGrid}</div>
+                        </div>
+                    </div>`;
+                }).join('');
+
+                html += `
+                <details class="shift-folder" ${folderIdx === 0 ? 'open' : ''}>
+                    <summary class="shift-folder-header">
+                        <span>📅 ${dateStr}</span>
+                        <span style="font-weight:normal; font-size:0.8rem; opacity:0.6;">${group.checks.length} checks ▾</span>
+                    </summary>
+                    <div class="shift-folder-content">${cardsHtml}</div>
+                </details>`;
+            });
+            container.innerHTML = html;
         }
     }
     document.getElementById('supHistoryModal').style.display = 'flex';
