@@ -122,7 +122,13 @@ const i18n = {
         f_jam: "Product Jam", f_other: "Other",
         disableComp: "Disable", repairComp: "Repair",
         confirmRepair: "Confirm this component is back online before clearing its downtime.",
-        cancel: "CANCEL", backOnline: "✅ BACK ONLINE", close: "CLOSE"
+        cancel: "CANCEL", backOnline: "✅ BACK ONLINE", close: "CLOSE",
+        sysDown: "DOWN", globalSys: "System Level", comp_sys: "Entire Machine (Hard Stop)",
+        impactLevel: "Impact Level",
+        impactDegraded: "⚠️ Reduces Capacity (Degraded)",
+        impactDown: "🔴 Stops Machine (Hard Down)",
+        endShift: "🏁 END SHIFT",
+        endShiftConfirm: "🏁 END SHIFT?\nThis will clear the board for the next operator. The Supervisor Ledger will NOT be deleted."
     },
     es: {
         title: "La Ventaja", target: "Objetivo", lane: "CARRIL", density: "DENSIDAD", avgWt: "PESO PROM",
@@ -157,7 +163,13 @@ const i18n = {
         f_jam: "Atasco de Producto", f_other: "Otro",
         disableComp: "Desactivar", repairComp: "Reparar",
         confirmRepair: "Confirma que el componente está en línea antes de borrar el tiempo.",
-        cancel: "CANCELAR", backOnline: "✅ EN LÍNEA", close: "CERRAR"
+        cancel: "CANCELAR", backOnline: "✅ EN LÍNEA", close: "CERRAR",
+        sysDown: "DETENIDA", globalSys: "Nivel de Sistema", comp_sys: "Máquina Completa (Parada)",
+        impactLevel: "Nivel de Impacto",
+        impactDegraded: "⚠️ Reduce Capacidad (Degradado)",
+        impactDown: "🔴 Detiene la Máquina (Parada)",
+        endShift: "🏁 FINALIZAR TURNO",
+        endShiftConfirm: "🏁 ¿FINALIZAR TURNO?\nEsto limpiará la pantalla para el próximo operador. El registro del supervisor NO se borrará."
     }
 };
 
@@ -400,11 +412,18 @@ window.routeUserByRole = function() {
 // SUPERVISOR ENGINE
 // =====================================================================
 let unsubSupHistories = null;
+let unsubSupLedger = null;
+let cachedShiftLedger = null;
 window.startSupervisorSync = function() {
     if (!db) { setTimeout(window.startSupervisorSync, 500); return; }
     if (unsubSupHistories) unsubSupHistories();
     unsubSupHistories = onValue(ref(db, 'histories'), (snap) => {
         window.renderSupervisorDashboard(snap.val() || {});
+    });
+    // Shift Ledger listener — permanent cross-shift history
+    if (unsubSupLedger) { unsubSupLedger(); unsubSupLedger = null; }
+    unsubSupLedger = onValue(ref(db, 'shiftLedger'), (snap) => {
+        cachedShiftLedger = snap.val() || {};
     });
     // RCA Ledger listener — only fires for supervisor/admin, matching security rules
     if (unsubMaintLogs) { unsubMaintLogs(); unsubMaintLogs = null; }
@@ -917,6 +936,8 @@ window.saveToHistory = function() {
     if (history.length > 50) history.pop();
     if (!window.isOfflineMode && dbRef_History) {
         set(dbRef_History, history).catch(e => window.showAdminToast("❌ Network Error: History not saved."));
+        // Dual-write: permanent copy to shiftLedger so supervisor history survives Clear Table
+        push(ref(db, `shiftLedger/M${config.currentMachine}`), row).catch(e => console.warn('Ledger write:', e));
     }
     window.renderHistoryCards();
 };
@@ -928,6 +949,31 @@ window.clearHistory = function() {
             set(dbRef_History, history).catch(e => window.showAdminToast("❌ Network Error: History not cleared."));
         }
         window.renderHistoryCards();
+    }
+};
+
+window.endShift = function() {
+    if (confirm(window.t('endShiftConfirm'))) {
+        const opName = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
+        const time = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+        const marker = { isMarker: true, text: `🏁 SHIFT ENDED BY ${opName.toUpperCase()}`, timestamp: Date.now(), time };
+        if (!window.isOfflineMode && db) {
+            push(ref(db, `shiftLedger/M${config.currentMachine}`), marker).catch(e => console.warn('Marker write:', e));
+        }
+        // Wipe active board
+        history = [];
+        lastAutoSaveCombo = "";
+        if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveTimer = null; }
+        if (!window.isOfflineMode && dbRef_History) set(dbRef_History, history).catch(e => console.warn(e));
+        window.renderHistoryCards();
+        // Clear weights only — keep densities so next shift starts from last known setting
+        if (store && store.lanes) {
+            store.lanes.forEach(l => { l.w = ''; l.locked = true; l.smartActive = false; l.stableCount = 0; });
+            if (!window.isOfflineMode && dbRef_Store) update(dbRef_Store, { lanes: store.lanes }).catch(e => console.warn(e));
+            window.updateUIFromCloud();
+        }
+        if (typeof window.clearYieldInputs === 'function') window.clearYieldInputs();
+        window.showAdminToast("🏁 Shift Ended & Board Cleared.");
     }
 };
 
@@ -1376,7 +1422,7 @@ window.startDowntimeListener = function() {
 };
 
 window.syncMatrixToCloud = function() {
-    const allIds = ['c1','c2','c3','c4','c5','c6','c7','c8','bin','bout','bnug','bfil'];
+    const allIds = ['sys','c1','c2','c3','c4','c5','c6','c7','c8','bin','bout','bnug','bfil'];
     allIds.forEach(id => {
         const btn = document.getElementById(`comp-${id}`);
         if (!btn) return;
@@ -1428,12 +1474,13 @@ window.cancelReEnable = function() { document.getElementById('reEnableDrawer').c
 
 window.confirmFault = function() {
     const reason = document.getElementById('faultReason').value;
-    if (!reason) { alert("Please select a fault reason."); return; }
-    const id    = document.getElementById('pendingCompId').value;
-    const name  = document.getElementById('pendingCompName').value;
-    const notes = document.getElementById('faultNotes').value.trim();
+    if (!reason) { alert(window.t('selectReason') || "Please select a fault reason."); return; }
+    const id       = document.getElementById('pendingCompId').value;
+    const name     = document.getElementById('pendingCompName').value;
+    const notes    = document.getElementById('faultNotes').value.trim();
+    const severity = document.getElementById('faultSeverity').value;
     const payload = {
-        name, reason, notes,
+        id, name, reason, notes, severity,
         startTime: Date.now(),
         loggedBy: window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator'
     };
@@ -1456,6 +1503,7 @@ window.confirmReEnable = function() {
         machine:    `M${config.currentMachine}`,
         component:  faultData.name,
         reason:     faultData.reason,
+        severity:   faultData.severity || 'degraded',
         notes:      faultData.notes || '',
         durationMins,
         startTime:  faultData.startTime,
@@ -1480,15 +1528,24 @@ window.updateBannerState = function() {
     const title  = document.getElementById('bannerTitle');
     const sub    = document.getElementById('bannerSub');
     if (!banner) return;
-    const downCount = Object.keys(currentActiveDowntimes).length;
+    const activeFaults = Object.values(currentActiveDowntimes);
+    const downCount = activeFaults.length;
     if (downCount === 0) {
         banner.className = 'system-banner banner-running';
         title.innerText  = `🟢 M${m}: ${window.t('sysRunning')}`;
         sub.innerText    = window.t('allActive');
     } else {
-        banner.className = 'system-banner banner-degraded';
-        title.innerText  = `⚠️ M${m}: ${window.t('sysDegraded')}`;
-        sub.innerText    = `${downCount} ${window.t('compsDown')}`;
+        // Hard down if any fault is explicitly marked 'down' or the sys master button is active
+        const isHardDown = activeFaults.some(f => f.severity === 'down' || f.id === 'sys');
+        if (isHardDown) {
+            banner.className = 'system-banner banner-down';
+            title.innerText  = `🔴 M${m}: ${window.t('sysDown')}`;
+            sub.innerText    = `${downCount} ${window.t('compsDown')}`;
+        } else {
+            banner.className = 'system-banner banner-degraded';
+            title.innerText  = `⚠️ M${m}: ${window.t('sysDegraded')}`;
+            sub.innerText    = `${downCount} ${window.t('compsDown')}`;
+        }
     }
 };
 
@@ -1555,73 +1612,91 @@ window.openSupHistory = function(machineNum) {
     const container = document.getElementById('supHistoryList');
     const machKey = `M${machineNum}`;
 
-    if (!cachedHistories || !cachedHistories[machKey]) {
-        container.innerHTML = '<div style="text-align:center; opacity:0.5; padding:20px;">No data available.</div>';
-    } else {
-        let allChecks = [];
+    let allChecks = [];
+
+    // Pull from permanent shiftLedger (primary source — survives Clear Table)
+    if (cachedShiftLedger && cachedShiftLedger[machKey]) {
+        allChecks = allChecks.concat(Object.values(cachedShiftLedger[machKey]).filter(e => e));
+    }
+    // Pull from active histories (backward compat — old data before shiftLedger existed)
+    if (cachedHistories && cachedHistories[machKey]) {
         for (let prodKey in cachedHistories[machKey]) {
             let entries = Array.isArray(cachedHistories[machKey][prodKey])
                 ? cachedHistories[machKey][prodKey]
                 : Object.values(cachedHistories[machKey][prodKey]);
             allChecks = allChecks.concat(entries.filter(e => e));
         }
-        allChecks.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
-        if (allChecks.length === 0) {
-            container.innerHTML = '<div style="text-align:center; opacity:0.5; padding:20px;">No shift history found.</div>';
-        } else {
-            // --- FACTORY CLOCK: 11PM (23:00) onward belongs to the next production day ---
-            const groupedByDate = {};
-            allChecks.forEach(r => {
-                const d = new Date(r.timestamp || 0);
-                const prodDate = new Date(d.getTime());
-                if (d.getHours() >= 23) prodDate.setDate(prodDate.getDate() + 1);
-                const dateStr = prodDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-                if (!groupedByDate[dateStr]) groupedByDate[dateStr] = { checks: [], sortKey: prodDate.getTime() };
-                groupedByDate[dateStr].checks.push(r);
-            });
-
-            // Sort date groups newest first explicitly — don't rely on object key order
-            const sortedDates = Object.entries(groupedByDate)
-                .sort((a, b) => b[1].sortKey - a[1].sortKey);
-
-            let html = '';
-            sortedDates.forEach(([dateStr, group], folderIdx) => {
-                const cardsHtml = group.checks.map(r => {
-                    const laneGrid = r.lanes.map((l, li) => `
-                        <div class="hist-lane-cell">
-                            <span class="hist-lane-lbl">L${li+1}</span>
-                            <span class="hist-lane-wt">${l.w}</span>
-                            <span class="hist-lane-dens">${l.d}</span>
-                        </div>`).join('');
-                    return `
-                    <div class="hist-card expanded" style="margin-bottom:8px; flex-shrink:0;">
-                        <div class="hist-card-header" style="cursor:default;">
-                            <div>
-                                <span class="hist-card-time">${r.time}</span>
-                                ${r.operator ? `<span style="font-size:0.72rem; opacity:0.6; margin-left:8px;">by ${r.operator}</span>` : ''}
-                            </div>
-                            <span class="hist-card-avg">Avg: <strong>${r.avg}g</strong></span>
-                        </div>
-                        <div class="hist-card-body" style="display:block;">
-                            <div style="font-size:0.72rem; opacity:0.55; margin-bottom:4px;">${window.t('target')}: ${r.target || '--'}g</div>
-                            <div class="hist-lane-grid">${laneGrid}</div>
-                        </div>
-                    </div>`;
-                }).join('');
-
-                html += `
-                <details class="shift-folder" ${folderIdx === 0 ? 'open' : ''}>
-                    <summary class="shift-folder-header">
-                        <span>📅 ${dateStr}</span>
-                        <span style="font-weight:normal; font-size:0.8rem; opacity:0.6;">${group.checks.length} checks ▾</span>
-                    </summary>
-                    <div class="shift-folder-content">${cardsHtml}</div>
-                </details>`;
-            });
-            container.innerHTML = html;
-        }
     }
+
+    if (allChecks.length === 0) {
+        container.innerHTML = '<div style="text-align:center; opacity:0.5; padding:20px;">No shift history found.</div>';
+        document.getElementById('supHistoryModal').style.display = 'flex';
+        return;
+    }
+
+    // Deduplicate by timestamp+operator combo — more robust than timestamp alone
+    const seen = new Set();
+    allChecks = allChecks.filter(c => {
+        if (!c || !c.timestamp) return false;
+        const key = `${c.timestamp}_${c.operator || ''}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+    allChecks.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    // Factory Clock grouping — 11PM onward belongs to the next production day
+    const groupedByDate = {};
+    allChecks.forEach(r => {
+        const d = new Date(r.timestamp || 0);
+        const prodDate = new Date(d.getTime());
+        if (d.getHours() >= 23) prodDate.setDate(prodDate.getDate() + 1);
+        const dateStr = prodDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        if (!groupedByDate[dateStr]) groupedByDate[dateStr] = { checks: [], sortKey: prodDate.getTime() };
+        groupedByDate[dateStr].checks.push(r);
+    });
+
+    const sortedDates = Object.entries(groupedByDate).sort((a, b) => b[1].sortKey - a[1].sortKey);
+
+    let html = '';
+    sortedDates.forEach(([dateStr, group], folderIdx) => {
+        const cardsHtml = group.checks.map(r => {
+            // Shift End marker — render as a blue divider banner
+            if (r.isMarker) {
+                return `<div style="background:rgba(0,198,240,0.1); border:1px solid var(--perfect); border-radius:8px; padding:10px; text-align:center; font-weight:bold; font-size:0.8rem; margin-bottom:8px; color:var(--perfect); flex-shrink:0;">${r.text} • ${r.time}</div>`;
+            }
+            const laneGrid = r.lanes.map((l, li) => `
+                <div class="hist-lane-cell">
+                    <span class="hist-lane-lbl">L${li+1}</span>
+                    <span class="hist-lane-wt">${l.w}</span>
+                    <span class="hist-lane-dens">${l.d}</span>
+                </div>`).join('');
+            return `
+            <div class="hist-card expanded" style="margin-bottom:8px; flex-shrink:0;">
+                <div class="hist-card-header" style="cursor:default;">
+                    <div>
+                        <span class="hist-card-time">${r.time}</span>
+                        ${r.operator ? `<span style="font-size:0.72rem; opacity:0.6; margin-left:8px;">by ${r.operator}</span>` : ''}
+                    </div>
+                    <span class="hist-card-avg">Avg: <strong>${r.avg}g</strong></span>
+                </div>
+                <div class="hist-card-body" style="display:block;">
+                    <div style="font-size:0.72rem; opacity:0.55; margin-bottom:4px;">${window.t('target')}: ${r.target || '--'}g</div>
+                    <div class="hist-lane-grid">${laneGrid}</div>
+                </div>
+            </div>`;
+        }).join('');
+
+        html += `
+        <details class="shift-folder" ${folderIdx === 0 ? 'open' : ''}>
+            <summary class="shift-folder-header">
+                <span>📅 ${dateStr}</span>
+                <span style="font-weight:normal; font-size:0.8rem; opacity:0.6;">${group.checks.length} logs ▾</span>
+            </summary>
+            <div class="shift-folder-content">${cardsHtml}</div>
+        </details>`;
+    });
+    container.innerHTML = html;
     document.getElementById('supHistoryModal').style.display = 'flex';
 };
 
