@@ -361,6 +361,12 @@
             <span id="bannerSub" class="banner-subtext">All components active. Tap for Maintenance.</span>
         </div>
     </div>
+
+    <div id="streamTestBanner" style="display:none; background:rgba(0,198,240,0.15); color:var(--perfect); padding:12px; border-radius:10px; text-align:center; font-weight:900; margin-bottom:12px; box-shadow:var(--shadow); cursor:pointer; border:2px solid var(--perfect); animation: pulseWarning 2s infinite;" onclick="window.openStreamTestModal()">
+        <div style="font-size:1.1rem; margin-bottom:4px;" data-i18n="streamReq">💧 STREAM TEST REQUIRED</div>
+        <div style="font-size:0.8rem; font-weight:normal; color:var(--text);" data-i18n="tapToLog">Tap here to log results</div>
+    </div>
+
     <div class="info-bar">
         <span id="displayConfig">Quad Lane • Lunch</span>
         <span id="displayTarget">Target: --g</span>
@@ -392,6 +398,26 @@
         <span class="stat-val" id="targetDisplay">--</span>
         <span class="stat-lbl" data-i18n="target">TARGET</span>
     </div>
+</div>
+
+<div class="modal-overlay" id="streamTestModal" style="display:none; z-index:240;">
+    <div class="modal">
+        <h2 style="color:var(--perfect); margin-top:0;" data-i18n="stVerify">💧 Stream Test Verification</h2>
+        <p style="font-size:0.85rem; color:var(--text); margin-bottom:15px;" data-i18n="stPrompt">Inspect the cardboard cutout for all active lanes. Are the jet streams cutting cleanly?</p>
+        <div style="background:rgba(128,128,128,0.05); border:1px solid var(--border); border-radius:10px; padding:15px; text-align:center; margin-bottom:15px;">
+            <input type="file" accept="image/*" capture="environment" id="streamCameraInput" style="display:none;" onchange="window.handleStreamPhoto(event)">
+            <button class="modal-btn secondary" id="btnTakePhoto" onclick="document.getElementById('streamCameraInput').click()" style="margin-top:0; border:2px dashed var(--info); color:var(--info); background:transparent;" data-i18n="takePhoto">📸 Take Photo (Optional)</button>
+            <img id="streamPhotoPreview" style="display:none; width:100%; max-height:200px; object-fit:contain; border-radius:8px; margin-top:10px; border:1px solid var(--border);" onclick="event.stopPropagation(); window.openFullSizePhoto(this.src)">
+        </div>
+        <button class="modal-btn" style="background:var(--success); margin-bottom:10px;" onclick="window.passStreamTest()" data-i18n="stPass">✅ ALL STREAMS VERIFIED</button>
+        <button class="modal-btn" style="background:var(--warning); color:black;" onclick="window.failStreamTest()" data-i18n="stFail">⚠️ LOG A FAILURE</button>
+        <button class="modal-btn secondary" onclick="window.closeStreamTestModal()" style="margin-top:15px;" data-i18n="cancel">CANCEL</button>
+    </div>
+</div>
+
+<div id="photoViewerModal" style="display:none; position:fixed; inset:0; z-index:999; background:rgba(0,0,0,0.95); align-items:center; justify-content:center; cursor:pointer;" onclick="this.style.display='none'">
+    <img id="photoViewerImg" style="max-width:95vw; max-height:95vh; object-fit:contain;" onclick="event.stopPropagation()">
+    <div style="position:absolute; top:20px; right:24px; color:white; font-size:2rem; font-weight:bold;">×</div>
 </div>
 
 <script>
