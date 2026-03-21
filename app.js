@@ -1173,7 +1173,18 @@ window.saveDisplayName = function() {
         update(ref(db, `users/${window.myUid}`), { displayName: name }).catch(e => window.showAdminToast("❌ Network Error: Name not saved."));
     }
 };
-window.applyTheme = function() { if (config.theme === 'dark') document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); };
+window.applyTheme = function() {
+    const isDark = config.theme === 'dark';
+    if (isDark) document.body.classList.add('dark-mode');
+    else document.body.classList.remove('dark-mode');
+    const logo = isDark ? 'logo-dark.png' : 'logo.png';
+    const splash = document.getElementById('splashLogo');
+    const header = document.getElementById('headerLogo');
+    const about  = document.getElementById('aboutLogo');
+    if (splash) splash.src = logo;
+    if (header) header.src = logo;
+    if (about)  about.src  = logo;
+};
 window.completeSetup = function() { config.machines = parseInt(document.getElementById('setupMachines').value); config.lanes = parseInt(document.getElementById('setupLanes').value); config.product = document.getElementById('setupProd').value; localStorage.setItem('dsi_setup_done', 'true'); window.saveLocalSettings(); document.getElementById('setupWizard').style.display = 'none'; window.routeUserByRole(); };
 window.factoryReset = function() { if (confirm("Erase LOCAL settings? Cloud data remains.")) { localStorage.clear(); location.reload(); } };
 window.switchMachine = function(m) { config.currentMachine = m; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); };
