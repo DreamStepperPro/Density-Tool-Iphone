@@ -128,7 +128,8 @@ const i18n = {
         impactDegraded: "⚠️ Reduces Capacity (Degraded)",
         impactDown: "🔴 Stops Machine (Hard Down)",
         endShift: "🏁 END SHIFT",
-        endShiftConfirm: "🏁 END SHIFT?\nThis will clear the board for the next operator. The Supervisor Ledger will NOT be deleted."
+        endShiftConfirm: "🏁 END SHIFT?\nThis will clear the board for the next operator. The Supervisor Ledger will NOT be deleted.",
+        liveYield: "LIVE YIELD UPDATE", trim: "Trim", fillets: "Fillets", nuggets: "Nuggets"
     },
     es: {
         title: "La Ventaja", target: "Objetivo", lane: "CARRIL", density: "DENSIDAD", avgWt: "PESO PROM",
@@ -169,7 +170,8 @@ const i18n = {
         impactDegraded: "⚠️ Reduce Capacidad (Degradado)",
         impactDown: "🔴 Detiene la Máquina (Parada)",
         endShift: "🏁 FINALIZAR TURNO",
-        endShiftConfirm: "🏁 ¿FINALIZAR TURNO?\nEsto limpiará la pantalla para el próximo operador. El registro del supervisor NO se borrará."
+        endShiftConfirm: "🏁 ¿FINALIZAR TURNO?\nEsto limpiará la pantalla para el próximo operador. El registro del supervisor NO se borrará.",
+        liveYield: "ACTUALIZACIÓN DE RENDIMIENTO", trim: "Recorte", fillets: "Filetes", nuggets: "Nuggets"
     }
 };
 
@@ -307,6 +309,12 @@ window.renderChat = function(messages) {
         let displayText = msg.text;
         if (msg.code === 'ERR_WT') displayText = window.t('errWt');
         if (msg.code === 'ERR_MECH') displayText = window.t('errMech');
+        if (msg.code === 'YIELD_UPDATE') {
+            try {
+                const data = JSON.parse(msg.text);
+                displayText = `📊 ${window.t('liveYield')}\n🔪 ${window.t('trim')}: ${data.trim}\n🥩 ${window.t('fillets')}: ${data.fillet}\n🍗 ${window.t('nuggets')}: ${data.nugget}`;
+            } catch(e) { displayText = msg.text; }
+        }
         html += `
         <div class="msg-bubble ${bubbleClass} ${errClass}">
             <div class="msg-meta"><span>${msg.senderName} (${msg.machine})</span><span>${timeStr}</span></div>
@@ -1342,8 +1350,8 @@ window.broadcastMidShiftYield = function() {
     const trim   = document.getElementById('yPctTrim').innerText;
     const fillet = document.getElementById('yPctFillet').innerText;
     const nugget = document.getElementById('yPctNugget').innerText;
-    const msg = `📊 LIVE YIELD UPDATE\n🔪 Trim: ${trim}\n🥩 Fillets: ${fillet}\n🍗 Nuggets: ${nugget}`;
-    window.sendCommsMsg('TEXT', msg);
+    const msg = JSON.stringify({ trim, fillet, nugget });
+    window.sendCommsMsg('YIELD_UPDATE', msg);
     const timeStr = new Date().toLocaleString([], { weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
     const yieldData = {
         timestamp: Date.now(),
