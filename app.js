@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, onValue, update, push, serverTimestamp, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, get, set, onValue, update, push, serverTimestamp, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -75,6 +75,10 @@ signInAnonymously(auth).then((result) => {
                 window.routeUserByRole();
             }
         } else {
+            // Hide splash immediately so unapproved user can see their Device ID
+            const splash = document.getElementById('splashScreen');
+            if (splash) splash.style.display = 'none';
+
             document.getElementById('accessDeniedOverlay').style.display = 'flex';
             document.getElementById('userIdDisplay').innerText = currentUserUid;
             document.getElementById('btnSos').style.display = 'none';
@@ -83,6 +87,9 @@ signInAnonymously(auth).then((result) => {
 }).catch((error) => {
     console.error("Firebase auth failed:", error.message);
     document.getElementById('userIdDisplay').innerText = "CONNECTION ERROR";
+    // Hide splash on auth failure too
+    const splash = document.getElementById('splashScreen');
+    if (splash) splash.style.display = 'none';
 });
 
 // =====================================================================
@@ -1911,19 +1918,17 @@ window.loadAndViewPhoto = function(imgEl) {
         return;
     }
     imgEl.style.opacity = '0.5';
-    import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js').then(({ get, ref: fbRef }) => {
-        get(fbRef(db, photoRef)).then(snap => {
-            const b64 = snap.val();
-            if (b64) {
-                imgEl.src = b64;
-                imgEl.style.opacity = '1';
-                window.openFullSizePhoto(b64);
-            } else {
-                imgEl.style.opacity = '1';
-                window.showAdminToast('📷 Photo not available.');
-            }
-        }).catch(() => { imgEl.style.opacity = '1'; window.showAdminToast('❌ Could not load photo.'); });
-    });
+    get(ref(db, photoRef)).then(snap => {
+        const b64 = snap.val();
+        if (b64) {
+            imgEl.src = b64;
+            imgEl.style.opacity = '1';
+            window.openFullSizePhoto(b64);
+        } else {
+            imgEl.style.opacity = '1';
+            window.showAdminToast('📷 Photo not available.');
+        }
+    }).catch(() => { imgEl.style.opacity = '1'; window.showAdminToast('❌ Could not load photo.'); });
 };
 
 // =====================================================================
