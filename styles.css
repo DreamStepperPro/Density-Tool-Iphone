@@ -11,13 +11,16 @@
             --m-active-bg: #2a2a2a;
         }
         body.dark-mode {
-            --bg: #0f0f13; --card-bg: #1a1a22; --text: #e8e8f0; --border: #2e2e3e;
-            --input-bg: #24242e; --nav-bg: #1a1a22;
+            /* Matched to logo-dark.png background */
+            --bg: #090e1a;
+            --card-bg: #0B1221;
+            --text: #e8e8f0; --border: #1a2438;
+            --input-bg: #111a2d; --nav-bg: #0B1221;
             --dark-grey: #e8e8f0;
-            --statsbar-bg: #111118;
-            --m-active-bg: #3a3a52;
-            --shadow: 0 2px 8px rgba(0,0,0,0.3);
-            --shadow-lg: 0 4px 20px rgba(0,0,0,0.5);
+            --statsbar-bg: #060912;
+            --m-active-bg: #2a3a56;
+            --shadow: 0 4px 12px rgba(0,0,0,0.4);
+            --shadow-lg: 0 6px 24px rgba(0,0,0,0.6);
         }
 
         * { box-sizing: border-box; }
