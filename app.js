@@ -1177,13 +1177,20 @@ window.applyTheme = function() {
     const isDark = config.theme === 'dark';
     if (isDark) document.body.classList.add('dark-mode');
     else document.body.classList.remove('dark-mode');
-    const logo = isDark ? 'logo-dark.png' : 'logo.png';
+    const logo = isDark ? 'logo_dark.png' : 'logo.png';
     const splash = document.getElementById('splashLogo');
     const header = document.getElementById('headerLogo');
     const about  = document.getElementById('aboutLogo');
-    if (splash) splash.src = logo;
-    if (header) header.src = logo;
-    if (about)  about.src  = logo;
+    if (splash) { splash.src = logo; splash.style.display = 'block'; }
+    if (header) {
+        header.src = logo; header.style.display = 'block';
+        // Re-hide text fallback in case onerror triggered it
+        const textTitle = document.querySelector('.brand-title');
+        const moonIcon  = document.querySelector('.moon-icon');
+        if (textTitle) textTitle.style.display = 'none';
+        if (moonIcon)  moonIcon.style.display  = 'none';
+    }
+    if (about) { about.src = logo; about.style.display = 'block'; }
 };
 window.completeSetup = function() { config.machines = parseInt(document.getElementById('setupMachines').value); config.lanes = parseInt(document.getElementById('setupLanes').value); config.product = document.getElementById('setupProd').value; localStorage.setItem('dsi_setup_done', 'true'); window.saveLocalSettings(); document.getElementById('setupWizard').style.display = 'none'; window.routeUserByRole(); };
 window.factoryReset = function() { if (confirm("Erase LOCAL settings? Cloud data remains.")) { localStorage.clear(); location.reload(); } };
