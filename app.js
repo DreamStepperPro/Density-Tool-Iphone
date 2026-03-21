@@ -134,7 +134,9 @@ const i18n = {
         stVerify: "Stream Test Verification", stPrompt: "Inspect the cardboard cutout for all active lanes. Are the jet streams cutting cleanly?",
         stPass: "✅ ALL STREAMS VERIFIED", stFail: "⚠️ LOG A FAILURE",
         takePhoto: "📸 Take Photo (Optional)", retakePhoto: "📸 Retake Photo",
-        photoBypass: "No photo attached. Proceed without photo?"
+        photoBypass: "No photo attached. Proceed without photo?",
+        ourStory: "Our Story", missionTitle: "Built by an Operator",
+        missionText: "I've been in the portioning industry for almost 10 years as a team leader and an operator. For a decade, the reality of the job was \"playing with the machine\" — guessing and adjusting density settings just to chase good weights. You'd check it every 30 minutes, hoping you were still in spec. It was a rhythmic approach to the constant problem of machine variation. Sometimes, all it takes is one issue to destabilize your entire workflow. The high speed and unpredictable nature of production mishaps can send even the most veteran operators spiraling.\n\nI wanted a solution, but a real one didn't exist. The tools we had were too slow, too out of touch, and relied too much on the blind hope that everything would just go smoothly. So, I built one. The Night Shift Advantage was built from the ground up by an operator who understands the chaotic nature of portioning and production. It was engineered to take back control from the chaos that robs your peace of mind. It is rigorously battle-tested. When you use this app, you will understand: it just works.\n\nThis tool can turn a new operator into a veteran, and a veteran into an elite operator. Set your own density formula, or let our SMART Adapt technology handle the headache for you — it accounts for the variation between all cutter performances so you hit your target weights instantly. The Predictive Velocity Engine tells you exactly when a lane is predicted to drift, keeping your target weights in the green for much longer. If there's downtime, you track Degraded vs. Hard Down events in seconds — no scrambling, no lethargic paperwork. And by sharing data securely in the cloud, operators and supervisors finally understand each other's strengths and weaknesses in real-time.\n\nBuilt with the operator front and center. Take back control."
     },
     es: {
         title: "La Ventaja", target: "Objetivo", lane: "CARRIL", density: "DENSIDAD", avgWt: "PESO PROM",
@@ -181,7 +183,9 @@ const i18n = {
         stVerify: "Verificación de Chorro", stPrompt: "Inspeccione el corte de cartón. ¿Los chorros están cortando limpiamente?",
         stPass: "✅ TODOS VERIFICADOS", stFail: "⚠️ REGISTRAR FALLA",
         takePhoto: "📸 Tomar Foto (Opcional)", retakePhoto: "📸 Volver a Tomar",
-        photoBypass: "Sin foto adjunta. ¿Continuar sin foto?"
+        photoBypass: "Sin foto adjunta. ¿Continuar sin foto?",
+        ourStory: "Nuestra Historia", missionTitle: "Creado por un Operador",
+        missionText: "Llevo casi 10 años en la industria del porcionado como líder de equipo y operador. Durante una década, la realidad del trabajo era \"jugar con la máquina\" — adivinar y ajustar la densidad solo para alcanzar buenos pesos. Revisabas cada 30 minutos, esperando seguir dentro de los parámetros. Era un enfoque rítmico al problema constante de la variación de la máquina. A veces, un solo problema desestabiliza todo el flujo de trabajo. La velocidad y la naturaleza impredecible de la producción puede hacer espiral incluso a los operadores más veteranos.\n\nQuería una solución real, pero no existía. Las herramientas disponibles eran demasiado lentas, demasiado desconectadas, y dependían demasiado de la esperanza de que todo saliera bien. Así que la construí yo. The Night Shift Advantage fue construida desde cero por un operador que entiende la naturaleza caótica del porcionado y la producción. Fue diseñada para recuperar el control del caos que roba tu paz mental. Está rigurosamente probada en campo. Cuando uses esta aplicación, entenderás: simplemente funciona.\n\nEsta herramienta puede convertir a un operador nuevo en veterano, y a un veterano en un operador élite. Configura tu propia fórmula de densidad, o deja que la tecnología SMART Adapt lo haga por ti — toma en cuenta la variación entre todos los cortadores para que alcances los pesos objetivo al instante. El Motor de Velocidad Predictiva te dice exactamente cuándo se predice que un carril se desviará, manteniendo los pesos en verde por mucho más tiempo. Si hay tiempo de inactividad, registras eventos Degradado vs. Parada en segundos — sin carreras, sin papeleo lento. Y al compartir datos de forma segura en la nube, operadores y supervisores finalmente entienden las fortalezas y debilidades del equipo en tiempo real.\n\nConstruido con el operador al frente. Recupera el control."
     }
 };
 
@@ -389,6 +393,14 @@ window.initApp = function() {
     const hasSetup = localStorage.getItem('dsi_setup_done');
     if (!hasSetup) document.getElementById('setupWizard').style.display = 'flex';
     else window.routeUserByRole();
+    // Fade out splash screen after app finishes loading
+    setTimeout(() => {
+        const splash = document.getElementById('splashScreen');
+        if (splash) {
+            splash.style.opacity = '0';
+            setTimeout(() => { splash.style.display = 'none'; }, 600);
+        }
+    }, 2500);
 };
 
 window.routeUserByRole = function() {
@@ -1894,4 +1906,12 @@ window.loadAndViewPhoto = function(imgEl) {
             }
         }).catch(() => { imgEl.style.opacity = '1'; window.showAdminToast('❌ Could not load photo.'); });
     });
+};
+
+// =====================================================================
+// ABOUT / OUR STORY
+// =====================================================================
+window.openAbout = function() {
+    document.getElementById('fullMissionText').innerText = window.t('missionText');
+    document.getElementById('aboutModal').style.display = 'flex';
 };
