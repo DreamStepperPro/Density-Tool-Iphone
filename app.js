@@ -129,7 +129,12 @@ const i18n = {
         impactDown: "🔴 Stops Machine (Hard Down)",
         endShift: "🏁 END SHIFT",
         endShiftConfirm: "🏁 END SHIFT?\nThis will clear the board for the next operator. The Supervisor Ledger will NOT be deleted.",
-        liveYield: "LIVE YIELD UPDATE", trim: "Trim", fillets: "Fillets", nuggets: "Nuggets"
+        liveYield: "LIVE YIELD UPDATE", trim: "Trim", fillets: "Fillets", nuggets: "Nuggets",
+        streamReq: "💧 STREAM TEST REQUIRED", tapToLog: "Tap here to log results",
+        stVerify: "Stream Test Verification", stPrompt: "Inspect the cardboard cutout for all active lanes. Are the jet streams cutting cleanly?",
+        stPass: "✅ ALL STREAMS VERIFIED", stFail: "⚠️ LOG A FAILURE",
+        takePhoto: "📸 Take Photo (Optional)", retakePhoto: "📸 Retake Photo",
+        photoBypass: "No photo attached. Proceed without photo?"
     },
     es: {
         title: "La Ventaja", target: "Objetivo", lane: "CARRIL", density: "DENSIDAD", avgWt: "PESO PROM",
@@ -171,7 +176,12 @@ const i18n = {
         impactDown: "🔴 Detiene la Máquina (Parada)",
         endShift: "🏁 FINALIZAR TURNO",
         endShiftConfirm: "🏁 ¿FINALIZAR TURNO?\nEsto limpiará la pantalla para el próximo operador. El registro del supervisor NO se borrará.",
-        liveYield: "ACTUALIZACIÓN DE RENDIMIENTO", trim: "Recorte", fillets: "Filetes", nuggets: "Nuggets"
+        liveYield: "ACTUALIZACIÓN DE RENDIMIENTO", trim: "Recorte", fillets: "Filetes", nuggets: "Nuggets",
+        streamReq: "💧 PRUEBA DE CHORRO REQUERIDA", tapToLog: "Toca aquí para registrar",
+        stVerify: "Verificación de Chorro", stPrompt: "Inspeccione el corte de cartón. ¿Los chorros están cortando limpiamente?",
+        stPass: "✅ TODOS VERIFICADOS", stFail: "⚠️ REGISTRAR FALLA",
+        takePhoto: "📸 Tomar Foto (Opcional)", retakePhoto: "📸 Volver a Tomar",
+        photoBypass: "Sin foto adjunta. ¿Continuar sin foto?"
     }
 };
 
@@ -1671,7 +1681,15 @@ window.openSupHistory = function(machineNum) {
         const cardsHtml = group.checks.map(r => {
             // Shift End marker — render as a blue divider banner
             if (r.isMarker) {
-                return `<div style="background:rgba(0,198,240,0.1); border:1px solid var(--perfect); border-radius:8px; padding:10px; text-align:center; font-weight:bold; font-size:0.8rem; margin-bottom:8px; color:var(--perfect); flex-shrink:0;">${r.text} • ${r.time}</div>`;
+                let color = 'var(--perfect)';
+                let bg    = 'rgba(0,198,240,0.1)';
+                if (r.isFail)                   { color = 'var(--danger)';  bg = 'rgba(255,77,77,0.1)'; }
+                if (r.text.includes('SHIFT ENDED')) { color = 'var(--text)'; bg = 'rgba(128,128,128,0.1)'; }
+                // Photo loaded on-demand from streamPhotos/ — use photoRef as src key
+                const photoHtml = r.photoRef
+                    ? `<img data-photoref="${r.photoRef}" style="width:100%; max-height:200px; object-fit:cover; border-radius:6px; margin-top:10px; border:1px solid rgba(0,0,0,0.2); cursor:pointer;" onclick="window.loadAndViewPhoto(this)">`
+                    : '';
+                return `<div style="background:${bg}; border:1px solid ${color}; border-radius:8px; padding:12px; text-align:center; font-weight:bold; font-size:0.85rem; margin-bottom:8px; color:${color}; flex-shrink:0; box-shadow:var(--shadow);">${r.text} • ${r.time}${photoHtml}</div>`;
             }
             const laneGrid = r.lanes.map((l, li) => `
                 <div class="hist-lane-cell">
@@ -1710,4 +1728,170 @@ window.openSupHistory = function(machineNum) {
 
 window.closeSupHistory = function() {
     document.getElementById('supHistoryModal').style.display = 'none';
+};
+
+// =====================================================================
+// STREAM TEST COMPLIANCE ENGINE
+// =====================================================================
+
+// Break windows as a module-level constant — single source of truth
+const STREAM_WINDOWS = [
+    { id: 'b1', start: 1 * 60 + 10, end: 1 * 60 + 25 }, // 1:10 AM - 1:25 AM
+    { id: 'b2', start: 3 * 60 + 45, end: 4 * 60 + 0  }, // 3:45 AM - 4:00 AM
+    { id: 'b3', start: 5 * 60 + 45, end: 6 * 60 + 0  }  // 5:45 AM - 6:00 AM
+];
+
+// Use ISO date string for locale-independent localStorage keys
+function getStreamKey(windowId) {
+    const isoDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD always
+    return `dsi_stream_${isoDate}_${windowId}`;
+}
+
+window.checkStreamTestCompliance = function() {
+    // Skip for admin (God Mode) and pure supervisor view — operators only
+    if (isAdmin) return;
+    if (document.getElementById('appContent').style.display === 'none') return;
+
+    const now = new Date();
+    const totalMins = now.getHours() * 60 + now.getMinutes();
+    const activeWindow = STREAM_WINDOWS.find(w => totalMins >= w.start && totalMins < w.end);
+    const banner = document.getElementById('streamTestBanner');
+    if (!banner) return;
+
+    if (activeWindow && !localStorage.getItem(getStreamKey(activeWindow.id))) {
+        if (banner.style.display !== 'block') {
+            banner.style.display = 'block';
+            if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        }
+    } else {
+        banner.style.display = 'none';
+    }
+};
+
+window.markStreamTestComplete = function() {
+    const now = new Date();
+    const totalMins = now.getHours() * 60 + now.getMinutes();
+    const activeWindow = STREAM_WINDOWS.find(w => totalMins >= w.start && totalMins < w.end);
+    if (activeWindow) localStorage.setItem(getStreamKey(activeWindow.id), 'true');
+    const banner = document.getElementById('streamTestBanner');
+    if (banner) banner.style.display = 'none';
+};
+
+window.openStreamTestModal  = function() { document.getElementById('streamTestModal').style.display = 'flex'; };
+
+window.closeStreamTestModal = function() {
+    document.getElementById('streamTestModal').style.display = 'none';
+    currentStreamPhoto = null;
+    const preview = document.getElementById('streamPhotoPreview');
+    if (preview) { preview.style.display = 'none'; preview.src = ''; }
+    const btn = document.getElementById('btnTakePhoto');
+    if (btn) { btn.setAttribute('data-i18n', 'takePhoto'); btn.innerText = window.t('takePhoto'); btn.style.borderStyle = 'dashed'; btn.style.background = 'transparent'; }
+    const input = document.getElementById('streamCameraInput');
+    if (input) input.value = '';
+};
+
+// Image compression engine
+let currentStreamPhoto = null;
+
+window.handleStreamPhoto = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 800;
+            const scale = MAX_WIDTH / img.width;
+            canvas.width = MAX_WIDTH;
+            canvas.height = img.height * scale;
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+            const base64 = canvas.toDataURL('image/jpeg', 0.6);
+            currentStreamPhoto = base64;
+            const preview = document.getElementById('streamPhotoPreview');
+            preview.src = base64;
+            preview.style.display = 'block';
+            const btn = document.getElementById('btnTakePhoto');
+            btn.innerText = window.t('retakePhoto');
+            btn.style.borderStyle = 'solid';
+            btn.style.background = 'rgba(0,123,255,0.1)';
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+};
+
+window.openFullSizePhoto = function(src) {
+    const modal = document.getElementById('photoViewerModal');
+    document.getElementById('photoViewerImg').src = src;
+    modal.style.display = 'flex';
+};
+
+window.passStreamTest = function() {
+    if (!currentStreamPhoto) {
+        if (!confirm(window.t('photoBypass'))) return;
+    }
+    const opName = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
+    const time = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+    const photoNote = currentStreamPhoto ? '' : ' (NO PHOTO)';
+    const marker = { isMarker: true, text: `💧 STREAM TEST VERIFIED${photoNote} BY ${opName.toUpperCase()}`, timestamp: Date.now(), time };
+    // Store photo separately to avoid bloating the shiftLedger sync
+    const photoRef = currentStreamPhoto ? `streamPhotos/${Date.now()}` : null;
+    if (!window.isOfflineMode && db) {
+        if (photoRef && currentStreamPhoto) set(ref(db, photoRef), currentStreamPhoto).catch(e => console.warn(e));
+        marker.photoRef = photoRef;
+        push(ref(db, `shiftLedger/M${config.currentMachine}`), marker).catch(e => console.warn(e));
+    }
+    window.markStreamTestComplete();
+    window.closeStreamTestModal();
+    window.showAdminToast(window.t('stPass'));
+};
+
+window.failStreamTest = function() {
+    if (!currentStreamPhoto) {
+        if (!confirm(window.t('photoBypass'))) return;
+    }
+    const opName = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
+    const time = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+    const photoNote = currentStreamPhoto ? '' : ' (NO PHOTO)';
+    const marker = { isMarker: true, isFail: true, text: `⚠️ STREAM TEST FAILED${photoNote} BY ${opName.toUpperCase()}`, timestamp: Date.now(), time };
+    const photoRef = currentStreamPhoto ? `streamPhotos/${Date.now()}` : null;
+    if (!window.isOfflineMode && db) {
+        if (photoRef && currentStreamPhoto) set(ref(db, photoRef), currentStreamPhoto).catch(e => console.warn(e));
+        marker.photoRef = photoRef;
+        push(ref(db, `shiftLedger/M${config.currentMachine}`), marker).catch(e => console.warn(e));
+    }
+    window.markStreamTestComplete();
+    window.closeStreamTestModal();
+    window.openMaintenance();
+    window.showAdminToast("⚠️ Select the failing component.");
+};
+
+// Start the compliance clock — check every 30s, and once on boot
+setInterval(window.checkStreamTestCompliance, 30000);
+setTimeout(window.checkStreamTestCompliance, 2000);
+
+// Load photo from Firebase on demand (avoids syncing large Base64 in shiftLedger)
+window.loadAndViewPhoto = function(imgEl) {
+    const photoRef = imgEl.getAttribute('data-photoref');
+    if (!photoRef || !db) return;
+    if (imgEl.src && imgEl.src.startsWith('data:')) {
+        // Already loaded — just open viewer
+        window.openFullSizePhoto(imgEl.src);
+        return;
+    }
+    imgEl.style.opacity = '0.5';
+    import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js').then(({ get, ref: fbRef }) => {
+        get(fbRef(db, photoRef)).then(snap => {
+            const b64 = snap.val();
+            if (b64) {
+                imgEl.src = b64;
+                imgEl.style.opacity = '1';
+                window.openFullSizePhoto(b64);
+            } else {
+                imgEl.style.opacity = '1';
+                window.showAdminToast('📷 Photo not available.');
+            }
+        }).catch(() => { imgEl.style.opacity = '1'; window.showAdminToast('❌ Could not load photo.'); });
+    });
 };
