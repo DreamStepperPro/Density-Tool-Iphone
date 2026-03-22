@@ -163,6 +163,8 @@ window.routeUserByRole = function() {
         document.getElementById('appContent').style.filter = 'none';
         const opHeader = document.querySelector('#appContent .header');
         if (opHeader) opHeader.style.display = 'none';
+        const sandboxBtn = document.getElementById('btnSandboxToggle');
+        if (sandboxBtn) sandboxBtn.classList.remove('btn-hidden');
         if (!window.isOfflineMode) { window.startSupervisorSync(); window.startCloudSync(); }
         window.renderInterface();
     } else if (role === 'supervisor') {
@@ -892,4 +894,39 @@ window.jumpstartNetwork = function() {
         }
         window.startCommsListener();
     }, 1000);
+};
+
+// =====================================================================
+// OFFLINE SANDBOX ENGINE (Admin only)
+// Severs Firebase connection so you can test math/UI without touching
+// production data. Reconnecting pulls fresh live data from the floor.
+// =====================================================================
+window.toggleSandboxMode = function() {
+    window.isOfflineMode = !window.isOfflineMode;
+
+    if (window.isOfflineMode) {
+        goOffline(db);
+        const configText = document.getElementById('displayConfig');
+        if (configText) configText.innerHTML = `<span style="color:var(--warning); font-weight:900; letter-spacing:0.5px;">🧪 SANDBOX MODE (OFFLINE)</span>`;
+        const dot = document.getElementById('statusDot');
+        if (dot) dot.className = "status-dot status-offline";
+        window.showAdminToast("🧪 Sandbox Mode ON: Database disconnected.");
+    } else {
+        goOnline(db);
+        const prodName = config.product === 'lunch' ? window.t('lunch') : window.t('bfast');
+        const configText = document.getElementById('displayConfig');
+        if (configText) configText.innerText = `${config.lanes} ${window.t('lane')} • ${prodName}`;
+        window.showAdminToast("🌐 Live Mode ON: Reconnected to floor.");
+        // Pull fresh live data — cloud always overwrites sandbox state
+        if (isAdmin) {
+            window.startSupervisorSync();
+            window.startCloudSync();
+        } else {
+            const role = window.currentUserData ? window.currentUserData.role : 'operator';
+            if (role === 'supervisor') { window.startSupervisorSync(); } else { window.startCloudSync(); }
+        }
+        window.startCommsListener();
+    }
+
+    window.toggleSettings();
 };
