@@ -375,16 +375,25 @@ window.calculateLocal = function() {
             const diff    = currW - target;
             let activeK   = baseK;
             const isSmart = config.smart === 'on' || (config.smart === 'auto' && lane.smartActive);
+
             if (isSmart && lane.lastD !== null && lane.lastW !== null) {
                 let dDelta = currD - lane.lastD, wDelta = currW - lane.lastW;
-                if (Math.abs(wDelta) > 0.5 && Math.abs(dDelta) > 0.001) {
+                // Rule 1: Outlier Veto — ignore ghost swings > 15g (double-stacked, woody breast, scale error)
+                if (Math.abs(wDelta) > 0.5 && Math.abs(wDelta) <= 15.0 && Math.abs(dDelta) > 0.001) {
                     let observedK = dDelta / wDelta;
-                    observedK = Math.max(baseK * 0.5, Math.min(observedK, baseK * 5));
+                    // Rule 2: Sensitivity bounds — 3.5x for bfast (wild math), 3.5x for lunch too
+                    observedK = Math.max(baseK * 0.5, Math.min(observedK, baseK * 3.5));
                     activeK = (observedK * 0.6) + (baseK * 0.4);
                 }
             }
-            let newD = currD + (diff * activeK);
-            newD = Math.max(-0.500, Math.min(0.500, newD));
+
+            let rawNewD = currD + (diff * activeK);
+            // Rule 3: Product-specific safety brake — bfast allows wider swings
+            const maxStep = config.product === 'bfast' ? 0.100 : 0.080;
+            let stepDelta = rawNewD - currD;
+            stepDelta = Math.max(-maxStep, Math.min(maxStep, stepDelta));
+            let newD = currD + stepDelta;
+            newD = Math.max(-0.500, Math.min(0.500, newD)); // Hard machine limits
             hiddenVal.value = newD.toFixed(3);
             resText.innerText = `${window.t('newDens')} ${newD.toFixed(3)}`;
             resBox.classList.add('has-value');
@@ -618,6 +627,12 @@ window.applyResult = function(idx) {
         if (Math.abs(currW - target) > 2) {
             lane.attempts++; lane.stableCount = 0;
             if (config.smart === 'auto' && lane.attempts >= 2) lane.smartActive = true;
+            // Rule 4: Auto-Bailout — if stuck after 5 attempts, hardware is the problem
+            if (config.smart === 'auto' && lane.smartActive && lane.attempts >= 5) {
+                lane.smartActive = false; lane.attempts = 0; lane.lastD = null; lane.lastW = null;
+                window.showAdminToast(`⚠️ ${window.t('lane')} ${idx}: Smart Adapt off. Check hardware.`);
+                if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+            }
         } else {
             lane.attempts = 0;
             if (Math.abs(currW - target) <= 1.0) {
