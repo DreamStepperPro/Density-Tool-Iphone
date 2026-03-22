@@ -12,27 +12,39 @@ const firebaseConfig = {
     appId: "1:545898401770:web:01928966d9415a9cc82c93"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const app  = initializeApp(firebaseConfig);
+const db   = getDatabase(app);
 const auth = getAuth(app);
 
-const ADMIN_UID = 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1';
+const ADMIN_UID    = 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1';
 let currentUserUid = null;
-let isAdmin = false;
+let isAdmin        = false;
 let appInitialized = false;
 
 window.isOfflineMode = false;
+
+// =====================================================================
+// SHARED STATE GETTERS — used by split modules (comms, supervisor, etc.)
+// These closures always return the CURRENT value of each variable.
+// =====================================================================
+window.db          = db;
+window.ADMIN_UID   = ADMIN_UID;
+window.getConfig   = () => config;
+window.getStore    = () => store;
+window.getHistory  = () => history;
+window.getIsAdmin  = () => isAdmin;
+
 // =====================================================================
 // TRUE NETWORK HEARTBEAT
 // =====================================================================
 const connectedRef = ref(db, ".info/connected");
 onValue(connectedRef, (snap) => {
     if (snap.val() === true) {
-        if(document.getElementById('statusDot')) document.getElementById('statusDot').className = "status-dot status-online";
-        if(document.getElementById('supStatusDot')) document.getElementById('supStatusDot').className = "status-dot status-online";
+        if (document.getElementById('statusDot')) document.getElementById('statusDot').className = "status-dot status-online";
+        if (document.getElementById('supStatusDot')) document.getElementById('supStatusDot').className = "status-dot status-online";
     } else {
-        if(document.getElementById('statusDot')) document.getElementById('statusDot').className = "status-dot status-offline";
-        if(document.getElementById('supStatusDot')) document.getElementById('supStatusDot').className = "status-dot status-offline";
+        if (document.getElementById('statusDot')) document.getElementById('statusDot').className = "status-dot status-offline";
+        if (document.getElementById('supStatusDot')) document.getElementById('supStatusDot').className = "status-dot status-offline";
     }
 });
 window.currentUserData = {};
@@ -45,8 +57,8 @@ window.forceOfflineMode = function() {
 
 signInAnonymously(auth).then((result) => {
     currentUserUid = result.user.uid;
-    window.myUid = currentUserUid;
-    isAdmin = (currentUserUid === ADMIN_UID);
+    window.myUid   = currentUserUid;
+    isAdmin        = (currentUserUid === ADMIN_UID);
 
     if (isAdmin) {
         document.getElementById('btnAdmin').classList.remove('btn-hidden');
@@ -78,7 +90,6 @@ signInAnonymously(auth).then((result) => {
             // Hide splash immediately so unapproved user can see their Device ID
             const splash = document.getElementById('splashScreen');
             if (splash) splash.style.display = 'none';
-
             document.getElementById('accessDeniedOverlay').style.display = 'flex';
             document.getElementById('userIdDisplay').innerText = currentUserUid;
             document.getElementById('btnSos').style.display = 'none';
@@ -87,311 +98,42 @@ signInAnonymously(auth).then((result) => {
 }).catch((error) => {
     console.error("Firebase auth failed:", error.message);
     document.getElementById('userIdDisplay').innerText = "CONNECTION ERROR";
-    // Hide splash on auth failure too
     const splash = document.getElementById('splashScreen');
     if (splash) splash.style.display = 'none';
 });
 
 // =====================================================================
-// i18n TRANSLATION ENGINE
+// SHARED APP STATE
 // =====================================================================
-const i18n = {
-    en: {
-        title: "The Advantage", target: "Target", lane: "LANE", density: "DENSITY", avgWt: "AVG WEIGHT",
-        newDens: "New Density:", tapApply: "TAP TO APPLY", history: "Shift History", saveCheck: "SAVE CHECK",
-        clearTable: "CLEAR TABLE", lineAvg: "LINE AVG", lineSd: "LINE SD", options: "⚙️ Options",
-        dispName: "Your Display Name", targetWt: "Target Weight (g)", unlockMethod: "Unlock Method",
-        machines: "Machines", config: "Configuration", prodMode: "Product Mode", smartMode: "Smart Mode",
-        theme: "Theme", enableAlerts: "🔔 ENABLE SYSTEM ALERTS", reset: "FACTORY RESET (LOCAL)",
-        lunch: "Lunch", bfast: "Breakfast", dispatch: "📻 Line Dispatch", weightOff: "⚖️ WEIGHT OFF",
-        maintReq: "🔧 MAINTENANCE REQ", send: "SEND", radioOpen: "Radio channel open...",
-        accessPending: "🔒 Access Pending", accessWait: "Your device is waiting for Admin approval.",
-        identify: "Identify Yourself to Admin", pingAdmin: "PING ADMIN FOR ACCESS", workOffline: "WORK OFFLINE",
-        cmdCenter: "👑 Command Center", pendingAppr: "⏳ Pending Approvals", allUsers: "All Users",
-        lockBtn: "Lock Button (Default)", longPress: "Long Press (1s)", doubleTap: "Double Tap",
-        dualLane: "Dual Lane", quadLane: "Quad Lane", changeTarget: "⚠️ Change target weight mid-shift?",
-        enterName: "Enter your name / role...", typeMsg: "Type message...",
-        errWt: "⚖️ WEIGHT OFF: Need calibration.", errMech: "🔧 MAINTENANCE: Mechanical failure.",
-        weighNow: "⚠️ WEIGH NOW",
-        maintMatrix: "Hardware Matrix", maintHint: "Tap a component to toggle its status.",
-        waterjets: "Waterjet Cutters", belts: "Transport Belts",
-        infeed: "Infeed", outfeed: "Outfeed", nuggetBelt: "Nuggets", filletBelt: "Fillets",
-        faultReason: "Fault Reason", notesOpt: "Notes (Optional)",
-        disable: "DISABLE", repair: "REPAIR", close: "CLOSE",
-        maintLogs: "Maintenance Logs", backToMatrix: "BACK TO MATRIX",
-        noLogs: "No downtime logged yet.", loadingLogs: "Loading logs...",
-        sysRunning: "RUNNING", sysDegraded: "DEGRADED",
-        allActive: "All components active. Tap for Maintenance.",
-        compsDown: "component(s) down. TAP TO VIEW.", selectReason: "-- Select Reason --",
-        comp_bin: "Infeed Belt", comp_bout: "Outfeed Belt", comp_bnug: "Nugget Belt", comp_bfil: "Fillet Belt",
-        f_orifice: "Orifice", f_blocker: "Blocker", f_water: "Water Line",
-        f_tracking: "Belt Tracking", f_broken: "Belt Broken", f_motor: "Motor Failure",
-        f_jam: "Product Jam", f_other: "Other",
-        disableComp: "Disable", repairComp: "Repair",
-        confirmRepair: "Confirm this component is back online before clearing its downtime.",
-        cancel: "CANCEL", backOnline: "✅ BACK ONLINE", close: "CLOSE",
-        sysDown: "DOWN", globalSys: "System Level", comp_sys: "Entire Machine (Hard Stop)",
-        impactLevel: "Impact Level",
-        impactDegraded: "⚠️ Reduces Capacity (Degraded)",
-        impactDown: "🔴 Stops Machine (Hard Down)",
-        endShift: "🏁 END SHIFT",
-        endShiftConfirm: "🏁 END SHIFT?\nThis will clear the board for the next operator. The Supervisor Ledger will NOT be deleted.",
-        liveYield: "LIVE YIELD UPDATE", trim: "Trim", fillets: "Fillets", nuggets: "Nuggets",
-        streamReq: "💧 STREAM TEST REQUIRED", tapToLog: "Tap here to log results",
-        stVerify: "Stream Test Verification", stPrompt: "Inspect the cardboard cutout for all active lanes. Are the jet streams cutting cleanly?",
-        stPass: "✅ ALL STREAMS VERIFIED", stFail: "⚠️ LOG A FAILURE",
-        takePhoto: "📸 Take Photo (Optional)", retakePhoto: "📸 Retake Photo",
-        photoBypass: "No photo attached. Proceed without photo?",
-        ourStory: "Our Story", missionTitle: "Built by an Operator",
-        missionText: "I've been in the portioning industry for almost 10 years as a team leader and an operator. For a decade, the reality of the job was \"playing with the machine\" — guessing and adjusting density settings just to chase good weights. You'd check it every 30 minutes, hoping you were still in spec. It was a rhythmic approach to the constant problem of machine variation. Sometimes, all it takes is one issue to destabilize your entire workflow. The high speed and unpredictable nature of production mishaps can send even the most veteran operators spiraling.\n\nI wanted a solution, but a real one didn't exist. The tools we had were too slow, too out of touch, and relied too much on the blind hope that everything would just go smoothly. So, I built one. The Night Shift Advantage was built from the ground up by an operator who understands the chaotic nature of portioning and production. It was engineered to take back control from the chaos that robs your peace of mind. It is rigorously battle-tested. When you use this app, you will understand: it just works.\n\nThis tool can turn a new operator into a veteran, and a veteran into an elite operator. Set your own density formula, or let our SMART Adapt technology handle the headache for you — it accounts for the variation between all cutter performances so you hit your target weights instantly. The Predictive Velocity Engine tells you exactly when a lane is predicted to drift, keeping your target weights in the green for much longer. If there's downtime, you track Degraded vs. Hard Down events in seconds — no scrambling, no lethargic paperwork. And by sharing data securely in the cloud, operators and supervisors finally understand each other's strengths and weaknesses in real-time.\n\nBuilt with the operator front and center. Take back control."
-    },
-    es: {
-        title: "La Ventaja", target: "Objetivo", lane: "CARRIL", density: "DENSIDAD", avgWt: "PESO PROM",
-        newDens: "Nueva Densidad:", tapApply: "TOCA PARA APLICAR", history: "Historial de Turno", saveCheck: "GUARDAR",
-        clearTable: "BORRAR TABLA", lineAvg: "PROM LÍNEA", lineSd: "SD LÍNEA", options: "⚙️ Opciones",
-        dispName: "Tu Nombre", targetWt: "Peso Objetivo (g)", unlockMethod: "Método Desbloqueo",
-        machines: "Máquinas", config: "Configuración", prodMode: "Modo Producto", smartMode: "Modo Inteligente",
-        theme: "Tema", enableAlerts: "🔔 ACTIVAR ALERTAS", reset: "RESETEO DE FÁBRICA",
-        lunch: "Almuerzo", bfast: "Desayuno", dispatch: "📻 Radio de Línea", weightOff: "⚖️ PESO INCORRECTO",
-        maintReq: "🔧 REQ. MANTENIMIENTO", send: "ENVIAR", radioOpen: "Canal de radio abierto...",
-        accessPending: "🔒 Acceso Pendiente", accessWait: "Tu dispositivo espera aprobación del Admin.",
-        identify: "Identifícate al Admin", pingAdmin: "CONTACTAR ADMIN", workOffline: "TRABAJAR OFFLINE",
-        cmdCenter: "👑 Centro de Mando", pendingAppr: "⏳ Aprobaciones Pendientes", allUsers: "Todos los Usuarios",
-        lockBtn: "Botón Bloqueo", longPress: "Pulsar 1s", doubleTap: "Doble Toque",
-        dualLane: "Dos Carriles", quadLane: "Cuatro Carriles", changeTarget: "⚠️ ¿Cambiar objetivo en medio turno?",
-        enterName: "Ingresa tu nombre...", typeMsg: "Escribe un mensaje...",
-        errWt: "⚖️ PESO INCORRECTO: Requiere calibración.", errMech: "🔧 MANTENIMIENTO: Falla mecánica.",
-        weighNow: "⚠️ PESAR AHORA",
-        maintMatrix: "Matriz de Hardware", maintHint: "Toca un componente para cambiar su estado.",
-        waterjets: "Cortadoras de Agua", belts: "Cintas de Transporte",
-        infeed: "Entrada", outfeed: "Salida", nuggetBelt: "Nuggets", filletBelt: "Filetes",
-        faultReason: "Razón de Falla", notesOpt: "Notas (Opcional)",
-        disable: "DESACTIVAR", repair: "REPARAR", close: "CERRAR",
-        maintLogs: "Registros de Mantenimiento", backToMatrix: "VOLVER A LA MATRIZ",
-        noLogs: "Sin registros de inactividad.", loadingLogs: "Cargando registros...",
-        sysRunning: "ACTIVO", sysDegraded: "DEGRADADO",
-        allActive: "Todos activos. Toca para Mantenimiento.",
-        compsDown: "comp. inactivos. TOCA PARA VER.", selectReason: "-- Seleccionar Razón --",
-        comp_bin: "Cinta de Entrada", comp_bout: "Cinta de Salida", comp_bnug: "Cinta de Nuggets", comp_bfil: "Cinta de Filetes",
-        f_orifice: "Orificio", f_blocker: "Bloqueador", f_water: "Línea de Agua",
-        f_tracking: "Alineación de Cinta", f_broken: "Cinta Rota", f_motor: "Falla de Motor",
-        f_jam: "Atasco de Producto", f_other: "Otro",
-        disableComp: "Desactivar", repairComp: "Reparar",
-        confirmRepair: "Confirma que el componente está en línea antes de borrar el tiempo.",
-        cancel: "CANCELAR", backOnline: "✅ EN LÍNEA", close: "CERRAR",
-        sysDown: "DETENIDA", globalSys: "Nivel de Sistema", comp_sys: "Máquina Completa (Parada)",
-        impactLevel: "Nivel de Impacto",
-        impactDegraded: "⚠️ Reduce Capacidad (Degradado)",
-        impactDown: "🔴 Detiene la Máquina (Parada)",
-        endShift: "🏁 FINALIZAR TURNO",
-        endShiftConfirm: "🏁 ¿FINALIZAR TURNO?\nEsto limpiará la pantalla para el próximo operador. El registro del supervisor NO se borrará.",
-        liveYield: "ACTUALIZACIÓN DE RENDIMIENTO", trim: "Recorte", fillets: "Filetes", nuggets: "Nuggets",
-        streamReq: "💧 PRUEBA DE CHORRO REQUERIDA", tapToLog: "Toca aquí para registrar",
-        stVerify: "Verificación de Chorro", stPrompt: "Inspeccione el corte de cartón. ¿Los chorros están cortando limpiamente?",
-        stPass: "✅ TODOS VERIFICADOS", stFail: "⚠️ REGISTRAR FALLA",
-        takePhoto: "📸 Tomar Foto (Opcional)", retakePhoto: "📸 Volver a Tomar",
-        photoBypass: "Sin foto adjunta. ¿Continuar sin foto?",
-        ourStory: "Nuestra Historia", missionTitle: "Creado por un Operador",
-        missionText: "Llevo casi 10 años en la industria del porcionado como líder de equipo y operador. Durante una década, la realidad del trabajo era \"jugar con la máquina\" — adivinar y ajustar la densidad solo para alcanzar buenos pesos. Revisabas cada 30 minutos, esperando seguir dentro de los parámetros. Era un enfoque rítmico al problema constante de la variación de la máquina. A veces, un solo problema desestabiliza todo el flujo de trabajo. La velocidad y la naturaleza impredecible de la producción puede hacer espiral incluso a los operadores más veteranos.\n\nQuería una solución real, pero no existía. Las herramientas disponibles eran demasiado lentas, demasiado desconectadas, y dependían demasiado de la esperanza de que todo saliera bien. Así que la construí yo. The Night Shift Advantage fue construida desde cero por un operador que entiende la naturaleza caótica del porcionado y la producción. Fue diseñada para recuperar el control del caos que roba tu paz mental. Está rigurosamente probada en campo. Cuando uses esta aplicación, entenderás: simplemente funciona.\n\nEsta herramienta puede convertir a un operador nuevo en veterano, y a un veterano en un operador élite. Configura tu propia fórmula de densidad, o deja que la tecnología SMART Adapt lo haga por ti — toma en cuenta la variación entre todos los cortadores para que alcances los pesos objetivo al instante. El Motor de Velocidad Predictiva te dice exactamente cuándo se predice que un carril se desviará, manteniendo los pesos en verde por mucho más tiempo. Si hay tiempo de inactividad, registras eventos Degradado vs. Parada en segundos — sin carreras, sin papeleo lento. Y al compartir datos de forma segura en la nube, operadores y supervisores finalmente entienden las fortalezas y debilidades del equipo en tiempo real.\n\nConstruido con el operador al frente. Recupera el control."
-    }
-};
-
-window.t = function(key) { return i18n[config.lang][key] || key; };
-
-window.toggleLanguage = function() {
-    config.lang = config.lang === 'en' ? 'es' : 'en';
-    window.saveLocalSettings();
-    window.applyTranslations();
-};
-
-window.applyTranslations = function() {
-    document.getElementById('langToggleBtnOp').innerText = config.lang.toUpperCase();
-    document.getElementById('langToggleBtnSup').innerText = config.lang.toUpperCase();
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        if (i18n[config.lang][key]) el.innerText = i18n[config.lang][key];
-    });
-    document.querySelectorAll('[data-i18n-ph]').forEach(el => {
-        const key = el.getAttribute('data-i18n-ph');
-        if (i18n[config.lang][key]) el.placeholder = i18n[config.lang][key];
-    });
-    if (document.getElementById('lanesContainer') && document.getElementById('lanesContainer').children.length > 0) {
-        window.renderInterface();
-    }
-    if (store && store.lanes) window.updateUIFromCloud();
-    if (history && history.length > 0) window.renderHistoryCards();
-    const supDash = document.getElementById('supervisorDashboard');
-    if (supDash && supDash.style.display !== 'none' && cachedHistories) window.renderSupervisorDashboard(cachedHistories);
-    if (db && !window.isOfflineMode) window.startCommsListener();
-    if (typeof window.updateBannerState === 'function') window.updateBannerState();
-};
-
 let config = {
     machines: 2, lanes: 4, product: 'lunch', smart: 'auto', theme: 'light',
     currentMachine: 1, lang: 'en', inputMode: 'button', displayName: ''
 };
 
-let store = {};
+let store   = {};
 let history = [];
-let cachedHistories = null;
 const FACTORS = { lunch: 0.01, bfast: 0.017 };
 let pressTimer;
 
-// Weekend Fix 1: Global scope for debounce timers (fixes auto-save)
 window.weightDebounceTimers = {};
+window.FACTORS = FACTORS;
 
-let autoSaveTimer = null;
-let lastAutoSaveCombo = "";
-let cloudPathKey = "";
-let prevAvg = null;
+let autoSaveTimer      = null;
+let lastAutoSaveCombo  = "";
+let cloudPathKey       = "";
+let prevAvg            = null;
 let pendingTargetValue = null;
-
-// =====================================================================
-// SOS / COMMS ENGINE
-// =====================================================================
-let isSosOpen = false;
-let unreadSos = 0;
-let lastNotifiedTs = Date.now();
-
-window.openSos = function() {
-    if (window.isOfflineMode) {
-        window.showAdminToast('📵 Line Dispatch unavailable offline');
-        return;
-    }
-    document.getElementById('sosModal').style.display = 'flex';
-    document.getElementById('sosBadge').style.display = 'none';
-    isSosOpen = true; unreadSos = 0;
-    const box = document.getElementById('chatBox');
-    box.scrollTop = box.scrollHeight;
-};
-
-window.closeSos = function() {
-    document.getElementById('sosModal').style.display = 'none';
-    isSosOpen = false;
-};
-
-window.sendCustomComms = function() {
-    const input = document.getElementById('chatInput');
-    const text = input.value.trim();
-    if (!text) return;
-    window.sendCommsMsg('TEXT', text);
-    input.value = '';
-};
-
-window.sendCommsMsg = function(code, customText = "") {
-    if (window.isOfflineMode || !db) return;
-    const role = window.currentUserData.role || 'operator';
-    const name = config.displayName || window.currentUserData.adminName || 'Unknown';
-    const isAdminUser = (window.currentUserData && window.currentUserData.role === 'supervisor') || role === 'supervisor' || window.myUid === ADMIN_UID;
-    const machineStr = isAdminUser ? 'ADMIN' : `DSI ${config.currentMachine}`;
-    
-    push(ref(db, 'messages'), {
-        senderUid: window.myUid, senderName: name, role, machine: machineStr,
-        code, text: customText, timestamp: Date.now()
-    }).then(() => {
-        onValue(ref(db, 'messages'), (snap) => {
-            const msgs = snap.val();
-            if (!msgs) return;
-            const keys = Object.keys(msgs).sort((a, b) => (msgs[a].timestamp || 0) - (msgs[b].timestamp || 0));
-            if (keys.length > 100) {
-                const toDelete = keys.slice(0, keys.length - 100);
-                const updates = {};
-                toDelete.forEach(k => { updates[`messages/${k}`] = null; });
-                update(ref(db, '/'), updates).catch(e => console.warn('Prune failed:', e));
-            }
-        }, { onlyOnce: true });
-    }).catch((error) => {
-        console.error(error);
-        window.showAdminToast("❌ Network Error: Message not sent.");
-    });
-};
-
-let unsubComms = null;
-window.startCommsListener = function() {
-    if (window.isOfflineMode || !db) return;
-    if (unsubComms) { unsubComms(); unsubComms = null; }
-    unsubComms = onValue(ref(db, 'messages'), (snap) => {
-        const msgs = snap.val() || {};
-        const sorted = Object.values(msgs).sort((a, b) => a.timestamp - b.timestamp).slice(-30);
-        window.renderChat(sorted);
-    });
-};
-
-window.renderChat = function(messages) {
-    const box = document.getElementById('chatBox');
-    let html = '';
-    let newMsgsCount = 0;
-    messages.forEach(msg => {
-        const isMe = msg.senderUid === window.myUid;
-        const isErr = msg.code !== 'TEXT';
-        const bubbleClass = isMe ? 'msg-me' : 'msg-them';
-        const errClass = isErr ? 'msg-err' : '';
-        const timeStr = new Date(msg.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
-        let displayText = msg.text;
-        if (msg.code === 'ERR_WT') displayText = window.t('errWt');
-        if (msg.code === 'ERR_MECH') displayText = window.t('errMech');
-        if (msg.code === 'YIELD_UPDATE') {
-            try {
-                const data = JSON.parse(msg.text);
-                displayText = `📊 ${window.t('liveYield')}\n🔪 ${window.t('trim')}: ${data.trim}\n🥩 ${window.t('fillets')}: ${data.fillet}\n🍗 ${window.t('nuggets')}: ${data.nugget}`;
-            } catch(e) { displayText = msg.text; }
-        }
-        html += `
-        <div class="msg-bubble ${bubbleClass} ${errClass}">
-            <div class="msg-meta"><span>${msg.senderName} (${msg.machine})</span><span>${timeStr}</span></div>
-            ${displayText}
-        </div>`;
-        if (msg.timestamp > lastNotifiedTs) {
-            lastNotifiedTs = msg.timestamp;
-            if (!isMe) {
-                newMsgsCount++;
-                const role = window.currentUserData ? window.currentUserData.role : '';
-                if (role === 'supervisor' || window.myUid === ADMIN_UID) {
-                    window.fireNativeNotification(`DSI Alert: ${msg.machine}`, displayText);
-                } else if (!isSosOpen) {
-                    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-                }
-            }
-        }
-    });
-    box.innerHTML = html || `<div style="text-align:center; opacity:0.5; font-size:0.8rem; margin-top:auto;">${window.t('radioOpen')}</div>`;
-    if (!isSosOpen && newMsgsCount > 0) {
-        unreadSos += newMsgsCount;
-        const badge = document.getElementById('sosBadge');
-        badge.innerText = unreadSos;
-        badge.style.display = 'flex';
-    }
-    box.scrollTop = box.scrollHeight;
-};
-
-window.enableSystemNotifications = function() {
-    if (!("Notification" in window)) { alert("Your browser does not support native notifications."); return; }
-    Notification.requestPermission().then(permission => {
-        if (permission === "granted") {
-            alert("✅ System alerts enabled!");
-            try { new Notification("System Ready", { body: "The Night Shift Advantage is connected." }); } catch(e) {}
-        } else { alert("❌ Notifications denied. Check browser permissions."); }
-    });
-};
-
-window.fireNativeNotification = function(title, body) {
-    if ("Notification" in window && Notification.permission === "granted") {
-        try { new Notification(title, { body }); } catch(e) {}
-        if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
-    }
-    window.showAdminToast(`📻 ${title} - ${body}`);
-};
 
 // =====================================================================
 // INIT
 // =====================================================================
 window.initApp = function() {
     const saved = localStorage.getItem('dsi_config_v11');
-    if (saved) config = { ...config, ...JSON.parse(saved) };
-    if (!config.smart) config.smart = 'auto';
-    if (!config.theme) config.theme = 'light';
+    if (saved) Object.assign(config, JSON.parse(saved));
+    if (!config.smart)     config.smart     = 'auto';
+    if (!config.theme)     config.theme     = 'light';
     if (!config.inputMode) config.inputMode = 'button';
-    if (!config.lang) config.lang = 'en';
+    if (!config.lang)      config.lang      = 'en';
     window.applyTheme();
     window.applyTranslations();
     const fieldMap = { setMachines:'machines', setLanes:'lanes', setProd:'product', setSmart:'smart', setInputMode:'inputMode', setTheme:'theme' };
@@ -400,26 +142,20 @@ window.initApp = function() {
     const hasSetup = localStorage.getItem('dsi_setup_done');
     if (!hasSetup) document.getElementById('setupWizard').style.display = 'flex';
     else window.routeUserByRole();
-    // Fade out splash screen after app finishes loading
     setTimeout(() => {
         const splash = document.getElementById('splashScreen');
-        if (splash) {
-            splash.style.opacity = '0';
-            setTimeout(() => { splash.style.display = 'none'; }, 600);
-        }
+        if (splash) { splash.style.opacity = '0'; setTimeout(() => { splash.style.display = 'none'; }, 600); }
     }, 2500);
 };
 
 window.routeUserByRole = function() {
     const role = window.currentUserData.role || 'operator';
     document.getElementById('globalStatsBar').style.display = 'flex';
-    
     if (isAdmin || role === 'supervisor') {
         if (document.getElementById('btnYieldOp')) document.getElementById('btnYieldOp').classList.remove('btn-hidden');
         if (document.getElementById('btnYieldSup')) document.getElementById('btnYieldSup').classList.remove('btn-hidden');
         if (document.getElementById('btnMaintSup')) document.getElementById('btnMaintSup').classList.remove('btn-hidden');
     }
-
     if (isAdmin) {
         document.getElementById('supervisorDashboard').style.display = 'block';
         document.getElementById('supervisorDashboard').style.paddingBottom = '0px';
@@ -427,10 +163,7 @@ window.routeUserByRole = function() {
         document.getElementById('appContent').style.filter = 'none';
         const opHeader = document.querySelector('#appContent .header');
         if (opHeader) opHeader.style.display = 'none';
-        if (!window.isOfflineMode) {
-            window.startSupervisorSync();
-            window.startCloudSync();
-        }
+        if (!window.isOfflineMode) { window.startSupervisorSync(); window.startCloudSync(); }
         window.renderInterface();
     } else if (role === 'supervisor') {
         document.getElementById('appContent').style.display = 'none';
@@ -446,166 +179,7 @@ window.routeUserByRole = function() {
 };
 
 // =====================================================================
-// SUPERVISOR ENGINE
-// =====================================================================
-let unsubSupHistories = null;
-let unsubSupLedger = null;
-let cachedShiftLedger = null;
-window.startSupervisorSync = function() {
-    if (!db) { setTimeout(window.startSupervisorSync, 500); return; }
-    if (unsubSupHistories) unsubSupHistories();
-    unsubSupHistories = onValue(ref(db, 'histories'), (snap) => {
-        window.renderSupervisorDashboard(snap.val() || {});
-    });
-    // Shift Ledger listener — permanent cross-shift history
-    if (unsubSupLedger) { unsubSupLedger(); unsubSupLedger = null; }
-    unsubSupLedger = onValue(ref(db, 'shiftLedger'), (snap) => {
-        cachedShiftLedger = snap.val() || {};
-    });
-    // RCA Ledger listener — only fires for supervisor/admin, matching security rules
-    if (unsubMaintLogs) { unsubMaintLogs(); unsubMaintLogs = null; }
-    unsubMaintLogs = onValue(ref(db, 'downtimeLogs'), (snap) => {
-        const data = snap.val();
-        cachedMaintLogs = data ? Object.values(data).sort((a, b) => b.endTime - a.endTime) : [];
-        if (document.getElementById('maintHistoryModal').style.display === 'flex') {
-            window.renderMaintHistory();
-        }
-    });
-};
-
-window.renderSupervisorDashboard = function(allHistories) {
-    cachedHistories = allHistories;
-    const container = document.getElementById('supCardsContainer');
-    container.innerHTML = '';
-    let allWeightsGlobal = [];
-    
-    for (let m = 1; m <= config.machines; m++) {
-        const machHistories = allHistories[`M${m}`];
-        const latest = window.getAbsoluteLatest(machHistories);
-        const recentChecks = window.getRecentChecks(machHistories, 5);
-        
-        if (latest) {
-            container.innerHTML += window.buildSupCard(`DSI ${m}`, latest, recentChecks, m);
-            allWeightsGlobal = allWeightsGlobal.concat(window.extractWeights(latest.entry));
-        } else {
-            container.innerHTML += `<div class="sup-card"><h3 style="color:gray;">DSI ${m}: No Data</h3></div>`;
-        }
-    }
-    
-    if (allWeightsGlobal.length > 0) {
-        const mean = allWeightsGlobal.reduce((a, b) => a + b, 0) / allWeightsGlobal.length;
-        document.getElementById('machAvg').innerText = mean.toFixed(1);
-        if (allWeightsGlobal.length > 1) {
-            const v = allWeightsGlobal.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / allWeightsGlobal.length;
-            document.getElementById('stdDev').innerText = Math.sqrt(v).toFixed(2);
-        } else { document.getElementById('stdDev').innerText = "--"; }
-    } else { document.getElementById('machAvg').innerText = "--"; document.getElementById('stdDev').innerText = "--"; }
-};
-
-window.getAbsoluteLatest = function(machineHistories) {
-    if (!machineHistories) return null;
-    let latestEntry = null, activeProduct = '';
-    for (let prodKey in machineHistories) {
-        let entries = Array.isArray(machineHistories[prodKey]) ? machineHistories[prodKey] : Object.values(machineHistories[prodKey]);
-        if (entries && entries.length > 0) {
-            let entry = entries[0];
-            if (!latestEntry || (entry.timestamp || 0) > (latestEntry.timestamp || 0)) { latestEntry = entry; activeProduct = prodKey.includes('lunch') ? 'lunch' : 'bfast'; }
-        }
-    }
-    return latestEntry ? { entry: latestEntry, product: activeProduct } : null;
-};
-
-window.getRecentChecks = function(machineHistories, n) {
-    if (!machineHistories) return [];
-    let all = [];
-    for (let prodKey in machineHistories) {
-        let entries = Array.isArray(machineHistories[prodKey]) ? machineHistories[prodKey] : Object.values(machineHistories[prodKey]);
-        entries.forEach(e => all.push(e));
-    }
-    return all.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)).slice(0, n);
-};
-
-window.extractWeights = function(entry) {
-    let wts = [];
-    entry.lanes.forEach(l => { let val = parseFloat(l.w); if (!isNaN(val)) wts.push(val); });
-    return wts;
-};
-
-window.buildSupCard = function(title, dataObj, recentChecks, m) {
-    const entry = dataObj.entry;
-    const target = parseFloat(entry.target || 0);
-    const opName = entry.operator || 'Unknown';
-    const isStale = (Date.now() - (entry.timestamp || 0)) > 180000;
-    let lanesHtml = '';
-    
-    entry.lanes.forEach((l, idx) => {
-        let weightVal = parseFloat(l.w), colorClass = '';
-        let laneWeights = [];
-        recentChecks.forEach(check => {
-            if (check.lanes && check.lanes[idx]) {
-                let cw = parseFloat(check.lanes[idx].w);
-                if (!isNaN(cw)) laneWeights.push(cw);
-            }
-        });
-
-        let stabilityHtml = '';
-        if (laneWeights.length > 1) {
-            const lMean = laneWeights.reduce((a, b) => a + b, 0) / laneWeights.length;
-            const lVar = laneWeights.reduce((a, b) => a + Math.pow(b - lMean, 2), 0) / laneWeights.length;
-            const lSd = Math.sqrt(lVar);
-            let score = Math.round(Math.max(0, 100 - (lSd * 15)));
-            let sColor = 'var(--success)'; let sIcon = '🟢';
-            if (score < 80 && score >= 60) { sColor = 'var(--warning)'; sIcon = '🟡'; }
-            else if (score < 60) { sColor = 'var(--danger)'; sIcon = '🔴'; }
-            stabilityHtml = `<div class="lane-stability" style="color:${sColor}">${sIcon} ${score}%</div>`;
-        } else {
-            stabilityHtml = `<div class="lane-stability" style="color:gray;">--%</div>`;
-        }
-
-        if (!isNaN(weightVal) && target > 0 && !isStale) {
-            let diff = Math.abs(weightVal - target);
-            if (diff <= 0.5) colorClass = 'bg-perfect';
-            else if (diff <= 2) colorClass = 'bg-success';
-            else if (diff <= 3) colorClass = 'bg-warning';
-            else colorClass = 'bg-danger';
-        }
-        lanesHtml += `<div class="sup-lane ${colorClass}"><span class="sup-lane-lbl">${window.t('lane')} ${idx+1}</span><span class="sup-lane-wt">${l.w}</span><span class="sup-lane-dens">${l.d}</span>${stabilityHtml}</div>`;
-    });
-    
-    let trendHtml = `<div class="sup-trend"><span class="sup-trend-lbl">Trend:</span>`;
-    for (let i = 0; i < Math.min(3, recentChecks.length); i++) {
-        const check = recentChecks[i];
-        const wts = window.extractWeights(check);
-        if (wts.length === 0) { trendHtml += `<span class="trend-chip trend-empty">·</span>`; continue; }
-        const mean = wts.reduce((a, b) => a + b, 0) / wts.length;
-        const diff = Math.abs(mean - target);
-        let cls, symbol;
-        if (diff <= 0.5) { cls = 'trend-perfect'; symbol = '✓'; }
-        else if (diff <= 2) { cls = 'trend-success'; symbol = '↑'; }
-        else if (diff <= 3) { cls = 'trend-warning'; symbol = '~'; }
-        else { cls = 'trend-danger'; symbol = '✗'; }
-        trendHtml += `<span class="trend-chip ${cls}" title="Avg: ${mean.toFixed(1)}g">${symbol}</span>`;
-    }
-    for(let i = recentChecks.length; i < 3; i++) { trendHtml += `<span class="trend-chip trend-empty">·</span>`; }
-    trendHtml += `<span style="font-size:0.62rem; opacity:0.5; margin-left:4px;">(newest → oldest)</span></div>`;
-    
-    return `
-    <div class="sup-card ${isStale ? 'stale' : ''}">
-        <div class="sup-header" style="align-items:center;">
-            <div>
-                <h2 class="sup-title">${title} <span style="font-size:0.8rem; color:gray; font-weight:normal;">• ${window.t(dataObj.product)}</span></h2>
-                <div class="sup-meta" style="text-align:left;">${window.t('target')}: ${target}g<strong style="display:inline-block; margin-left:6px;">${entry.time}${isStale ? ' ⚠️' : ''}</strong></div>
-            </div>
-            <button class="btn-icon" style="border:none; font-size:1.3rem; height:40px; width:40px; background:rgba(128,128,128,0.1); flex-shrink:0;" onclick="window.openSupHistory(${m})" title="View Detailed Logs">📋</button>
-        </div>
-        <div class="sup-operator">👤 ${opName}</div>
-        <div class="sup-grid">${lanesHtml}</div>
-        ${trendHtml}
-    </div>`;
-};
-
-// =====================================================================
-// OPERATOR ENGINE
+// OPERATOR ENGINE — Cloud Sync
 // =====================================================================
 let unsubStore = null, unsubHistory = null;
 let dbRef_Store = null, dbRef_History = null;
@@ -615,9 +189,8 @@ window.startCloudSync = function() {
     cloudPathKey = `M${config.currentMachine}/${config.product}_${config.lanes}L`;
     if (unsubStore) unsubStore();
     if (unsubHistory) unsubHistory();
-    dbRef_Store = ref(db, `stores/${cloudPathKey}`);
+    dbRef_Store   = ref(db, `stores/${cloudPathKey}`);
     dbRef_History = ref(db, `histories/${cloudPathKey}`);
-    
     unsubStore = onValue(dbRef_Store, (snapshot) => {
         const val = snapshot.val();
         if (val) { store = val; window.updateUIFromCloud(); }
@@ -629,7 +202,6 @@ window.startCloudSync = function() {
             }
         }
     });
-    
     unsubHistory = onValue(dbRef_History, (snapshot) => {
         const val = snapshot.val();
         history = val ? (Array.isArray(val) ? val : Object.values(val)) : [];
@@ -642,16 +214,16 @@ window.pushLaneToCloud = function(idx) {
     document.getElementById('statusDot').className = "status-dot status-syncing";
     const updates = {};
     const lane = store.lanes[idx-1];
-    updates[`lanes/${idx-1}/d`] = lane.d;
-    updates[`lanes/${idx-1}/w`] = lane.w;
-    updates[`lanes/${idx-1}/locked`] = lane.locked;
-    updates[`lanes/${idx-1}/attempts`] = lane.attempts ?? 0;
+    updates[`lanes/${idx-1}/d`]           = lane.d;
+    updates[`lanes/${idx-1}/w`]           = lane.w;
+    updates[`lanes/${idx-1}/locked`]      = lane.locked;
+    updates[`lanes/${idx-1}/attempts`]    = lane.attempts ?? 0;
     updates[`lanes/${idx-1}/smartActive`] = lane.smartActive ?? false;
-    updates[`lanes/${idx-1}/lastD`] = lane.lastD ?? null;
-    updates[`lanes/${idx-1}/lastW`] = lane.lastW ?? null;
+    updates[`lanes/${idx-1}/lastD`]       = lane.lastD ?? null;
+    updates[`lanes/${idx-1}/lastW`]       = lane.lastW ?? null;
     updates[`lanes/${idx-1}/stableCount`] = lane.stableCount ?? 0;
     updates[`lanes/${idx-1}/lastUpdated`] = serverTimestamp();
-    updates[`lastUpdated`] = serverTimestamp();
+    updates['lastUpdated']                = serverTimestamp();
     update(dbRef_Store, updates).then(() => {
         document.getElementById('statusDot').className = "status-dot status-online";
     }).catch((e) => {
@@ -688,25 +260,19 @@ window.renderInterface = function() {
     const fieldMap = { setMachines:'machines', setLanes:'lanes', setProd:'product', setSmart:'smart', setInputMode:'inputMode', setTheme:'theme' };
     for (const [id, key] of Object.entries(fieldMap)) { const el = document.getElementById(id); if (el) el.value = config[key]; }
     if (document.getElementById('setDispName')) document.getElementById('setDispName').value = config.displayName || '';
-    
     const container = document.getElementById('lanesContainer');
     container.innerHTML = '';
-    
     for (let i = 1; i <= config.lanes; i++) {
         let labelText = window.t('density');
         if (config.inputMode === 'longpress' && !isAdmin) labelText += " (HOLD)";
         if ((config.inputMode === 'doubletap' && !isAdmin) || isAdmin) labelText += " (×2)";
-        
         let btnHtml = config.inputMode === 'button' && !isAdmin
             ? `<button class="btn-icon" id="lockDens-${i}" onmousedown="event.preventDefault()" onclick="window.toggleLock(${i})">🔒</button>`
             : `<button class="btn-icon btn-hidden" id="lockDens-${i}">🔒</button>`;
-
-        // Weekend Fix 1: uses window.weightDebounceTimers (global scope)
         let weightHtml = `<input type="number" id="avgWt-${i}" inputmode="decimal" oninput="window.handleWeightInput(${i})" onblur="clearTimeout(window.weightDebounceTimers[${i}]); window.pushLaneToCloud(${i}); window.checkAutoSave()">`;
         if (isAdmin) {
             weightHtml = `<input type="number" id="avgWt-${i}" class="density-input" inputmode="decimal" readonly oninput="window.handleWeightInput(${i})" onblur="window.checkAutoSave(); window.lockWeightOnBlur(${i})">`;
         }
-
         container.innerHTML += `
             <div class="lane-card" id="card-${i}">
                 <div class="lane-header">
@@ -735,7 +301,6 @@ window.renderInterface = function() {
                 <input type="hidden" id="calcVal-${i}">
             </div>`;
     }
-    
     for (let i = 1; i <= config.lanes; i++) {
         const dEl = document.getElementById(`currDens-${i}`);
         const wEl = document.getElementById(`avgWt-${i}`);
@@ -745,9 +310,9 @@ window.renderInterface = function() {
         } else {
             if (config.inputMode === 'longpress') {
                 dEl.addEventListener('touchstart', () => { pressTimer = setTimeout(() => window.unlockAndFocus(i), 800); });
-                dEl.addEventListener('touchend', () => clearTimeout(pressTimer));
-                dEl.addEventListener('mousedown', () => { pressTimer = setTimeout(() => window.unlockAndFocus(i), 800); });
-                dEl.addEventListener('mouseup', () => clearTimeout(pressTimer));
+                dEl.addEventListener('touchend',   () => clearTimeout(pressTimer));
+                dEl.addEventListener('mousedown',  () => { pressTimer = setTimeout(() => window.unlockAndFocus(i), 800); });
+                dEl.addEventListener('mouseup',    () => clearTimeout(pressTimer));
             } else if (config.inputMode === 'doubletap') {
                 dEl.ondblclick = () => window.unlockAndFocus(i);
             }
@@ -789,24 +354,26 @@ window.updateUIFromCloud = function() {
     window.calculateLocal();
 };
 
+// =====================================================================
+// PORTIONING BRAIN — Density Math + Smart Adapt + Velocity Engine
+// =====================================================================
 window.calculateLocal = function() {
     if (!store || !store.lanes) return;
-    const target = parseFloat(store.target);
-    const baseK = FACTORS[config.product];
+    const target  = parseFloat(store.target);
+    const baseK   = FACTORS[config.product];
     let weights = [], count = 0;
     for (let i = 1; i <= config.lanes; i++) {
         if (!store.lanes[i-1]) continue;
-        const lane = store.lanes[i-1];
-        const currD = parseFloat(lane.d), currW = parseFloat(lane.w);
+        const lane    = store.lanes[i-1];
+        const currD   = parseFloat(lane.d), currW = parseFloat(lane.w);
         const resText = document.getElementById(`resText-${i}`);
         const hiddenVal = document.getElementById(`calcVal-${i}`);
-        const card = document.getElementById(`card-${i}`);
-        const resBox = document.getElementById(`resBox-${i}`);
+        const card    = document.getElementById(`card-${i}`);
+        const resBox  = document.getElementById(`resBox-${i}`);
         const trendEl = document.getElementById(`trend-${i}`);
-        
         if (!isNaN(target) && !isNaN(currD) && !isNaN(currW)) {
-            const diff = currW - target;
-            let activeK = baseK;
+            const diff    = currW - target;
+            let activeK   = baseK;
             const isSmart = config.smart === 'on' || (config.smart === 'auto' && lane.smartActive);
             if (isSmart && lane.lastD !== null && lane.lastW !== null) {
                 let dDelta = currD - lane.lastD, wDelta = currW - lane.lastW;
@@ -816,23 +383,21 @@ window.calculateLocal = function() {
                     activeK = (observedK * 0.6) + (baseK * 0.4);
                 }
             }
-            // Weekend Fix 3: Density clamp — machine physical limit
             let newD = currD + (diff * activeK);
             newD = Math.max(-0.500, Math.min(0.500, newD));
-            
             hiddenVal.value = newD.toFixed(3);
             resText.innerText = `${window.t('newDens')} ${newD.toFixed(3)}`;
             resBox.classList.add('has-value');
-            // --- PREDICTIVE VELOCITY ENGINE ---
+            // Predictive Velocity Engine
             let driftHtml = "";
             if (history && history.length > 0) {
                 const lastCheck = history[0];
-                const lastWStr = lastCheck.lanes && lastCheck.lanes[i-1] ? lastCheck.lanes[i-1].w : null;
+                const lastWStr  = lastCheck.lanes && lastCheck.lanes[i-1] ? lastCheck.lanes[i-1].w : null;
                 if (lastWStr && lastWStr !== '--') {
                     const lastW = parseFloat(lastWStr);
                     if (!isNaN(lastW) && lastCheck.timestamp) {
                         const timeDiffMin = Math.max(1, (Date.now() - lastCheck.timestamp) / 60000);
-                        const velocity = (currW - lastW) / timeDiffMin;
+                        const velocity    = (currW - lastW) / timeDiffMin;
                         if (Math.abs(velocity) > 0.015) {
                             let runway = 0;
                             if (velocity > 0 && currW < (target + 2)) runway = (target + 2) - currW;
@@ -841,10 +406,8 @@ window.calculateLocal = function() {
                                 const minsToDrift = Math.round(runway / Math.abs(velocity));
                                 if (minsToDrift < 120) {
                                     if (minsToDrift <= 15) {
-                                        // The Red Zone: Explicit command with a flashing animation
                                         driftHtml = `<span style="font-size:0.7rem; margin-left:8px; font-weight:900; color:var(--danger); animation: pulseWarning 1.5s infinite;">${window.t('weighNow')}</span>`;
                                     } else {
-                                        // The Safe Zone: Standard countdown
                                         const driftColor = minsToDrift <= 30 ? 'var(--warning)' : 'var(--perfect)';
                                         driftHtml = `<span style="font-size:0.7rem; margin-left:8px; font-weight:900; color:${driftColor};">⏳ ${minsToDrift}m</span>`;
                                     }
@@ -854,23 +417,13 @@ window.calculateLocal = function() {
                     }
                 }
             }
-
             const absDiff = Math.abs(diff);
             card.className = "lane-card";
             if (isSmart) card.classList.add('smart-active');
-            if (absDiff <= 0.5) {
-                card.classList.add('bg-perfect');
-                trendEl.innerHTML = `<span style="color:var(--perfect)">●</span>${driftHtml}`;
-            } else if (absDiff <= 2) {
-                card.classList.add('bg-success');
-                trendEl.innerHTML = `<span style="color:var(--success)">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}g</span>${driftHtml}`;
-            } else if (absDiff <= 3) {
-                card.classList.add('bg-warning');
-                trendEl.innerHTML = `<span style="color:var(--warning)">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}g</span>`;
-            } else {
-                card.classList.add('bg-danger');
-                trendEl.innerHTML = `<span style="color:var(--danger)">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}g</span>`;
-            }
+            if (absDiff <= 0.5) { card.classList.add('bg-perfect'); trendEl.innerHTML = `<span style="color:var(--perfect)">●</span>${driftHtml}`; }
+            else if (absDiff <= 2) { card.classList.add('bg-success'); trendEl.innerHTML = `<span style="color:var(--success)">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}g</span>${driftHtml}`; }
+            else if (absDiff <= 3) { card.classList.add('bg-warning'); trendEl.innerHTML = `<span style="color:var(--warning)">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}g</span>`; }
+            else { card.classList.add('bg-danger'); trendEl.innerHTML = `<span style="color:var(--danger)">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}g</span>`; }
             weights.push(currW); count++;
         } else {
             resText.innerText = `${window.t('newDens')} --`; hiddenVal.value = "";
@@ -944,9 +497,7 @@ window.checkAutoSave = function() {
         currentCombo += w + ",";
     }
     if (allFilled && currentCombo !== lastAutoSaveCombo) {
-        // Cancel any pending save — operator may still be correcting a typo
         if (autoSaveTimer) clearTimeout(autoSaveTimer);
-        // 2.5-second grace period before committing to permanent history
         autoSaveTimer = setTimeout(() => {
             lastAutoSaveCombo = currentCombo;
             window.saveToHistory();
@@ -956,14 +507,14 @@ window.checkAutoSave = function() {
 };
 
 window.saveToHistory = function() {
-    const time = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+    const time      = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
     const timestamp = Date.now();
-    const avg = document.getElementById('machAvg') ? document.getElementById('machAvg').innerText : '--';
-    prevAvg = parseFloat(avg) || null;
-    const opName = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
+    const avg       = document.getElementById('machAvg') ? document.getElementById('machAvg').innerText : '--';
+    prevAvg         = parseFloat(avg) || null;
+    const opName    = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
     let row = { time, timestamp, avg, operator: opName, target: store.target, lanes: [] };
     for (let i = 1; i <= config.lanes; i++) {
-        const wt = store.lanes[i-1] ? store.lanes[i-1].w : '';
+        const wt   = store.lanes[i-1] ? store.lanes[i-1].w : '';
         const calc = document.getElementById(`calcVal-${i}`).value;
         const dens = store.lanes[i-1] ? store.lanes[i-1].d : '';
         row.lanes.push({ w: wt ? `${wt}g` : '--', d: calc || dens || '--' });
@@ -973,7 +524,6 @@ window.saveToHistory = function() {
     if (history.length > 50) history.pop();
     if (!window.isOfflineMode && dbRef_History) {
         set(dbRef_History, history).catch(e => window.showAdminToast("❌ Network Error: History not saved."));
-        // Dual-write: permanent copy to shiftLedger so supervisor history survives Clear Table
         push(ref(db, `shiftLedger/M${config.currentMachine}`), row).catch(e => console.warn('Ledger write:', e));
     }
     window.renderHistoryCards();
@@ -992,18 +542,14 @@ window.clearHistory = function() {
 window.endShift = function() {
     if (confirm(window.t('endShiftConfirm'))) {
         const opName = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
-        const time = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+        const time   = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
         const marker = { isMarker: true, text: `🏁 SHIFT ENDED BY ${opName.toUpperCase()}`, timestamp: Date.now(), time };
-        if (!window.isOfflineMode && db) {
-            push(ref(db, `shiftLedger/M${config.currentMachine}`), marker).catch(e => console.warn('Marker write:', e));
-        }
-        // Wipe active board
+        if (!window.isOfflineMode && db) push(ref(db, `shiftLedger/M${config.currentMachine}`), marker).catch(e => console.warn('Marker write:', e));
         history = [];
         lastAutoSaveCombo = "";
         if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveTimer = null; }
         if (!window.isOfflineMode && dbRef_History) set(dbRef_History, history).catch(e => console.warn(e));
         window.renderHistoryCards();
-        // Clear weights only — keep densities so next shift starts from last known setting
         if (store && store.lanes) {
             store.lanes.forEach(l => { l.w = ''; l.locked = true; l.smartActive = false; l.stableCount = 0; });
             if (!window.isOfflineMode && dbRef_Store) update(dbRef_Store, { lanes: store.lanes }).catch(e => console.warn(e));
@@ -1030,39 +576,26 @@ window.toggleDensitySign = function(i) {
 };
 
 window.applyResult = function(idx) {
-    const val = document.getElementById(`calcVal-${idx}`).value;
-    const lane = store.lanes[idx-1];
+    const val   = document.getElementById(`calcVal-${idx}`).value;
+    const lane  = store.lanes[idx-1];
     const currD = parseFloat(lane.d), currW = parseFloat(lane.w);
     if (val && !isNaN(currD)) {
         window.saveToHistory();
         lane.lastD = currD; lane.lastW = currW;
         const target = parseFloat(store.target);
-
-        // --- SMART ADAPT LOGIC & COOL-DOWN ---
         if (Math.abs(currW - target) > 2) {
-            // BAD CHECK: drifting hard — increment failures, reset stability counter
-            lane.attempts++;
-            lane.stableCount = 0;
+            lane.attempts++; lane.stableCount = 0;
             if (config.smart === 'auto' && lane.attempts >= 2) lane.smartActive = true;
         } else {
-            // GOOD CHECK: in safe zone — reset failure counter
             lane.attempts = 0;
             if (Math.abs(currW - target) <= 1.0) {
-                // PERFECT ZONE: track consecutive perfect hits
                 lane.stableCount = (lane.stableCount || 0) + 1;
                 if (config.smart === 'auto' && lane.smartActive && lane.stableCount >= 2) {
-                    // Machine stabilized — hand off back to standard physics
-                    lane.smartActive = false;
-                    lane.lastD = null;
-                    lane.lastW = null;
+                    lane.smartActive = false; lane.lastD = null; lane.lastW = null;
                     if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
                 }
-            } else {
-                // MEDIOCRE: not bad enough to trigger Smart, not good enough to turn it off
-                lane.stableCount = 0;
-            }
+            } else { lane.stableCount = 0; }
         }
-
         lane.d = val; lane.w = ''; lane.locked = true;
         if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveTimer = null; }
         lastAutoSaveCombo = "";
@@ -1102,18 +635,15 @@ window.handleWeightInput = function(i) {
 
 window.lockOnBlur = function(i) { setTimeout(() => { if (document.activeElement === document.getElementById(`currDens-${i}`)) return; store.lanes[i-1].locked = true; store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; window.pushLaneToCloud(i); }, 150); };
 
-// Weekend Fix 2: God Mode safety catch on recheckLane
 window.recheckLane = function(idx) {
     if (isAdmin) {
-        if (!confirm(`⚠️ WIPE WEIGHT DATA?\nAre you sure you want to delete the operator's weight for Lane ${idx}?`)) {
-            return;
-        }
+        if (!confirm(`⚠️ WIPE WEIGHT DATA?\nAre you sure you want to delete the operator's weight for Lane ${idx}?`)) return;
     }
     store.lanes[idx-1].w = '';
     document.getElementById(`avgWt-${idx}`).value = '';
     if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveTimer = null; }
     lastAutoSaveCombo = "";
-    if (!isAdmin) { document.getElementById(`avgWt-${idx}`).focus(); }
+    if (!isAdmin) document.getElementById(`avgWt-${idx}`).focus();
     window.calculateLocal();
     window.pushLaneToCloud(idx);
 };
@@ -1145,8 +675,8 @@ window.onTargetInput = function() {
     } else { window.applyTargetNow(newVal); }
 };
 window.confirmTargetChange = function() { if (pendingTargetValue !== null) { window.applyTargetNow(pendingTargetValue); pendingTargetValue = null; } document.getElementById('targetConfirm').classList.remove('show'); };
-window.cancelTargetChange = function() { document.getElementById('setTarget').value = store.target || ''; pendingTargetValue = null; document.getElementById('targetConfirm').classList.remove('show'); };
-window.applyTargetNow = function(val) { store.target = val; document.getElementById('displayTarget').innerText = `${window.t('target')}: ${val}g`; document.getElementById('targetDisplay').innerText = `${val}g`; window.calculateLocal(); window.pushTargetToCloud(); };
+window.cancelTargetChange  = function() { document.getElementById('setTarget').value = store.target || ''; pendingTargetValue = null; document.getElementById('targetConfirm').classList.remove('show'); };
+window.applyTargetNow      = function(val) { store.target = val; document.getElementById('displayTarget').innerText = `${window.t('target')}: ${val}g`; document.getElementById('targetDisplay').innerText = `${val}g`; window.calculateLocal(); window.pushTargetToCloud(); };
 
 // =====================================================================
 // SETTINGS
@@ -1156,22 +686,22 @@ window.toggleSettings = function() {
     m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
     if (m.style.display === 'flex') {
         if (document.getElementById('setDispName')) document.getElementById('setDispName').value = config.displayName || '';
-        if (document.getElementById('setSmart')) document.getElementById('setSmart').value = config.smart || 'auto';
-        if (document.getElementById('setTheme')) document.getElementById('setTheme').value = config.theme || 'light';
+        if (document.getElementById('setSmart'))    document.getElementById('setSmart').value = config.smart || 'auto';
+        if (document.getElementById('setTheme'))    document.getElementById('setTheme').value = config.theme || 'light';
         if (document.getElementById('setTarget') && store.target) document.getElementById('setTarget').value = store.target;
         document.getElementById('targetConfirm').classList.remove('show');
     }
 };
 window.saveLocalSettings = function() {
-    if (document.getElementById('setMachines')) config.machines = parseInt(document.getElementById('setMachines').value);
-    if (document.getElementById('setLanes')) config.lanes = parseInt(document.getElementById('setLanes').value);
-    if (document.getElementById('setProd')) config.product = document.getElementById('setProd').value;
-    if (document.getElementById('setSmart')) config.smart = document.getElementById('setSmart').value;
-    if (document.getElementById('setInputMode')) config.inputMode = document.getElementById('setInputMode').value;
-    if (document.getElementById('setTheme')) config.theme = document.getElementById('setTheme').value;
+    if (document.getElementById('setMachines')) config.machines   = parseInt(document.getElementById('setMachines').value);
+    if (document.getElementById('setLanes'))    config.lanes      = parseInt(document.getElementById('setLanes').value);
+    if (document.getElementById('setProd'))     config.product    = document.getElementById('setProd').value;
+    if (document.getElementById('setSmart'))    config.smart      = document.getElementById('setSmart').value;
+    if (document.getElementById('setInputMode'))config.inputMode  = document.getElementById('setInputMode').value;
+    if (document.getElementById('setTheme'))    config.theme      = document.getElementById('setTheme').value;
     localStorage.setItem('dsi_config_v11', JSON.stringify(config));
 };
-window.toggleTheme = function() { config.theme = document.getElementById('setTheme').value; window.applyTheme(); window.saveLocalSettings(); };
+window.toggleTheme    = function() { config.theme = document.getElementById('setTheme').value; window.applyTheme(); window.saveLocalSettings(); };
 window.saveDisplayName = function() {
     const name = document.getElementById('setDispName').value;
     config.displayName = name;
@@ -1184,14 +714,13 @@ window.applyTheme = function() {
     const isDark = config.theme === 'dark';
     if (isDark) document.body.classList.add('dark-mode');
     else document.body.classList.remove('dark-mode');
-    const logo = isDark ? 'logo_dark.png' : 'logo.png';
+    const logo   = isDark ? 'logo_dark.png' : 'logo.png';
     const splash = document.getElementById('splashLogo');
     const header = document.getElementById('headerLogo');
     const about  = document.getElementById('aboutLogo');
     if (splash) { splash.src = logo; splash.style.display = 'block'; }
     if (header) {
         header.src = logo; header.style.display = 'block';
-        // Re-hide text fallback in case onerror triggered it
         const textTitle = document.querySelector('.brand-title');
         const moonIcon  = document.querySelector('.moon-icon');
         if (textTitle) textTitle.style.display = 'none';
@@ -1199,10 +728,10 @@ window.applyTheme = function() {
     }
     if (about) { about.src = logo; about.style.display = 'block'; }
 };
-window.completeSetup = function() { config.machines = parseInt(document.getElementById('setupMachines').value); config.lanes = parseInt(document.getElementById('setupLanes').value); config.product = document.getElementById('setupProd').value; localStorage.setItem('dsi_setup_done', 'true'); window.saveLocalSettings(); document.getElementById('setupWizard').style.display = 'none'; window.routeUserByRole(); };
-window.factoryReset = function() { if (confirm("Erase LOCAL settings? Cloud data remains.")) { localStorage.clear(); location.reload(); } };
-window.switchMachine = function(m) { config.currentMachine = m; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); };
-window.switchProfile = function() { config.lanes = parseInt(document.getElementById('setLanes').value); config.product = document.getElementById('setProd').value; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); };
+window.completeSetup  = function() { config.machines = parseInt(document.getElementById('setupMachines').value); config.lanes = parseInt(document.getElementById('setupLanes').value); config.product = document.getElementById('setupProd').value; localStorage.setItem('dsi_setup_done', 'true'); window.saveLocalSettings(); document.getElementById('setupWizard').style.display = 'none'; window.routeUserByRole(); };
+window.factoryReset   = function() { if (confirm("Erase LOCAL settings? Cloud data remains.")) { localStorage.clear(); location.reload(); } };
+window.switchMachine  = function(m) { config.currentMachine = m; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); };
+window.switchProfile  = function() { config.lanes = parseInt(document.getElementById('setLanes').value); config.product = document.getElementById('setProd').value; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); };
 
 // =====================================================================
 // ADMIN
@@ -1228,12 +757,11 @@ window.openAdmin = function() {
         });
     }
 };
-
 window.buildAdminUserCard = function(key, data, highlight) {
-    const isAppr = data.approved ? 'checked' : '';
+    const isAppr    = data.approved ? 'checked' : '';
     const adminName = data.adminName || '';
-    const dispName = data.displayName || 'No Name Set';
-    const role = data.role || 'operator';
+    const dispName  = data.displayName || 'No Name Set';
+    const role      = data.role || 'operator';
     return `
     <div class="admin-user-card" style="${highlight ? 'border-color:var(--warning);' : ''}">
         <div class="admin-user-id">ID: ${key}</div>
@@ -1253,42 +781,36 @@ window.buildAdminUserCard = function(key, data, highlight) {
         <div class="admin-user-last">Last seen: ${data.lastLogin || 'Unknown'}</div>
     </div>`;
 };
-
-window.closeAdmin = function() { document.getElementById('adminModal').style.display = 'none'; };
-window.updateAdminName = function(uid, name) { update(ref(db, `users/${uid}`), { adminName: name }).catch(e => window.showAdminToast("❌ Error: Could not update name.")); };
-window.updateUserRole = function(uid, role) { update(ref(db, `users/${uid}`), { role }).catch(e => window.showAdminToast("❌ Error: Could not update role.")); };
-window.toggleUserApprove = function(uid, isAppr) {
+window.closeAdmin         = function() { document.getElementById('adminModal').style.display = 'none'; };
+window.updateAdminName    = function(uid, name) { update(ref(db, `users/${uid}`), { adminName: name }).catch(e => window.showAdminToast("❌ Error: Could not update name.")); };
+window.updateUserRole     = function(uid, role) { update(ref(db, `users/${uid}`), { role }).catch(e => window.showAdminToast("❌ Error: Could not update role.")); };
+window.toggleUserApprove  = function(uid, isAppr) {
     update(ref(db, `users/${uid}`), { approved: isAppr, requestPending: false })
     .then(() => { if (isAppr) { notifiedSet.delete(uid); persistNotifiedSet(); } })
     .catch(e => window.showAdminToast("❌ Error: Could not update approval."));
 };
 window.deleteUser = function(uid) { set(ref(db, `users/${uid}`), null).catch(e => window.showAdminToast("❌ Error: Could not delete user.")); };
-
-window.pingAdmin = function() {
+window.pingAdmin  = function() {
     const nameInput = document.getElementById('reqName').value.trim();
     if (!nameInput) { alert("Please enter your name."); return; }
     update(ref(db, `users/${window.myUid}`), { displayName: nameInput, requestPending: true, requestTime: Date.now() })
         .then(() => { document.getElementById('requestForm').innerHTML = `<div style="color:var(--success); font-weight:bold; font-size:1.1rem; padding:10px;">✅ Flare Sent!<br><span style="font-size:0.8rem; color:var(--text); font-weight:normal;">Admin has been notified.</span></div>`; })
         .catch(e => window.showAdminToast("❌ Network Error: Could not send request."));
 };
-
 let notifiedSet = new Set(JSON.parse(sessionStorage.getItem('dsi_notified') || '[]'));
 function persistNotifiedSet() { sessionStorage.setItem('dsi_notified', JSON.stringify([...notifiedSet])); }
-
 window.startAdminRadar = function() {
     onValue(ref(db, 'users'), (snap) => {
         const users = snap.val() || {};
         for (let uid in users) {
             const u = users[uid];
             if (u.requestPending === true && u.approved !== true && !notifiedSet.has(uid)) {
-                notifiedSet.add(uid);
-                persistNotifiedSet();
+                notifiedSet.add(uid); persistNotifiedSet();
                 window.fireNativeNotification('🔑 Access Request', `${u.displayName || 'Someone'} wants access!`);
             }
         }
     });
 };
-
 window.showAdminToast = function(msg) {
     const toast = document.getElementById('adminToast');
     document.getElementById('toastMsg').innerText = msg;
@@ -1298,131 +820,13 @@ window.showAdminToast = function(msg) {
 };
 
 // =====================================================================
-// YIELD CALCULATOR MODULE
-// =====================================================================
-let unsubYieldHistory = null;
-
-window.openYield = function() {
-    document.getElementById('yieldModal').style.display = 'flex';
-    window.loadYieldHistory();
-};
-
-window.closeYield = function() {
-    document.getElementById('yieldModal').style.display = 'none';
-    if (unsubYieldHistory) { unsubYieldHistory(); unsubYieldHistory = null; }
-};
-
-window.calcYield = function() {
-    const v = (id) => parseFloat(document.getElementById(id).value) || 0;
-    const fillet  = v('y10130') + v('y10070');
-    const nugget  = v('y10114');
-    const trim    = v('y30212') + v('y30211') + v('y15530') + v('y15531') + (v('y40030boxes') * 40);
-    const totalOutput = fillet + nugget + trim;
-    const totalInput  = totalOutput * 1.03;
-    document.getElementById('yOutput').innerText = totalOutput.toFixed(1);
-    document.getElementById('yInput').innerText  = totalInput.toFixed(1);
-    if (totalInput > 0) {
-        document.getElementById('yPctFillet').innerText = ((fillet  / totalInput) * 100).toFixed(2) + '%';
-        document.getElementById('yPctNugget').innerText = ((nugget  / totalInput) * 100).toFixed(2) + '%';
-        document.getElementById('yPctTrim').innerText   = ((trim    / totalInput) * 100).toFixed(2) + '%';
-    } else {
-        document.getElementById('yPctFillet').innerText = '0.0%';
-        document.getElementById('yPctNugget').innerText = '0.0%';
-        document.getElementById('yPctTrim').innerText   = '0.0%';
-    }
-};
-
-window.clearYieldInputs = function() {
-    ['y10130','y10070','y10114','y30212','y30211','y15530','y15531','y40030boxes']
-        .forEach(id => document.getElementById(id).value = '');
-    window.calcYield();
-};
-
-window.saveEosYield = function() {
-    const v = (id) => parseFloat(document.getElementById(id).value) || 0;
-    const totalOutput = v('y10130')+v('y10070')+v('y10114')+v('y30212')+v('y30211')+v('y15530')+v('y15531')+(v('y40030boxes')*40);
-    if (totalOutput <= 0) { alert("Please enter product weights first."); return; }
-    const timeStr = new Date().toLocaleString([], { weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
-    const yieldData = {
-        timestamp: Date.now(), timeStr,
-        input:    document.getElementById('yInput').innerText,
-        output:   totalOutput.toFixed(1),
-        fillet:   document.getElementById('yPctFillet').innerText,
-        nugget:   document.getElementById('yPctNugget').innerText,
-        trim:     document.getElementById('yPctTrim').innerText,
-        operator: window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Supervisor') : 'Supervisor'
-    };
-    push(ref(db, 'yieldHistory'), yieldData)
-        .then(() => { window.showAdminToast("✅ EOS Yield Saved!"); window.clearYieldInputs(); })
-        .catch(() => window.showAdminToast("❌ Error saving yield."));
-};
-
-window.loadYieldHistory = function() {
-    if (unsubYieldHistory) { unsubYieldHistory(); unsubYieldHistory = null; }
-    unsubYieldHistory = onValue(ref(db, 'yieldHistory'), (snap) => {
-        const list = document.getElementById('yieldHistoryList');
-        const data = snap.val();
-        if (!data) { list.innerHTML = '<div style="opacity:0.5; text-align:center;">No history saved yet.</div>'; return; }
-        const arr = Object.values(data).sort((a, b) => b.timestamp - a.timestamp);
-        list.innerHTML = arr.map(y => `
-            <div class="yield-hist-card">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                    <strong>${y.timeStr}</strong>
-                    <span style="font-size:0.7rem; opacity:0.6;">by ${y.operator}</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; font-size:0.75rem;">
-                    <span>In: ${y.input}lb</span>
-                    <span>Out: ${y.output}lb</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; margin-top:6px; font-weight:bold;">
-                    <span style="color:var(--perfect);">F: ${y.fillet}</span>
-                    <span style="color:var(--warning);">N: ${y.nugget}</span>
-                    <span style="color:var(--danger);">T: ${y.trim}</span>
-                </div>
-            </div>`).join('');
-    });
-};
-
-window.wipeYieldHistory = function() {
-    if (confirm("Permanently delete all saved yield history?")) {
-        set(ref(db, 'yieldHistory'), null)
-            .then(() => window.showAdminToast("🗑️ Yield history wiped."));
-    }
-};
-
-window.broadcastMidShiftYield = function() {
-    const v = (id) => parseFloat(document.getElementById(id).value) || 0;
-    const totalOutput = v('y10130')+v('y10070')+v('y10114')+v('y30212')+v('y30211')+v('y15530')+v('y15531')+(v('y40030boxes')*40);
-    if (totalOutput <= 0) { alert("Please enter product weights first."); return; }
-    const trim   = document.getElementById('yPctTrim').innerText;
-    const fillet = document.getElementById('yPctFillet').innerText;
-    const nugget = document.getElementById('yPctNugget').innerText;
-    const msg = JSON.stringify({ trim, fillet, nugget });
-    window.sendCommsMsg('YIELD_UPDATE', msg);
-    const timeStr = new Date().toLocaleString([], { weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
-    const yieldData = {
-        timestamp: Date.now(),
-        timeStr: timeStr + ' (Mid-Shift)',
-        input:    document.getElementById('yInput').innerText,
-        output:   totalOutput.toFixed(1),
-        fillet, nugget, trim,
-        operator: window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Supervisor') : 'Supervisor'
-    };
-    push(ref(db, 'yieldHistory'), yieldData)
-        .then(() => { window.showAdminToast("📣 Yield Broadcasted to Team!"); window.clearYieldInputs(); })
-        .catch(() => window.showAdminToast("❌ Error saving mid-shift yield."));
-};
-
-// =====================================================================
 // INSTANT WAKE / BACKGROUND RECONNECT ENGINE
 // =====================================================================
 document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible" && !window.isOfflineMode && db) {
         goOnline(db);
-        if (isAdmin) {
-            window.startSupervisorSync();
-            window.startCloudSync();
-        } else {
+        if (isAdmin) { window.startSupervisorSync(); window.startCloudSync(); }
+        else {
             const role = window.currentUserData ? window.currentUserData.role : 'operator';
             if (role === 'supervisor') { window.startSupervisorSync(); } else { window.startCloudSync(); }
         }
@@ -1431,7 +835,7 @@ document.addEventListener("visibilitychange", () => {
 });
 
 // =====================================================================
-// NETWORK JUMPSTART ENGINE (Manual Radio Reset)
+// NETWORK JUMPSTART ENGINE
 // =====================================================================
 window.jumpstartNetwork = function() {
     if (!db) return;
@@ -1442,499 +846,11 @@ window.jumpstartNetwork = function() {
     setTimeout(() => {
         goOnline(db);
         if (dot) dot.style.transform = 'scale(1)';
-        if (isAdmin) {
-            window.startSupervisorSync();
-            window.startCloudSync();
-        } else {
+        if (isAdmin) { window.startSupervisorSync(); window.startCloudSync(); }
+        else {
             const role = window.currentUserData ? window.currentUserData.role : 'operator';
             if (role === 'supervisor') { window.startSupervisorSync(); } else { window.startCloudSync(); }
         }
         window.startCommsListener();
     }, 1000);
-};
-
-
-// =====================================================================
-// DOWNTIME & RCA ENGINE (CLOUD SYNCED — Strike 2)
-// =====================================================================
-let unsubDowntime = null;
-let currentActiveDowntimes = {};
-
-// Hook downtime listener directly into startCloudSync (no wrapper needed)
-const _origStartCloudSync = window.startCloudSync;
-window.startCloudSync = function() {
-    _origStartCloudSync();
-    window.startDowntimeListener();
-};
-
-window.startDowntimeListener = function() {
-    if (!db || window.isOfflineMode) return;
-    if (unsubDowntime) { unsubDowntime(); unsubDowntime = null; }
-    unsubDowntime = onValue(ref(db, `activeDowntimes/M${config.currentMachine}`), (snapshot) => {
-        currentActiveDowntimes = snapshot.val() || {};
-        window.syncMatrixToCloud();
-    });
-};
-
-window.syncMatrixToCloud = function() {
-    const allIds = ['sys','c1','c2','c3','c4','c5','c6','c7','c8','bin','bout','bnug','bfil'];
-    allIds.forEach(id => {
-        const btn = document.getElementById(`comp-${id}`);
-        if (!btn) return;
-        if (currentActiveDowntimes[id]) {
-            btn.classList.remove('running');
-            btn.classList.add('down');
-        } else {
-            btn.classList.remove('down');
-            btn.classList.add('running');
-        }
-    });
-    window.updateBannerState();
-};
-
-window.openMaintenance = function() {
-    document.getElementById('maintModalTitle').innerText = `🔧 M${config.currentMachine} ${window.t('maintMatrix')}`;
-    document.getElementById('maintenanceModal').style.display = 'flex';
-    window.cancelFault();
-    window.cancelReEnable();
-};
-
-window.closeMaintenance = function() {
-    document.getElementById('maintenanceModal').style.display = 'none';
-    window.cancelFault();
-    window.cancelReEnable();
-};
-
-window.toggleComponent = function(id, name) {
-    window.cancelFault();
-    window.cancelReEnable();
-    if (currentActiveDowntimes[id]) {
-        document.getElementById('reEnableTitle').innerText = `${window.t('repairComp')} ${window.t(name) || name}?`;
-        document.getElementById('pendingCompId').value = id;
-        document.getElementById('reEnableDrawer').classList.add('active');
-        setTimeout(() => document.getElementById('reEnableDrawer').scrollIntoView({behavior:'smooth', block:'nearest'}), 50);
-    } else {
-        document.getElementById('faultTitle').innerText = `${window.t('disableComp')} ${window.t(name) || name}`;
-        document.getElementById('pendingCompId').value = id;
-        document.getElementById('pendingCompName').value = name; // needed by confirmFault for Firebase
-        document.getElementById('faultReason').value = '';
-        document.getElementById('faultNotes').value = '';
-        document.getElementById('faultDrawer').classList.add('active');
-        setTimeout(() => document.getElementById('faultDrawer').scrollIntoView({behavior:'smooth', block:'nearest'}), 50);
-    }
-};
-
-window.cancelFault    = function() { document.getElementById('faultDrawer').classList.remove('active'); };
-window.cancelReEnable = function() { document.getElementById('reEnableDrawer').classList.remove('active'); };
-
-window.confirmFault = function() {
-    const reason = document.getElementById('faultReason').value;
-    if (!reason) { alert(window.t('selectReason') || "Please select a fault reason."); return; }
-    const id       = document.getElementById('pendingCompId').value;
-    const name     = document.getElementById('pendingCompName').value;
-    const notes    = document.getElementById('faultNotes').value.trim();
-    const severity = document.getElementById('faultSeverity').value;
-    const payload = {
-        id, name, reason, notes, severity,
-        startTime: Date.now(),
-        loggedBy: window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator'
-    };
-    update(ref(db, `activeDowntimes/M${config.currentMachine}`), { [id]: payload })
-        .then(() => {
-            window.cancelFault();
-            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-        })
-        .catch(() => window.showAdminToast("❌ Network Error: Could not disable component."));
-};
-
-window.confirmReEnable = function() {
-    const id        = document.getElementById('pendingCompId').value;
-    const faultData = currentActiveDowntimes[id];
-    if (!faultData) { window.cancelReEnable(); return; }
-    const endTime      = Date.now();
-    const durationMins = Math.max(1, Math.round((endTime - faultData.startTime) / 60000));
-    const timeStr      = new Date(faultData.startTime).toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
-    const permanentRecord = {
-        machine:    `M${config.currentMachine}`,
-        component:  faultData.name,
-        reason:     faultData.reason,
-        severity:   faultData.severity || 'degraded',
-        notes:      faultData.notes || '',
-        durationMins,
-        startTime:  faultData.startTime,
-        endTime,
-        timeStr,
-        loggedBy:   faultData.loggedBy,
-        clearedBy:  window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator'
-    };
-    push(ref(db, 'downtimeLogs'), permanentRecord)
-        .then(() => {
-            set(ref(db, `activeDowntimes/M${config.currentMachine}/${id}`), null);
-            window.cancelReEnable();
-            if (navigator.vibrate) navigator.vibrate([50, 50]);
-            window.showAdminToast(`✅ Repaired. Downtime: ${durationMins}m logged.`);
-        })
-        .catch(() => window.showAdminToast("❌ Network Error: Could not save log."));
-};
-
-window.updateBannerState = function() {
-    const m      = config.currentMachine;
-    const banner = document.getElementById('statusBanner');
-    const title  = document.getElementById('bannerTitle');
-    const sub    = document.getElementById('bannerSub');
-    if (!banner) return;
-    const activeFaults = Object.values(currentActiveDowntimes);
-    const downCount = activeFaults.length;
-    if (downCount === 0) {
-        banner.className = 'system-banner banner-running';
-        title.innerText  = `🟢 M${m}: ${window.t('sysRunning')}`;
-        sub.innerText    = window.t('allActive');
-    } else {
-        // Hard down if any fault is explicitly marked 'down' or the sys master button is active
-        const isHardDown = activeFaults.some(f => f.severity === 'down' || f.id === 'sys');
-        if (isHardDown) {
-            banner.className = 'system-banner banner-down';
-            title.innerText  = `🔴 M${m}: ${window.t('sysDown')}`;
-            sub.innerText    = `${downCount} ${window.t('compsDown')}`;
-        } else {
-            banner.className = 'system-banner banner-degraded';
-            title.innerText  = `⚠️ M${m}: ${window.t('sysDegraded')}`;
-            sub.innerText    = `${downCount} ${window.t('compsDown')}`;
-        }
-    }
-};
-
-// Machine switch: unsub old listener, reset UI, start new listener for new machine
-const _origSwitchMachine = window.switchMachine;
-window.switchMachine = function(m) {
-    if (unsubDowntime) { unsubDowntime(); unsubDowntime = null; }
-    currentActiveDowntimes = {};
-    _origSwitchMachine(m);
-    // startCloudSync (called inside _origSwitchMachine) will re-fire startDowntimeListener
-};
-
-// =====================================================================
-// RCA LEDGER ENGINE (SUPERVISOR SECURED)
-// =====================================================================
-let unsubMaintLogs = null;
-let cachedMaintLogs = [];
-
-window.openMaintHistory = function() {
-    document.getElementById('maintenanceModal').style.display = 'none';
-    document.getElementById('maintHistoryModal').style.display = 'flex';
-    window.renderMaintHistory();
-};
-
-window.closeMaintHistory = function() {
-    document.getElementById('maintHistoryModal').style.display = 'none';
-    document.getElementById('maintenanceModal').style.display = 'flex';
-};
-
-window.renderMaintHistory = function() {
-    const container = document.getElementById('maintHistoryList');
-    if (!container) return;
-    if (!cachedMaintLogs || cachedMaintLogs.length === 0) {
-        container.innerHTML = `<div style="text-align:center; opacity:0.5; padding:20px; font-size:0.85rem;">${window.t('noLogs')}</div>`;
-        return;
-    }
-    container.innerHTML = cachedMaintLogs.map(log => `
-        <div class="maint-log-card">
-            <div class="maint-log-header">
-                <span>${log.timeStr} • ${log.machine}</span>
-                <span>Logged by ${log.loggedBy}</span>
-            </div>
-            <div class="maint-log-body">
-                <div class="maint-log-fault">
-                    <span class="maint-log-comp">${window.t(log.component) || log.component}</span>
-                    <span class="maint-log-reason">⚠️ ${window.t(log.reason) || log.reason}</span>
-                </div>
-                <div class="maint-log-duration">
-                    ${log.durationMins}<span style="font-size:0.8rem; font-weight:normal; opacity:0.7;">m</span>
-                </div>
-            </div>
-            ${log.notes ? `<div class="maint-log-notes">"${log.notes}"</div>` : ''}
-            <div style="font-size:0.7rem; opacity:0.5; margin-top:8px; text-align:right;">
-                Repaired by ${log.clearedBy}
-            </div>
-        </div>`).join('');
-};
-
-// =====================================================================
-// SUPERVISOR DEEP DIVE LEDGER
-// =====================================================================
-window.openSupHistory = function(machineNum) {
-    document.getElementById('supHistoryTitle').innerText = `📋 DSI ${machineNum} Ledger`;
-    const container = document.getElementById('supHistoryList');
-    const machKey = `M${machineNum}`;
-
-    let allChecks = [];
-
-    // Pull from permanent shiftLedger (primary source — survives Clear Table)
-    if (cachedShiftLedger && cachedShiftLedger[machKey]) {
-        allChecks = allChecks.concat(Object.values(cachedShiftLedger[machKey]).filter(e => e));
-    }
-    // Pull from active histories (backward compat — old data before shiftLedger existed)
-    if (cachedHistories && cachedHistories[machKey]) {
-        for (let prodKey in cachedHistories[machKey]) {
-            let entries = Array.isArray(cachedHistories[machKey][prodKey])
-                ? cachedHistories[machKey][prodKey]
-                : Object.values(cachedHistories[machKey][prodKey]);
-            allChecks = allChecks.concat(entries.filter(e => e));
-        }
-    }
-
-    if (allChecks.length === 0) {
-        container.innerHTML = '<div style="text-align:center; opacity:0.5; padding:20px;">No shift history found.</div>';
-        document.getElementById('supHistoryModal').style.display = 'flex';
-        return;
-    }
-
-    // Deduplicate by timestamp+operator combo — more robust than timestamp alone
-    const seen = new Set();
-    allChecks = allChecks.filter(c => {
-        if (!c || !c.timestamp) return false;
-        const key = `${c.timestamp}_${c.operator || ''}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-    });
-    allChecks.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
-    // Factory Clock grouping — 11PM onward belongs to the next production day
-    const groupedByDate = {};
-    allChecks.forEach(r => {
-        const d = new Date(r.timestamp || 0);
-        const prodDate = new Date(d.getTime());
-        if (d.getHours() >= 23) prodDate.setDate(prodDate.getDate() + 1);
-        const dateStr = prodDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-        if (!groupedByDate[dateStr]) groupedByDate[dateStr] = { checks: [], sortKey: prodDate.getTime() };
-        groupedByDate[dateStr].checks.push(r);
-    });
-
-    const sortedDates = Object.entries(groupedByDate).sort((a, b) => b[1].sortKey - a[1].sortKey);
-
-    let html = '';
-    sortedDates.forEach(([dateStr, group], folderIdx) => {
-        const cardsHtml = group.checks.map(r => {
-            // Shift End marker — render as a blue divider banner
-            if (r.isMarker) {
-                let color = 'var(--perfect)';
-                let bg    = 'rgba(0,198,240,0.1)';
-                if (r.isFail)                   { color = 'var(--danger)';  bg = 'rgba(255,77,77,0.1)'; }
-                if (r.text.includes('SHIFT ENDED')) { color = 'var(--text)'; bg = 'rgba(128,128,128,0.1)'; }
-                // Photo loaded on-demand from streamPhotos/ — use photoRef as src key
-                const photoHtml = r.photoRef
-                    ? `<img data-photoref="${r.photoRef}" style="width:100%; max-height:200px; object-fit:cover; border-radius:6px; margin-top:10px; border:1px solid rgba(0,0,0,0.2); cursor:pointer;" onclick="window.loadAndViewPhoto(this)">`
-                    : '';
-                return `<div style="background:${bg}; border:1px solid ${color}; border-radius:8px; padding:12px; text-align:center; font-weight:bold; font-size:0.85rem; margin-bottom:8px; color:${color}; flex-shrink:0; box-shadow:var(--shadow);">${r.text} • ${r.time}${photoHtml}</div>`;
-            }
-            const laneGrid = r.lanes.map((l, li) => `
-                <div class="hist-lane-cell">
-                    <span class="hist-lane-lbl">L${li+1}</span>
-                    <span class="hist-lane-wt">${l.w}</span>
-                    <span class="hist-lane-dens">${l.d}</span>
-                </div>`).join('');
-            return `
-            <div class="hist-card expanded" style="margin-bottom:8px; flex-shrink:0;">
-                <div class="hist-card-header" style="cursor:default;">
-                    <div>
-                        <span class="hist-card-time">${r.time}</span>
-                        ${r.operator ? `<span style="font-size:0.72rem; opacity:0.6; margin-left:8px;">by ${r.operator}</span>` : ''}
-                    </div>
-                    <span class="hist-card-avg">Avg: <strong>${r.avg}g</strong></span>
-                </div>
-                <div class="hist-card-body" style="display:block;">
-                    <div style="font-size:0.72rem; opacity:0.55; margin-bottom:4px;">${window.t('target')}: ${r.target || '--'}g</div>
-                    <div class="hist-lane-grid">${laneGrid}</div>
-                </div>
-            </div>`;
-        }).join('');
-
-        html += `
-        <details class="shift-folder" ${folderIdx === 0 ? 'open' : ''}>
-            <summary class="shift-folder-header">
-                <span>📅 ${dateStr}</span>
-                <span style="font-weight:normal; font-size:0.8rem; opacity:0.6;">${group.checks.length} logs ▾</span>
-            </summary>
-            <div class="shift-folder-content">${cardsHtml}</div>
-        </details>`;
-    });
-    container.innerHTML = html;
-    document.getElementById('supHistoryModal').style.display = 'flex';
-};
-
-window.closeSupHistory = function() {
-    document.getElementById('supHistoryModal').style.display = 'none';
-};
-
-// =====================================================================
-// STREAM TEST COMPLIANCE ENGINE
-// =====================================================================
-
-// Break windows as a module-level constant — single source of truth
-const STREAM_WINDOWS = [
-    { id: 'b1', start: 1 * 60 + 10, end: 1 * 60 + 25 }, // 1:10 AM - 1:25 AM
-    { id: 'b2', start: 3 * 60 + 45, end: 4 * 60 + 0  }, // 3:45 AM - 4:00 AM
-    { id: 'b3', start: 5 * 60 + 45, end: 6 * 60 + 0  }  // 5:45 AM - 6:00 AM
-];
-
-// Use ISO date string for locale-independent localStorage keys
-function getStreamKey(windowId) {
-    const isoDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD always
-    return `dsi_stream_${isoDate}_${windowId}`;
-}
-
-window.checkStreamTestCompliance = function() {
-    // Skip for admin (God Mode) and pure supervisor view — operators only
-    if (isAdmin) return;
-    if (document.getElementById('appContent').style.display === 'none') return;
-
-    const now = new Date();
-    const totalMins = now.getHours() * 60 + now.getMinutes();
-    const activeWindow = STREAM_WINDOWS.find(w => totalMins >= w.start && totalMins < w.end);
-    const banner = document.getElementById('streamTestBanner');
-    if (!banner) return;
-
-    if (activeWindow && !localStorage.getItem(getStreamKey(activeWindow.id))) {
-        if (banner.style.display !== 'block') {
-            banner.style.display = 'block';
-            if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-        }
-    } else {
-        banner.style.display = 'none';
-    }
-};
-
-window.markStreamTestComplete = function() {
-    const now = new Date();
-    const totalMins = now.getHours() * 60 + now.getMinutes();
-    const activeWindow = STREAM_WINDOWS.find(w => totalMins >= w.start && totalMins < w.end);
-    if (activeWindow) localStorage.setItem(getStreamKey(activeWindow.id), 'true');
-    const banner = document.getElementById('streamTestBanner');
-    if (banner) banner.style.display = 'none';
-};
-
-window.openStreamTestModal  = function() { document.getElementById('streamTestModal').style.display = 'flex'; };
-
-window.closeStreamTestModal = function() {
-    document.getElementById('streamTestModal').style.display = 'none';
-    currentStreamPhoto = null;
-    const preview = document.getElementById('streamPhotoPreview');
-    if (preview) { preview.style.display = 'none'; preview.src = ''; }
-    const btn = document.getElementById('btnTakePhoto');
-    if (btn) { btn.setAttribute('data-i18n', 'takePhoto'); btn.innerText = window.t('takePhoto'); btn.style.borderStyle = 'dashed'; btn.style.background = 'transparent'; }
-    const input = document.getElementById('streamCameraInput');
-    if (input) input.value = '';
-};
-
-// Image compression engine
-let currentStreamPhoto = null;
-
-window.handleStreamPhoto = function(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
-            const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 800;
-            const scale = MAX_WIDTH / img.width;
-            canvas.width = MAX_WIDTH;
-            canvas.height = img.height * scale;
-            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-            const base64 = canvas.toDataURL('image/jpeg', 0.6);
-            currentStreamPhoto = base64;
-            const preview = document.getElementById('streamPhotoPreview');
-            preview.src = base64;
-            preview.style.display = 'block';
-            const btn = document.getElementById('btnTakePhoto');
-            btn.innerText = window.t('retakePhoto');
-            btn.style.borderStyle = 'solid';
-            btn.style.background = 'rgba(0,123,255,0.1)';
-        };
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-};
-
-window.openFullSizePhoto = function(src) {
-    const modal = document.getElementById('photoViewerModal');
-    document.getElementById('photoViewerImg').src = src;
-    modal.style.display = 'flex';
-};
-
-window.passStreamTest = function() {
-    if (!currentStreamPhoto) {
-        if (!confirm(window.t('photoBypass'))) return;
-    }
-    const opName = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
-    const time = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
-    const photoNote = currentStreamPhoto ? '' : ' (NO PHOTO)';
-    const marker = { isMarker: true, text: `💧 STREAM TEST VERIFIED${photoNote} BY ${opName.toUpperCase()}`, timestamp: Date.now(), time };
-    // Store photo separately to avoid bloating the shiftLedger sync
-    const photoRef = currentStreamPhoto ? `streamPhotos/${Date.now()}` : null;
-    if (!window.isOfflineMode && db) {
-        if (photoRef && currentStreamPhoto) set(ref(db, photoRef), currentStreamPhoto).catch(e => console.warn(e));
-        marker.photoRef = photoRef;
-        push(ref(db, `shiftLedger/M${config.currentMachine}`), marker).catch(e => console.warn(e));
-    }
-    window.markStreamTestComplete();
-    window.closeStreamTestModal();
-    window.showAdminToast(window.t('stPass'));
-};
-
-window.failStreamTest = function() {
-    if (!currentStreamPhoto) {
-        if (!confirm(window.t('photoBypass'))) return;
-    }
-    const opName = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
-    const time = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
-    const photoNote = currentStreamPhoto ? '' : ' (NO PHOTO)';
-    const marker = { isMarker: true, isFail: true, text: `⚠️ STREAM TEST FAILED${photoNote} BY ${opName.toUpperCase()}`, timestamp: Date.now(), time };
-    const photoRef = currentStreamPhoto ? `streamPhotos/${Date.now()}` : null;
-    if (!window.isOfflineMode && db) {
-        if (photoRef && currentStreamPhoto) set(ref(db, photoRef), currentStreamPhoto).catch(e => console.warn(e));
-        marker.photoRef = photoRef;
-        push(ref(db, `shiftLedger/M${config.currentMachine}`), marker).catch(e => console.warn(e));
-    }
-    window.markStreamTestComplete();
-    window.closeStreamTestModal();
-    window.openMaintenance();
-    window.showAdminToast("⚠️ Select the failing component.");
-};
-
-// Start the compliance clock — check every 30s, and once on boot
-setInterval(window.checkStreamTestCompliance, 30000);
-setTimeout(window.checkStreamTestCompliance, 2000);
-
-// Load photo from Firebase on demand (avoids syncing large Base64 in shiftLedger)
-window.loadAndViewPhoto = function(imgEl) {
-    const photoRef = imgEl.getAttribute('data-photoref');
-    if (!photoRef || !db) return;
-    if (imgEl.src && imgEl.src.startsWith('data:')) {
-        // Already loaded — just open viewer
-        window.openFullSizePhoto(imgEl.src);
-        return;
-    }
-    imgEl.style.opacity = '0.5';
-    get(ref(db, photoRef)).then(snap => {
-        const b64 = snap.val();
-        if (b64) {
-            imgEl.src = b64;
-            imgEl.style.opacity = '1';
-            window.openFullSizePhoto(b64);
-        } else {
-            imgEl.style.opacity = '1';
-            window.showAdminToast('📷 Photo not available.');
-        }
-    }).catch(() => { imgEl.style.opacity = '1'; window.showAdminToast('❌ Could not load photo.'); });
-};
-
-// =====================================================================
-// ABOUT / OUR STORY
-// =====================================================================
-window.openAbout = function() {
-    document.getElementById('fullMissionText').innerText = window.t('missionText');
-    document.getElementById('aboutModal').style.display = 'flex';
 };
