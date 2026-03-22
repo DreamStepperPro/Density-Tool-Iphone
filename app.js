@@ -388,42 +388,74 @@ window.calculateLocal = function() {
             hiddenVal.value = newD.toFixed(3);
             resText.innerText = `${window.t('newDens')} ${newD.toFixed(3)}`;
             resBox.classList.add('has-value');
-            // Predictive Velocity Engine
+            // Predictive Velocity Engine (3-point smoothed)
             let driftHtml = "";
+            let runwayPct = 100;
+            let runwayColor = 'transparent';
+
             if (history && history.length > 0) {
-                const lastCheck = history[0];
-                const lastWStr  = lastCheck.lanes && lastCheck.lanes[i-1] ? lastCheck.lanes[i-1].w : null;
-                if (lastWStr && lastWStr !== '--') {
-                    const lastW = parseFloat(lastWStr);
-                    if (!isNaN(lastW) && lastCheck.timestamp) {
-                        const timeDiffMin = Math.max(1, (Date.now() - lastCheck.timestamp) / 60000);
-                        const velocity    = (currW - lastW) / timeDiffMin;
+                // Collect up to last 3 valid weight checks for this lane
+                let recentWts = [], recentTimes = [];
+                for (let h = 0; h < Math.min(3, history.length); h++) {
+                    const wStr = history[h].lanes && history[h].lanes[i-1] ? history[h].lanes[i-1].w : null;
+                    if (wStr && wStr !== '--') {
+                        recentWts.push(parseFloat(wStr));
+                        recentTimes.push(history[h].timestamp);
+                    }
+                }
+                if (recentWts.length > 0 && !isNaN(currW)) {
+                    const oldestW    = recentWts[recentWts.length - 1];
+                    const oldestTime = recentTimes[recentTimes.length - 1];
+                    if (oldestTime) {
+                        const timeDiffMin = Math.max(1, (Date.now() - oldestTime) / 60000);
+                        const velocity    = (currW - oldestW) / timeDiffMin;
                         if (Math.abs(velocity) > 0.015) {
                             let runway = 0;
                             if (velocity > 0 && currW < (target + 2)) runway = (target + 2) - currW;
                             else if (velocity < 0 && currW > (target - 2)) runway = currW - (target - 2);
                             if (runway > 0) {
                                 const minsToDrift = Math.round(runway / Math.abs(velocity));
+                                runwayPct = Math.max(0, Math.min(100, (minsToDrift / 60) * 100));
                                 if (minsToDrift < 120) {
                                     if (minsToDrift <= 15) {
-                                        driftHtml = `<span style="font-size:0.7rem; margin-left:8px; font-weight:900; color:var(--danger); animation: pulseWarning 1.5s infinite;">${window.t('weighNow')}</span>`;
+                                        runwayColor = 'var(--danger)';
+                                        driftHtml = `<span class="drift-alert-critical">${window.t('weighNow')}</span>`;
+                                        // Operator autonomy toast — local cooldown per lane, never touches Firebase
+                                        if (minsToDrift <= 5) {
+                                            const now = Date.now();
+                                            const lastToast = window._driftToastTs && window._driftToastTs[i] || 0;
+                                            if (now - lastToast > 120000) { // 2-min cooldown
+                                                if (!window._driftToastTs) window._driftToastTs = {};
+                                                window._driftToastTs[i] = now;
+                                                window.showAdminToast(`⚠️ ${window.t('lane')} ${i}: ${window.t('driftingFast')}`);
+                                                if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                                            }
+                                        }
                                     } else {
-                                        const driftColor = minsToDrift <= 30 ? 'var(--warning)' : 'var(--perfect)';
-                                        driftHtml = `<span style="font-size:0.7rem; margin-left:8px; font-weight:900; color:${driftColor};">⏳ ${minsToDrift}m</span>`;
+                                        runwayColor = minsToDrift <= 30 ? 'var(--warning)' : 'var(--perfect)';
+                                        driftHtml = `<span style="font-size:0.7rem; margin-left:8px; font-weight:900; color:${runwayColor};">⏳ ${minsToDrift}m</span>`;
                                     }
                                 }
+                            } else {
+                                // Already at or past boundary — show full danger bar
+                                runwayPct = 0;
+                                runwayColor = 'var(--danger)';
+                                driftHtml = `<span class="drift-alert-critical">${window.t('weighNow')}</span>`;
                             }
                         }
                     }
                 }
             }
+            const runwayHtml = runwayColor !== 'transparent'
+                ? `<div class="runway-track"><div class="runway-fill" style="width:${runwayPct}%; background:${runwayColor};"></div></div>`
+                : '';
             const absDiff = Math.abs(diff);
             card.className = "lane-card";
             if (isSmart) card.classList.add('smart-active');
-            if (absDiff <= 0.5) { card.classList.add('bg-perfect'); trendEl.innerHTML = `<span style="color:var(--perfect)">●</span>${driftHtml}`; }
-            else if (absDiff <= 2) { card.classList.add('bg-success'); trendEl.innerHTML = `<span style="color:var(--success)">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}g</span>${driftHtml}`; }
-            else if (absDiff <= 3) { card.classList.add('bg-warning'); trendEl.innerHTML = `<span style="color:var(--warning)">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}g</span>`; }
-            else { card.classList.add('bg-danger'); trendEl.innerHTML = `<span style="color:var(--danger)">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}g</span>`; }
+            if (absDiff <= 0.5) { card.classList.add('bg-perfect'); trendEl.innerHTML = `<span style="color:var(--perfect)">●</span>${driftHtml}${runwayHtml}`; }
+            else if (absDiff <= 2) { card.classList.add('bg-success'); trendEl.innerHTML = `<span style="color:var(--success)">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}g</span>${driftHtml}${runwayHtml}`; }
+            else if (absDiff <= 3) { card.classList.add('bg-warning'); trendEl.innerHTML = `<span style="color:var(--warning)">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}g</span>${driftHtml}${runwayHtml}`; }
+            else { card.classList.add('bg-danger'); trendEl.innerHTML = `<span style="color:var(--danger)">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}g</span>${driftHtml}${runwayHtml}`; }
             weights.push(currW); count++;
         } else {
             resText.innerText = `${window.t('newDens')} --`; hiddenVal.value = "";
