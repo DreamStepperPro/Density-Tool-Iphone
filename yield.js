@@ -22,10 +22,28 @@ window.closeYield = function() {
 };
 
 window.calcYield = function() {
-    const v = (id) => parseFloat(document.getElementById(id).value) || 0;
-    const fillet      = v('y10130') + v('y10070');
-    const nugget      = v('y10114');
-    const trim        = v('y30212') + v('y30211') + v('y15530') + v('y15531') + (v('y40030boxes') * 40);
+    const validate = (id, maxVal, isBox) => {
+        const el = document.getElementById(id);
+        if (!el || el.value === '') return 0;
+        let val = parseFloat(el.value);
+        if (val < 0) {
+            val = 0; el.value = '';
+            window.showAdminToast("⚠️ Negative numbers blocked.");
+        }
+        if (val > maxVal) {
+            val = maxVal; el.value = maxVal;
+            const msg = isBox ? `⚠️ Max box count is ${maxVal}` : `⚠️ Max weight is ${maxVal.toLocaleString()} lbs`;
+            window.showAdminToast(msg);
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+        }
+        return val || 0;
+    };
+    const fillet      = validate('y10130', 90000, false) + validate('y10070', 90000, false);
+    const nugget      = validate('y10114', 90000, false);
+    const boxesWeight = validate('y40030boxes', 999, true) * 40;
+    const trim        = validate('y30212', 90000, false) + validate('y30211', 90000, false)
+                      + validate('y15530', 90000, false) + validate('y15531', 90000, false)
+                      + boxesWeight;
     const totalOutput = fillet + nugget + trim;
     const totalInput  = totalOutput * 1.03;
     document.getElementById('yOutput').innerText = totalOutput.toFixed(1);
@@ -51,6 +69,9 @@ window.saveEosYield = function() {
     const v = (id) => parseFloat(document.getElementById(id).value) || 0;
     const totalOutput = v('y10130')+v('y10070')+v('y10114')+v('y30212')+v('y30211')+v('y15530')+v('y15531')+(v('y40030boxes')*40);
     if (totalOutput <= 0) { alert("Please enter product weights first."); return; }
+    if (totalOutput > 70000) {
+        if (!confirm(`⚠️ HIGH YIELD WARNING: ${totalOutput.toLocaleString()} lbs\n\nThis exceeds standard plant capacity (70k lbs). Are you absolutely sure your box counts and weights are correct?`)) return;
+    }
     const timeStr = new Date().toLocaleString([], { weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
     const yieldData = {
         timestamp: Date.now(), timeStr,
@@ -103,6 +124,9 @@ window.broadcastMidShiftYield = function() {
     const v = (id) => parseFloat(document.getElementById(id).value) || 0;
     const totalOutput = v('y10130')+v('y10070')+v('y10114')+v('y30212')+v('y30211')+v('y15530')+v('y15531')+(v('y40030boxes')*40);
     if (totalOutput <= 0) { alert("Please enter product weights first."); return; }
+    if (totalOutput > 70000) {
+        if (!confirm(`⚠️ HIGH YIELD WARNING: ${totalOutput.toLocaleString()} lbs\n\nThis exceeds standard plant capacity. Are you absolutely sure your inputs are correct before broadcasting to the team?`)) return;
+    }
     const trim   = document.getElementById('yPctTrim').innerText;
     const fillet = document.getElementById('yPctFillet').innerText;
     const nugget = document.getElementById('yPctNugget').innerText;
