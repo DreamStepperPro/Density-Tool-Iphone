@@ -28,7 +28,22 @@ window.switchMachine = function(m) {
     if (unsubDowntime) { unsubDowntime(); unsubDowntime = null; }
     currentActiveDowntimes = {};
     _origSwitchMachine(m);
+    // When offline, app.js skips startCloudSync — force sandbox memory to load for new machine
+    if (window.isOfflineMode) {
+        window.startDowntimeListener();
+    }
 };
+
+// Hook into sandbox toggle so the matrix wipes clean the moment you go offline
+if (window.toggleSandboxMode) {
+    const _origToggleSandbox = window.toggleSandboxMode;
+    window.toggleSandboxMode = function() {
+        _origToggleSandbox();
+        if (window.isOfflineMode) {
+            window.startDowntimeListener();
+        }
+    };
+}
 
 window.startDowntimeListener = function() {
     // Sandbox bypass: load local memory and wipe the screen clean for this machine
