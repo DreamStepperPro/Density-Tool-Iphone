@@ -266,11 +266,48 @@ window.closeMaintHistory = function() {
 };
 
 window.renderMaintHistory = function() {
-    const container = document.getElementById('maintHistoryList');
+    const container  = document.getElementById('maintHistoryList');
+    const summaryBox = document.getElementById('maintSummaryBox');
     if (!container) return;
     if (!cachedMaintLogs || cachedMaintLogs.length === 0) {
         container.innerHTML = `<div style="text-align:center; opacity:0.5; padding:20px; font-size:0.85rem;">${window.t('noLogs')}</div>`;
+        if (summaryBox) summaryBox.style.display = 'none';
         return;
+    }
+    // OEE 24-hour summary — totals by severity and hardware category
+    const now = Date.now();
+    let totalDown = 0, totalDegraded = 0;
+    const sums = { cutters: { d:0, w:0 }, belts: { d:0, w:0 }, sys: { d:0, w:0 } };
+    const recentLogs = cachedMaintLogs.filter(log => (now - log.endTime) < 86400000);
+    recentLogs.forEach(log => {
+        const dur    = log.durationMins || 0;
+        const isDown = log.severity === 'down';
+        if (isDown) totalDown += dur; else totalDegraded += dur;
+        // Category detection uses the stored component ID/key, not the translated name
+        const comp = (log.component || '').toLowerCase();
+        let cat = 'sys';
+        if (comp.startsWith('c') && comp !== 'comp_sys') cat = 'cutters'; // c1–c8
+        else if (comp.startsWith('b') || comp.includes('bin') || comp.includes('bout') || comp.includes('bnug') || comp.includes('bfil')) cat = 'belts';
+        if (isDown) sums[cat].d += dur; else sums[cat].w += dur;
+    });
+    if (summaryBox) {
+        summaryBox.style.display = 'block';
+        summaryBox.innerHTML = `
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px; gap:8px;">
+                <div style="background:rgba(255,77,77,0.1); border:1px solid var(--danger); padding:10px; border-radius:8px; flex:1; text-align:center; box-shadow:var(--shadow);">
+                    <div style="font-size:0.65rem; color:var(--danger); font-weight:bold; text-transform:uppercase;">Total Hard Down (24h)</div>
+                    <div style="font-size:1.5rem; font-weight:900; color:var(--text); margin-top:2px;">${totalDown} <span style="font-size:0.75rem; font-weight:normal; opacity:0.7;">min</span></div>
+                </div>
+                <div style="background:rgba(255,193,7,0.15); border:1px solid var(--warning); padding:10px; border-radius:8px; flex:1; text-align:center; box-shadow:var(--shadow);">
+                    <div style="font-size:0.65rem; color:#c98f00; font-weight:bold; text-transform:uppercase;">Total Degraded (24h)</div>
+                    <div style="font-size:1.5rem; font-weight:900; color:var(--text); margin-top:2px;">${totalDegraded} <span style="font-size:0.75rem; font-weight:normal; opacity:0.7;">min</span></div>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.75rem; padding:10px 5px; border:1px solid var(--border); background:rgba(128,128,128,0.03); border-radius:8px;">
+                <div style="flex:1; text-align:center;"><strong>Cutters</strong><br><span style="color:var(--danger)">${sums.cutters.d}m down</span><br><span style="color:#c98f00">${sums.cutters.w}m deg</span></div>
+                <div style="flex:1; text-align:center; border-left:1px solid var(--border); border-right:1px solid var(--border);"><strong>Belts</strong><br><span style="color:var(--danger)">${sums.belts.d}m down</span><br><span style="color:#c98f00">${sums.belts.w}m deg</span></div>
+                <div style="flex:1; text-align:center;"><strong>System</strong><br><span style="color:var(--danger)">${sums.sys.d}m down</span><br><span style="color:#c98f00">${sums.sys.w}m deg</span></div>
+            </div>`;
     }
     container.innerHTML = cachedMaintLogs.map(log => `
         <div class="maint-log-card">

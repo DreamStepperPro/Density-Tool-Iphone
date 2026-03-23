@@ -268,6 +268,7 @@
         <div id="reEnableDrawer" class="fault-drawer" style="border-color:var(--success);">
             <h3 id="reEnableTitle" style="margin-top:0; font-size:1rem; color:var(--success);">Mark as Repaired?</h3>
             <p style="font-size:0.8rem; color:var(--text); margin:0 0 10px;" data-i18n="confirmRepair">Confirm this component is back online before clearing its downtime.</p>
+            <button id="btnSwapSeverity" class="modal-btn" style="display:none; margin-top:0; margin-bottom:10px;">🔄 SWAP SEVERITY</button>
             <div style="display:flex; gap:10px;">
                 <button class="modal-btn" onclick="window.confirmReEnable()" style="margin-top:0; background:var(--success);" data-i18n="backOnline">✅ BACK ONLINE</button>
                 <button class="modal-btn secondary" onclick="window.cancelReEnable()" style="margin-top:0;" data-i18n="cancel">CANCEL</button>
@@ -297,7 +298,8 @@
             <h2 style="margin:0;">📋 Maintenance Logs</h2>
             <button class="btn-icon" onclick="window.closeMaintHistory()" style="border:none; font-size:1.5rem;">×</button>
         </div>
-        <div id="maintHistoryList" style="max-height:60vh; overflow-y:auto; display:flex; flex-direction:column; gap:10px;">
+        <div id="maintSummaryBox" style="display:none; margin-bottom:15px;"></div>
+        <div id="maintHistoryList" style="max-height:55vh; overflow-y:auto; display:flex; flex-direction:column; gap:10px;">
             <div style="text-align:center; opacity:0.5; padding:20px; font-size:0.85rem;">Loading logs...</div>
         </div>
         <button class="modal-btn secondary" onclick="window.closeMaintHistory()" style="margin-top:15px;">BACK TO MATRIX</button>

@@ -112,8 +112,22 @@ window.toggleComponent = function(id, name) {
     window.cancelFault();
     window.cancelReEnable();
     if (currentActiveDowntimes[id]) {
+        const faultData = currentActiveDowntimes[id];
         document.getElementById('reEnableTitle').innerText = `${window.t('repairComp')} ${window.t(name) || name}?`;
         document.getElementById('pendingCompId').value = id;
+        // Configure severity swap button based on current state
+        const swapBtn = document.getElementById('btnSwapSeverity');
+        if (swapBtn) {
+            if (faultData.severity === 'down') {
+                swapBtn.innerHTML = '🔄 SWAP TO DEGRADED';
+                swapBtn.style.cssText = 'display:block; margin-top:0; margin-bottom:10px; background:var(--warning); color:black;';
+                swapBtn.onclick = () => window.swapSeverity('degraded');
+            } else {
+                swapBtn.innerHTML = '🔄 SWAP TO HARD DOWN';
+                swapBtn.style.cssText = 'display:block; margin-top:0; margin-bottom:10px; background:var(--danger); color:white;';
+                swapBtn.onclick = () => window.swapSeverity('down');
+            }
+        }
         document.getElementById('reEnableDrawer').classList.add('active');
         setTimeout(() => document.getElementById('reEnableDrawer').scrollIntoView({behavior:'smooth', block:'nearest'}), 50);
     } else {
@@ -128,7 +142,55 @@ window.toggleComponent = function(id, name) {
 };
 
 window.cancelFault    = function() { document.getElementById('faultDrawer').classList.remove('active'); };
-window.cancelReEnable = function() { document.getElementById('reEnableDrawer').classList.remove('active'); };
+window.cancelReEnable = function() {
+    document.getElementById('reEnableDrawer').classList.remove('active');
+    // Hide swap button when drawer closes
+    const swapBtn = document.getElementById('btnSwapSeverity');
+    if (swapBtn) swapBtn.style.display = 'none';
+};
+
+window.swapSeverity = function(newSeverity) {
+    const id        = document.getElementById('pendingCompId').value;
+    const faultData = currentActiveDowntimes[id];
+    if (!faultData) return;
+    const now          = Date.now();
+    const durationMins = Math.max(1, Math.round((now - faultData.startTime) / 60000));
+    const timeStr      = new Date(faultData.startTime).toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    const opName       = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
+    const m            = window.getConfig().currentMachine;
+    const label        = newSeverity === 'down' ? 'Hard Down' : 'Degraded';
+    // Closed-out record for the old severity block
+    const permanentRecord = {
+        machine: `M${m}`, component: faultData.name, reason: faultData.reason,
+        severity: faultData.severity || 'degraded',
+        notes: faultData.notes ? `${faultData.notes} (Swapped to ${label})` : `Swapped to ${label}`,
+        durationMins, startTime: faultData.startTime, endTime: now, timeStr,
+        loggedBy: faultData.loggedBy, clearedBy: opName
+    };
+    // New fault payload continuing under the new severity
+    const newFaultData = { ...faultData, severity: newSeverity, startTime: now, loggedBy: opName };
+
+    // Sandbox bypass — update local memory only
+    if (window.isOfflineMode) {
+        if (!window.sandboxDowntimes[m]) window.sandboxDowntimes[m] = {};
+        window.sandboxDowntimes[m][id] = newFaultData;
+        currentActiveDowntimes = window.sandboxDowntimes[m];
+        window.syncMatrixToCloud();
+        window.cancelReEnable();
+        if (navigator.vibrate) navigator.vibrate([50, 50]);
+        window.showAdminToast(`🧪 SANDBOX: Swapped to ${label}.`);
+        return;
+    }
+    // Live mode — close old record, open new one (uses static imports, no dynamic import crash)
+    push(ref(db, 'downtimeLogs'), permanentRecord)
+        .then(() => update(ref(db, `activeDowntimes/M${m}`), { [id]: newFaultData }))
+        .then(() => {
+            window.cancelReEnable();
+            if (navigator.vibrate) navigator.vibrate([50, 50]);
+            window.showAdminToast(`🔄 Swapped to ${label}.`);
+        })
+        .catch(() => window.showAdminToast("❌ Network Error: Could not swap severity."));
+};
 
 window.confirmFault = function() {
     const reason = document.getElementById('faultReason').value;
