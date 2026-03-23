@@ -12,6 +12,8 @@ const db = getDatabase(getApp());
 // ---- Downtime State ----
 let unsubDowntime        = null;
 let currentActiveDowntimes = {};
+// Sandbox local memory — keyed by machine number, never touches Firebase
+window.sandboxDowntimes = {};
 
 // Hook into startCloudSync so downtime listener auto-starts with the operator engine
 const _origStartCloudSync = window.startCloudSync;
@@ -29,7 +31,14 @@ window.switchMachine = function(m) {
 };
 
 window.startDowntimeListener = function() {
-    if (!db || window.isOfflineMode) return;
+    // Sandbox bypass: load local memory and wipe the screen clean for this machine
+    if (window.isOfflineMode) {
+        const m = window.getConfig().currentMachine;
+        currentActiveDowntimes = window.sandboxDowntimes[m] || {};
+        window.syncMatrixToCloud();
+        return;
+    }
+    if (!db) return;
     if (unsubDowntime) { unsubDowntime(); unsubDowntime = null; }
     unsubDowntime = onValue(ref(db, `activeDowntimes/M${window.getConfig().currentMachine}`), (snapshot) => {
         currentActiveDowntimes = snapshot.val() || {};
@@ -118,7 +127,19 @@ window.confirmFault = function() {
         startTime: Date.now(),
         loggedBy: window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator'
     };
-    update(ref(db, `activeDowntimes/M${window.getConfig().currentMachine}`), { [id]: payload })
+    const m = window.getConfig().currentMachine;
+    // Sandbox bypass: write to local memory only
+    if (window.isOfflineMode) {
+        if (!window.sandboxDowntimes[m]) window.sandboxDowntimes[m] = {};
+        window.sandboxDowntimes[m][id] = payload;
+        currentActiveDowntimes = window.sandboxDowntimes[m];
+        window.syncMatrixToCloud();
+        window.cancelFault();
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+        window.showAdminToast(`🧪 SANDBOX: ${name} disabled.`);
+        return;
+    }
+    update(ref(db, `activeDowntimes/M${m}`), { [id]: payload })
         .then(() => { window.cancelFault(); if (navigator.vibrate) navigator.vibrate([100, 50, 100]); })
         .catch(() => window.showAdminToast("❌ Network Error: Could not disable component."));
 };
@@ -130,8 +151,19 @@ window.confirmReEnable = function() {
     const endTime      = Date.now();
     const durationMins = Math.max(1, Math.round((endTime - faultData.startTime) / 60000));
     const timeStr      = new Date(faultData.startTime).toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    const m = window.getConfig().currentMachine;
+    // Sandbox bypass: delete from local memory, wipe from screen
+    if (window.isOfflineMode) {
+        if (window.sandboxDowntimes[m]) delete window.sandboxDowntimes[m][id];
+        currentActiveDowntimes = window.sandboxDowntimes[m] || {};
+        window.syncMatrixToCloud();
+        window.cancelReEnable();
+        if (navigator.vibrate) navigator.vibrate([50, 50]);
+        window.showAdminToast(`🧪 SANDBOX: Repaired. ${durationMins}m logged.`);
+        return;
+    }
     const permanentRecord = {
-        machine:    `M${window.getConfig().currentMachine}`,
+        machine:    `M${m}`,
         component:  faultData.name,
         reason:     faultData.reason,
         severity:   faultData.severity || 'degraded',
@@ -142,7 +174,7 @@ window.confirmReEnable = function() {
     };
     push(ref(db, 'downtimeLogs'), permanentRecord)
         .then(() => {
-            set(ref(db, `activeDowntimes/M${window.getConfig().currentMachine}/${id}`), null);
+            set(ref(db, `activeDowntimes/M${m}/${id}`), null);
             window.cancelReEnable();
             if (navigator.vibrate) navigator.vibrate([50, 50]);
             window.showAdminToast(`✅ Repaired. Downtime: ${durationMins}m logged.`);
