@@ -24,11 +24,23 @@
     <div class="modal" style="text-align:center;">
         <h2 style="color:var(--danger);" data-i18n="accessPending">🔒 Access Pending</h2>
         <p style="font-size:0.9rem; margin-bottom:20px;" data-i18n="accessWait">Your device is waiting for Admin approval.</p>
-        <div id="requestForm" style="background:rgba(128,128,128,0.05); padding:15px; border-radius:10px; border:1px solid var(--border); margin-bottom:20px;">
-            <label style="text-align:left; margin-bottom:5px;" data-i18n="identify">Identify Yourself to Admin</label>
-            <input type="text" id="reqName" placeholder="Enter your name / role..." style="margin-bottom:10px; font-weight:normal;" data-i18n-ph="enterName">
-            <button class="modal-btn" onclick="window.pingAdmin()" style="margin-top:0; background:var(--accent);" data-i18n="pingAdmin">PING ADMIN FOR ACCESS</button>
+
+        <!-- NEW PIN LOGIN -->
+        <div style="background:rgba(128,128,128,0.05); padding:15px; border-radius:10px; border:1px solid var(--border); margin-bottom:20px;">
+            <label style="text-align:left; margin-bottom:5px; display:block;">Have an Approved Profile?</label>
+            <input type="password" id="loginPin" inputmode="numeric" placeholder="Enter 4-Digit PIN" style="margin-bottom:10px; font-size:1.5rem; text-align:center; letter-spacing:0.5rem; width:100%; box-sizing:border-box; padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);" onkeydown="if(event.key==='Enter') window.loginWithPin()">
+            <button class="modal-btn" onclick="window.loginWithPin()" style="margin-top:0; background:var(--perfect); color:black;">LOGIN WITH PIN</button>
         </div>
+
+        <details style="text-align:left; margin-bottom:20px; background:rgba(128,128,128,0.05); padding:10px; border-radius:10px; border:1px solid var(--border);">
+            <summary style="cursor:pointer; font-weight:bold; color:var(--text);">New User Request</summary>
+            <div id="requestForm" style="margin-top:10px;">
+                <label style="margin-bottom:5px;" data-i18n="identify">Identify Yourself to Admin</label>
+                <input type="text" id="reqName" placeholder="Enter your name / role..." style="margin-bottom:10px; font-weight:normal; width:100%; box-sizing:border-box; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);" data-i18n-ph="enterName">
+                <button class="modal-btn" onclick="window.pingAdmin()" style="margin-top:0; background:var(--accent);" data-i18n="pingAdmin">PING ADMIN FOR ACCESS</button>
+            </div>
+        </details>
+
         <p style="font-size:0.8rem; opacity:0.8; margin-bottom:5px;">Your Device ID:</p>
         <code id="userIdDisplay" style="background:var(--input-bg); padding:10px; display:block; word-break:break-all; border-radius:8px; border:1px solid var(--border); font-weight:bold; margin-bottom:20px;">Loading...</code>
         <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
@@ -387,7 +399,7 @@
         <button class="btn-clear" onclick="window.saveToHistory()" style="background:var(--info); margin-top:6px;" data-i18n="saveCheck">SAVE CHECK</button>
         <button class="btn-clear" onclick="window.clearHistory()" style="margin-top:6px;" data-i18n="clearTable">CLEAR TABLE</button>
         <hr style="border:0; border-top:1px dashed var(--border); margin:15px 0;">
-        <button class="btn-clear" onclick="window.endShift()" style="background:var(--card-bg); color:var(--danger); border:2px solid var(--danger); box-shadow:var(--shadow);" data-i18n="endShift">🏁 END SHIFT</button>
+        <button class="btn-clear" onclick="window.triggerGlobalShiftReset()" style="background:var(--card-bg); color:var(--danger); border:2px solid var(--danger); box-shadow:var(--shadow);" data-i18n="endShift">🏁 END SHIFT</button>
     </div>
 </div>
 

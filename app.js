@@ -123,6 +123,8 @@ let lastAutoSaveCombo  = "";
 let cloudPathKey       = "";
 let prevAvg            = null;
 let pendingTargetValue = null;
+let localSessionStartTime = Date.now();
+let unsubGlobalReset = null;
 
 // =====================================================================
 // INIT
@@ -165,7 +167,7 @@ window.routeUserByRole = function() {
         if (opHeader) opHeader.style.display = 'none';
         const sandboxBtn = document.getElementById('btnSandboxToggle');
         if (sandboxBtn) sandboxBtn.classList.remove('btn-hidden');
-        if (!window.isOfflineMode) { window.startSupervisorSync(); window.startCloudSync(); }
+        if (!window.isOfflineMode) { window.startSupervisorSync(); window.startCloudSync(); window.listenForGlobalReset(`M${config.currentMachine}`); }
         window.renderInterface();
     } else if (role === 'supervisor') {
         document.getElementById('appContent').style.display = 'none';
@@ -176,7 +178,7 @@ window.routeUserByRole = function() {
         document.getElementById('appContent').style.display = 'block';
         document.getElementById('appContent').style.filter = 'none';
         window.renderInterface();
-        if (!window.isOfflineMode) window.startCloudSync();
+        if (!window.isOfflineMode) { window.startCloudSync(); window.listenForGlobalReset(`M${config.currentMachine}`); }
     }
 };
 
@@ -582,12 +584,14 @@ window.clearHistory = function() {
     }
 };
 
-window.endShift = function() {
-    if (confirm(window.t('endShiftConfirm'))) {
+window.performLocalWipe = function(isRemote = false) {
+    if (isRemote || confirm(window.t('endShiftConfirm'))) {
         const opName = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
         const time   = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
         const marker = { isMarker: true, text: `🏁 SHIFT ENDED BY ${opName.toUpperCase()}`, timestamp: Date.now(), time };
-        if (!window.isOfflineMode && db) push(ref(db, `shiftLedger/M${config.currentMachine}`), marker).catch(e => console.warn('Marker write:', e));
+        if (!isRemote) {
+            if (!window.isOfflineMode && db) push(ref(db, `shiftLedger/M${config.currentMachine}`), marker).catch(e => console.warn('Marker write:', e));
+        }
         history = [];
         lastAutoSaveCombo = "";
         if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveTimer = null; }
@@ -599,8 +603,28 @@ window.endShift = function() {
             window.updateUIFromCloud();
         }
         if (typeof window.clearYieldInputs === 'function') window.clearYieldInputs();
-        window.showAdminToast("🏁 Shift Ended & Board Cleared.");
+        if (!isRemote) window.showAdminToast("🏁 Shift Ended & Board Cleared.");
     }
+};
+
+window.listenForGlobalReset = function(machineKey) {
+    if (unsubGlobalReset) { unsubGlobalReset(); unsubGlobalReset = null; }
+    const resetRef = ref(db, `stores/${machineKey}/lastShiftReset`);
+    unsubGlobalReset = onValue(resetRef, (snap) => {
+        const lastReset = snap.val();
+        if (lastReset && lastReset > localSessionStartTime) {
+            window.performLocalWipe(true);
+            localSessionStartTime = Date.now();
+            window.showAdminToast('🏁 Shift Reset by Supervisor');
+        }
+    });
+};
+
+window.triggerGlobalShiftReset = function() {
+    window.performLocalWipe(false);
+    const ts = Date.now();
+    set(ref(db, `stores/M${config.currentMachine}/lastShiftReset`), ts);
+    localSessionStartTime = ts;
 };
 
 // =====================================================================
@@ -771,7 +795,7 @@ window.applyTheme = function() {
 };
 window.completeSetup  = function() { config.machines = parseInt(document.getElementById('setupMachines').value); config.lanes = parseInt(document.getElementById('setupLanes').value); config.product = document.getElementById('setupProd').value; localStorage.setItem('dsi_setup_done', 'true'); window.saveLocalSettings(); document.getElementById('setupWizard').style.display = 'none'; window.routeUserByRole(); };
 window.factoryReset   = function() { if (confirm("Erase LOCAL settings? Cloud data remains.")) { localStorage.clear(); location.reload(); } };
-window.switchMachine  = function(m) { config.currentMachine = m; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); };
+window.switchMachine  = function(m) { config.currentMachine = m; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) { window.startCloudSync(); window.listenForGlobalReset(`M${config.currentMachine}`); } };
 window.switchProfile  = function() { config.lanes = parseInt(document.getElementById('setLanes').value); config.product = document.getElementById('setProd').value; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); };
 
 // =====================================================================
@@ -807,7 +831,10 @@ window.buildAdminUserCard = function(key, data, highlight) {
     <div class="admin-user-card" style="${highlight ? 'border-color:var(--warning);' : ''}">
         <div class="admin-user-id">ID: ${key}</div>
         <div class="admin-user-name">Device: <strong>${dispName}</strong></div>
-        <input type="text" placeholder="Admin Name" value="${adminName}" onblur="window.updateAdminName('${key}', this.value)" style="margin-bottom:8px; padding:8px; font-size:0.85rem; width:100%; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text);">
+        <div style="display:flex; gap:8px; margin-bottom:8px;">
+            <input type="text" placeholder="Admin Name" value="${adminName}" onblur="window.updateAdminName('${key}', this.value)" style="padding:8px; font-size:0.85rem; flex:1; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text);">
+            <input type="text" placeholder="PIN" value="${data.pin || ''}" onblur="window.updateUserPin('${key}', this.value)" style="padding:8px; font-size:0.85rem; width:80px; text-align:center; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text);">
+        </div>
         <div class="admin-user-row">
             <select onchange="window.updateUserRole('${key}', this.value)" style="padding:6px; font-size:0.8rem; width:40%; border-radius:6px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);">
                 <option value="operator" ${role === 'operator' ? 'selected' : ''}>Operator</option>
@@ -929,4 +956,63 @@ window.toggleSandboxMode = function() {
     }
 
     window.toggleSettings();
+};
+
+window.loginWithPin = function() {
+    const pinInputEl = document.getElementById('loginPin');
+    const pinInput = pinInputEl ? pinInputEl.value.trim() : '';
+    if (!pinInput || pinInput.length < 4) { 
+        window.showAdminToast("⚠️ Please enter a 4-digit PIN."); 
+        return; 
+    }
+    
+    get(ref(db, 'users')).then(snap => {
+        const users = snap.val() || {};
+        let foundUid = null;
+        let foundData = null;
+        
+        for (const [uid, data] of Object.entries(users)) {
+            if (data.pin === pinInput && data.approved === true) {
+                foundUid = uid;
+                foundData = data;
+                break;
+            }
+        }
+        
+        if (foundUid && foundData) {
+            const updates = {
+                approved: foundData.approved,
+                requestPending: false,
+                role: foundData.role || 'operator',
+                displayName: foundData.displayName || '',
+                adminName: foundData.adminName || '',
+                pin: foundData.pin || '',
+                lastLogin: new Date().toLocaleString()
+            };
+            
+            update(ref(db, `users/${window.myUid}`), updates).then(() => {
+                // CRITICAL SAFEGUARD: Never delete the Admin or the current active profile
+                if (foundUid && foundUid !== window.myUid && foundUid !== window.ADMIN_UID) {
+                    set(ref(db, `users/${foundUid}`), null).catch(e => console.warn("Cleanup:", e));
+                }
+                
+                if (pinInputEl) pinInputEl.value = '';
+                const welcomeName = foundData.adminName || foundData.displayName || 'Operator';
+                window.showAdminToast(`✅ Welcome back, ${welcomeName}!`);
+                
+                document.getElementById('accessDeniedOverlay').style.display = 'none';
+                window.routeUserByRole();
+            }).catch(e => console.warn(e));
+        } else {
+            window.showAdminToast("❌ Invalid PIN or unapproved profile.");
+            if (pinInputEl) pinInputEl.value = '';
+        }
+    }).catch(e => {
+        console.warn(e);
+        window.showAdminToast("❌ Network error verifying PIN.");
+    });
+};
+
+window.updateUserPin = function(uid, pinStr) {
+    update(ref(db, `users/${uid}`), { pin: pinStr }).catch(e => console.warn(e));
 };

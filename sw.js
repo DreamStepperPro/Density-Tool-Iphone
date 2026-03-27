@@ -31,6 +31,7 @@ self.addEventListener('activate', (event) => {
 
 // Fetch: NETWORK FIRST, Fallback to Cache
 self.addEventListener('fetch', (event) => {
+    if (event.request.method !== 'GET') { return; }
     event.respondWith(
         fetch(event.request).then((networkResponse) => {
             return caches.open(CACHE_NAME).then((cache) => {
