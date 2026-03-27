@@ -26,10 +26,14 @@
         <p style="font-size:0.9rem; margin-bottom:20px;" data-i18n="accessWait">Your device is waiting for Admin approval.</p>
 
         <!-- NEW PIN LOGIN -->
-        <div style="background:rgba(128,128,128,0.05); padding:15px; border-radius:10px; border:1px solid var(--border); margin-bottom:20px;">
-            <label style="text-align:left; margin-bottom:5px; display:block;">Have an Approved Profile?</label>
-            <input type="password" id="loginPin" inputmode="numeric" placeholder="Enter 4-Digit PIN" style="margin-bottom:10px; font-size:1.5rem; text-align:center; letter-spacing:0.5rem; width:100%; box-sizing:border-box; padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);" onkeydown="if(event.key==='Enter') window.loginWithPin()">
-            <button class="modal-btn" onclick="window.loginWithPin()" style="margin-top:0; background:var(--perfect); color:black;">LOGIN WITH PIN</button>
+        <div style="background:rgba(128,128,128,0.05); padding:20px; border-radius:10px; border:1px solid var(--border); margin-bottom:20px;">
+            <p style="font-size:0.85rem; margin-top:0; margin-bottom:15px; color:var(--text); opacity:0.8;">Enter PIN to access the floor</p>
+            
+            <input type="password" id="loginPin" pattern="[0-9]*" inputmode="numeric" maxlength="4" placeholder="••••" 
+                style="margin-bottom:15px; font-size:2.5rem; font-weight:bold; text-align:center; letter-spacing:1.5rem; width:100%; box-sizing:border-box; padding:15px; border-radius:10px; border:2px solid var(--border); background:var(--input-bg); color:var(--text);" 
+                onkeydown="if(event.key==='Enter') window.loginWithPin()">
+            
+            <button class="modal-btn" onclick="window.loginWithPin()" style="margin-top:0; background:var(--perfect); color:black; font-weight:bold; letter-spacing:1px;">UNLOCK</button>
         </div>
 
         <details style="text-align:left; margin-bottom:20px; background:rgba(128,128,128,0.05); padding:10px; border-radius:10px; border:1px solid var(--border);">
