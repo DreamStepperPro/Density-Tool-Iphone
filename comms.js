@@ -37,6 +37,25 @@ window.sendCustomComms = function() {
     input.value = '';
 };
 
+window.sendLaneWarning = function(machineName, laneNum) {
+    let confirmMsg = (window.t('dispatchWarningConfirm') || "Dispatch weight warning to {machine} Lane {lane}?")
+        .replace('{machine}', machineName).replace('{lane}', laneNum);
+
+    if (!confirm(confirmMsg)) return;
+
+    let dispatchMsg = (window.t('offTargetMsg') || "⚠️ OFF TARGET: Please check weight on {machine}, Lane {lane}.")
+        .replace('{machine}', machineName).replace('{lane}', laneNum);
+
+    if (window.isOfflineMode || !db) return;
+    const cfg  = window.getConfig();
+    const name = cfg.displayName || window.currentUserData.adminName || 'Supervisor';
+
+    push(ref(db, 'messages'), {
+        senderUid: window.myUid, senderName: name, role: 'supervisor',
+        machine: 'ADMIN', code: 'TEXT', text: dispatchMsg, timestamp: Date.now()
+    }).catch(e => window.showAdminToast('❌ Network Error: Warning not sent.'));
+};
+
 window.sendCommsMsg = function(code, customText = "") {
     if (window.isOfflineMode || !db) return;
     const cfg    = window.getConfig();

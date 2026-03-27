@@ -331,10 +331,6 @@
         <div class="chat-box" id="chatBox">
             <div style="text-align:center; opacity:0.5; font-size:0.8rem; margin-top:auto;" data-i18n="radioOpen">Radio channel open...</div>
         </div>
-        <div class="quick-tap-grid" id="quickTaps">
-            <button class="btn-quick" onclick="window.sendCommsMsg('ERR_WT')" data-i18n="weightOff">⚖️ WEIGHT OFF</button>
-            <button class="btn-quick" onclick="window.sendCommsMsg('ERR_MECH')" data-i18n="maintReq">🔧 MAINTENANCE REQ</button>
-        </div>
         <div style="display:flex; gap:8px;">
             <input type="text" id="chatInput" placeholder="Type message..." style="flex:1; padding:10px;" data-i18n-ph="typeMsg" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();window.sendCustomComms();}">
             <button class="modal-btn" style="width:auto; margin-top:0; padding:0 20px;" onclick="window.sendCustomComms()" data-i18n="send">SEND</button>

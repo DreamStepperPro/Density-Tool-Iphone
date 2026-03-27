@@ -123,14 +123,17 @@ window.buildSupCard = function(title, dataObj, recentChecks, m) {
             else if (score < 60) { sColor = 'var(--danger)'; sIcon = '🔴'; }
             stabilityHtml = `<div class="lane-stability" style="color:${sColor}">${sIcon} ${score}%</div>`;
         } else { stabilityHtml = `<div class="lane-stability" style="color:gray;">--%</div>`; }
-        if (!isNaN(weightVal) && target > 0 && !isStale) {
-            let diff = Math.abs(weightVal - target);
-            if (diff <= 0.5) colorClass = 'bg-perfect';
-            else if (diff <= 2) colorClass = 'bg-success';
-            else if (diff <= 3) colorClass = 'bg-warning';
+        const absDiff = (!isNaN(weightVal) && target > 0 && !isStale) ? Math.abs(weightVal - target) : 0;
+        if (absDiff > 0) {
+            if (absDiff <= 0.5) colorClass = 'bg-perfect';
+            else if (absDiff <= 2) colorClass = 'bg-success';
+            else if (absDiff <= 3) colorClass = 'bg-warning';
             else colorClass = 'bg-danger';
         }
-        lanesHtml += `<div class="sup-lane ${colorClass}"><span class="sup-lane-lbl">${window.t('lane')} ${idx+1}</span><span class="sup-lane-wt">${l.w}</span><span class="sup-lane-dens">${l.d}</span>${stabilityHtml}</div>`;
+        const laneClickAttr = absDiff > 2.0
+            ? `onclick="window.sendLaneWarning('M${m}', ${idx+1})" style="cursor:pointer;"`
+            : '';
+        lanesHtml += `<div class="sup-lane ${colorClass}" ${laneClickAttr}><span class="sup-lane-lbl">${window.t('lane')} ${idx+1}</span><span class="sup-lane-wt">${l.w}</span><span class="sup-lane-dens">${l.d}</span>${stabilityHtml}</div>`;
     });
     let trendHtml = `<div class="sup-trend"><span class="sup-trend-lbl">Trend:</span>`;
     for (let i = 0; i < Math.min(3, recentChecks.length); i++) {
