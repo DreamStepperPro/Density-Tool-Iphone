@@ -247,3 +247,23 @@
 .shift-folder-header::-webkit-details-marker { display: none; }
 .shift-folder[open] .shift-folder-header { border-bottom: 1px solid var(--border); background: rgba(128,128,128,0.08); }
 .shift-folder-content { padding: 10px; }
+
+/* =====================================================================
+   DISABLED LANE
+   ===================================================================== */
+.lane-disabled {
+    opacity: 0.45;
+    background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(128,128,128,0.05) 10px, rgba(128,128,128,0.05) 20px);
+    transition: opacity 0.3s ease;
+}
+.lane-disabled input {
+    pointer-events: none;
+}
+
+/* =====================================================================
+   QUICK-DELETE & TACTILE UI
+   ===================================================================== */
+.btn-delete-row { background:transparent; border:none; color:var(--danger); font-size:1.1rem; font-weight:bold; cursor:pointer; padding:0 8px; margin-left:5px; transition: transform 0.2s; }
+.btn-delete-row:active { transform: scale(0.8); }
+.btn-pop { animation: click-pop 0.2s ease-out; }
+@keyframes click-pop { 0% { transform: scale(1); } 50% { transform: scale(0.92); } 100% { transform: scale(1); } }

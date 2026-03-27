@@ -221,6 +221,7 @@ window.pushLaneToCloud = function(idx) {
     updates[`lanes/${idx-1}/d`]           = lane.d;
     updates[`lanes/${idx-1}/w`]           = lane.w;
     updates[`lanes/${idx-1}/locked`]      = lane.locked;
+    updates[`lanes/${idx-1}/disabled`]    = lane.disabled || false;
     updates[`lanes/${idx-1}/attempts`]    = lane.attempts ?? 0;
     updates[`lanes/${idx-1}/smartActive`] = lane.smartActive ?? false;
     updates[`lanes/${idx-1}/lastD`]       = lane.lastD ?? null;
@@ -280,7 +281,7 @@ window.renderInterface = function() {
         container.innerHTML += `
             <div class="lane-card" id="card-${i}">
                 <div class="lane-header">
-                    <div class="lane-header-left"><span>${window.t('lane')} ${i}</span><span class="smart-tag" id="tag-${i}">SMART</span></div>
+                    <div class="lane-header-left"><span>${window.t('lane')} ${i}</span><span class="smart-tag" id="tag-${i}">SMART</span><button class="btn-icon" id="btnDisable-${i}" onclick="window.toggleLaneDisable(${i})" style="margin-left:8px; font-size:0.9rem; padding:0 5px;" title="Toggle Lane Power">⊘</button></div>
                     <span class="lane-trend" id="trend-${i}"></span>
                 </div>
                 <div>
@@ -352,6 +353,16 @@ window.updateUIFromCloud = function() {
             if (isAdmin) { wEl.readOnly = true; wEl.style.borderColor = 'var(--border)'; }
         }
         const card = document.getElementById(`card-${i}`);
+        const btnDis = document.getElementById(`btnDisable-${i}`);
+        if (lane.disabled) {
+            card.classList.add('lane-disabled');
+            if (btnDis) { btnDis.innerText = '⊘ OFF'; btnDis.style.color = 'var(--danger)'; }
+            dEl.disabled = true; if (wEl) wEl.disabled = true;
+        } else {
+            card.classList.remove('lane-disabled');
+            if (btnDis) { btnDis.innerText = '⊘'; btnDis.style.color = ''; }
+            dEl.disabled = false; if (wEl) wEl.disabled = false;
+        }
         if (config.smart === 'on' || (config.smart === 'auto' && lane.smartActive)) card.classList.add('smart-active');
         else card.classList.remove('smart-active');
     }
@@ -368,6 +379,7 @@ window.calculateLocal = function() {
     let weights = [], count = 0;
     for (let i = 1; i <= config.lanes; i++) {
         if (!store.lanes[i-1]) continue;
+        if (store.lanes[i-1].disabled) { document.getElementById(`resText-${i}`).innerText = 'OFF'; continue; }
         const lane    = store.lanes[i-1];
         const currD   = parseFloat(lane.d), currW = parseFloat(lane.w);
         const resText = document.getElementById(`resText-${i}`);
@@ -522,6 +534,7 @@ window.renderHistoryCards = function() {
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span class="hist-card-avg">Avg: <strong>${r.avg}g</strong></span>
                     <span class="hist-card-chevron">▼</span>
+                    <button class="btn-delete-row" title="Delete Row" onclick="event.stopPropagation(); window.deleteHistoryRow(${idx})">✕</button>
                 </div>
             </div>
             <div class="hist-card-body">
@@ -537,6 +550,7 @@ window.toggleHistCard = function(idx) { document.getElementById(`hcard-${idx}`).
 window.checkAutoSave = function() {
     let currentCombo = "", allFilled = true;
     for (let i = 1; i <= config.lanes; i++) {
+        if (store.lanes[i-1] && store.lanes[i-1].disabled) continue;
         const w = document.getElementById(`avgWt-${i}`).value;
         if (!w) { allFilled = false; break; }
         currentCombo += w + ",";
@@ -547,6 +561,8 @@ window.checkAutoSave = function() {
             lastAutoSaveCombo = currentCombo;
             window.saveToHistory();
             autoSaveTimer = null;
+            const saveBtn = document.querySelector('button[onclick="window.saveToHistory()"]');
+            if (saveBtn) { saveBtn.classList.add('btn-pop'); setTimeout(() => saveBtn.classList.remove('btn-pop'), 200); }
         }, 2500);
     }
 };
@@ -559,10 +575,14 @@ window.saveToHistory = function() {
     const opName    = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
     let row = { time, timestamp, avg, operator: opName, target: store.target, lanes: [] };
     for (let i = 1; i <= config.lanes; i++) {
-        const wt   = store.lanes[i-1] ? store.lanes[i-1].w : '';
-        const calc = document.getElementById(`calcVal-${i}`).value;
-        const dens = store.lanes[i-1] ? store.lanes[i-1].d : '';
-        row.lanes.push({ w: wt ? `${wt}g` : '--', d: calc || dens || '--' });
+        if (store.lanes[i-1] && store.lanes[i-1].disabled) {
+            row.lanes.push({ w: 'OFF', d: '--' });
+        } else {
+            const wt   = store.lanes[i-1] ? store.lanes[i-1].w : '';
+            const calc = document.getElementById(`calcVal-${i}`).value;
+            const dens = store.lanes[i-1] ? store.lanes[i-1].d : '';
+            row.lanes.push({ w: wt ? `${wt}g` : '--', d: calc || dens || '--' });
+        }
     }
     if (!Array.isArray(history)) history = [];
     history.unshift(row);
@@ -572,6 +592,7 @@ window.saveToHistory = function() {
         push(ref(db, `shiftLedger/M${config.currentMachine}`), row).catch(e => console.warn('Ledger write:', e));
     }
     window.renderHistoryCards();
+    if (navigator.vibrate) navigator.vibrate([40]);
 };
 
 window.clearHistory = function() {
@@ -582,6 +603,16 @@ window.clearHistory = function() {
         }
         window.renderHistoryCards();
     }
+};
+
+window.deleteHistoryRow = function(idx) {
+    if (!confirm("Delete this shift record?")) return;
+    history.splice(idx, 1);
+    if (!window.isOfflineMode && dbRef_History) {
+        set(dbRef_History, history).catch(e => window.showAdminToast("❌ Error deleting record."));
+    }
+    window.renderHistoryCards();
+    if (navigator.vibrate) navigator.vibrate([50, 50]);
 };
 
 window.performLocalWipe = function(isRemote = false) {
@@ -695,6 +726,7 @@ window.toggleLock = function(i) {
     if (!store.lanes[i-1].locked) { el.readOnly = false; setTimeout(() => { el.focus(); el.style.borderColor = 'var(--info)'; }, 50); }
     else { el.readOnly = true; el.style.borderColor = 'var(--border)'; }
     window.pushLaneToCloud(i);
+    if (navigator.vibrate) navigator.vibrate([30]);
 };
 
 window.handleInput = function(i) { store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; window.calculateLocal(); };
@@ -735,6 +767,19 @@ window.lockWeightOnBlur = function(i) {
         if (document.activeElement === el) return;
         el.readOnly = true; el.style.borderColor = 'var(--border)';
     }, 150);
+};
+
+window.toggleLaneDisable = function(idx) {
+    if (!store.lanes) return;
+    const lane = store.lanes[idx-1];
+    lane.disabled = !lane.disabled;
+    if (lane.disabled) {
+        lane.w = ''; lane.d = ''; lane.locked = true; lane.smartActive = false;
+        document.getElementById(`avgWt-${idx}`).value = '';
+    }
+    window.pushLaneToCloud(idx);
+    window.updateUIFromCloud();
+    window.checkAutoSave();
 };
 
 // =====================================================================
