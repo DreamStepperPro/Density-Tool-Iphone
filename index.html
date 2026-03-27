@@ -21,25 +21,18 @@
 
 <!-- ACCESS PENDING -->
 <div class="modal-overlay" id="accessDeniedOverlay" style="display:flex; z-index:300; background:var(--bg);">
-    <div class="modal" style="text-align:center; max-width:350px;">
-        <h2 style="color:var(--perfect); margin-top:0;">The Advantage</h2>
-        <p style="font-size:0.85rem; margin-bottom:15px; color:var(--text); opacity:0.8;">Enter your 4-digit PIN to access the floor.</p>
-        <div style="margin-bottom:20px;">
-            <input type="password" id="loginPin" pattern="[0-9]*" inputmode="numeric" maxlength="4" placeholder="••••"
-                style="font-size:2rem; text-align:center; letter-spacing:10px; width:100%; padding:10px; border-radius:10px; border:2px solid var(--border); background:var(--input-bg); color:var(--text); font-weight:bold; margin-bottom:10px;"
-                onkeydown="if(event.key==='Enter') window.loginWithPin()">
-            <button class="modal-btn" onclick="window.loginWithPin()" style="background:var(--success);">LOGIN</button>
+    <div class="modal" style="text-align:center;">
+        <h2 style="color:var(--danger);" data-i18n="accessPending">🔒 Access Pending</h2>
+        <p style="font-size:0.9rem; margin-bottom:20px;" data-i18n="accessWait">Your device is waiting for Admin approval.</p>
+        <div id="requestForm" style="background:rgba(128,128,128,0.05); padding:15px; border-radius:10px; border:1px solid var(--border); margin-bottom:20px;">
+            <label style="text-align:left; margin-bottom:5px;" data-i18n="identify">Identify Yourself to Admin</label>
+            <input type="text" id="reqName" placeholder="Enter your name / role..." style="margin-bottom:10px; font-weight:normal;" data-i18n-ph="enterName">
+            <button class="modal-btn" onclick="window.pingAdmin()" style="margin-top:0; background:var(--accent);" data-i18n="pingAdmin">PING ADMIN FOR ACCESS</button>
         </div>
-        <hr style="border:0; border-top:1px solid var(--border); margin:20px 0;">
-        <details style="text-align:left; background:rgba(128,128,128,0.05); padding:10px; border-radius:8px; border:1px solid var(--border);">
-            <summary style="font-size:0.8rem; font-weight:bold; cursor:pointer; opacity:0.8;">New Device? Request Access</summary>
-            <div id="requestForm" style="margin-top:10px;">
-                <input type="text" id="reqName" placeholder="Enter your name / role..." style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); margin-bottom:10px;" data-i18n-ph="enterName">
-                <button class="modal-btn" onclick="window.pingAdmin()" style="margin-top:0; background:var(--accent); font-size:0.85rem;" data-i18n="pingAdmin">PING ADMIN FOR ACCESS</button>
-                <div style="font-size:0.65rem; opacity:0.6; margin-top:10px; text-align:center; word-break:break-all;">Device: <span id="userIdDisplay">Loading...</span></div>
-            </div>
-        </details>
-        <button class="modal-btn secondary" onclick="window.forceOfflineMode()" style="margin-top:15px;" data-i18n="workOffline">WORK OFFLINE</button>
+        <p style="font-size:0.8rem; opacity:0.8; margin-bottom:5px;">Your Device ID:</p>
+        <code id="userIdDisplay" style="background:var(--input-bg); padding:10px; display:block; word-break:break-all; border-radius:8px; border:1px solid var(--border); font-weight:bold; margin-bottom:20px;">Loading...</code>
+        <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
+        <button class="modal-btn secondary" onclick="window.forceOfflineMode()" data-i18n="workOffline">WORK OFFLINE</button>
     </div>
 </div>
 
@@ -394,7 +387,7 @@
         <button class="btn-clear" onclick="window.saveToHistory()" style="background:var(--info); margin-top:6px;" data-i18n="saveCheck">SAVE CHECK</button>
         <button class="btn-clear" onclick="window.clearHistory()" style="margin-top:6px;" data-i18n="clearTable">CLEAR TABLE</button>
         <hr style="border:0; border-top:1px dashed var(--border); margin:15px 0;">
-        <button class="btn-clear" onclick="window.triggerGlobalShiftReset()" style="background:var(--card-bg); color:var(--danger); border:2px solid var(--danger); box-shadow:var(--shadow);" data-i18n="endShift">🏁 END SHIFT</button>
+        <button class="btn-clear" onclick="window.endShift()" style="background:var(--card-bg); color:var(--danger); border:2px solid var(--danger); box-shadow:var(--shadow);" data-i18n="endShift">🏁 END SHIFT</button>
     </div>
 </div>
 
