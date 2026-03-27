@@ -123,6 +123,8 @@ let lastAutoSaveCombo  = "";
 let cloudPathKey       = "";
 let prevAvg            = null;
 let pendingTargetValue = null;
+let localSessionStartTime = Date.now(); // Global End Shift: marks when this tablet session started
+let unsubGlobalReset   = null;          // Global End Shift: holds the Firebase reset listener
 
 // =====================================================================
 // INIT
@@ -165,7 +167,7 @@ window.routeUserByRole = function() {
         if (opHeader) opHeader.style.display = 'none';
         const sandboxBtn = document.getElementById('btnSandboxToggle');
         if (sandboxBtn) sandboxBtn.classList.remove('btn-hidden');
-        if (!window.isOfflineMode) { window.startSupervisorSync(); window.startCloudSync(); }
+        if (!window.isOfflineMode) { window.startSupervisorSync(); window.startCloudSync(); window.listenForGlobalReset(`M${config.currentMachine}`); }
         window.renderInterface();
     } else if (role === 'supervisor') {
         document.getElementById('appContent').style.display = 'none';
@@ -582,24 +584,57 @@ window.clearHistory = function() {
     }
 };
 
-window.endShift = function() {
-    if (confirm(window.t('endShiftConfirm'))) {
+// =====================================================================
+// GLOBAL END SHIFT ENGINE
+// =====================================================================
+window.performLocalWipe = function(isRemote = false) {
+    // Only write ledger marker if this tablet triggered the wipe (prevents all tablets from spamming the ledger)
+    if (!isRemote) {
         const opName = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
         const time   = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
         const marker = { isMarker: true, text: `🏁 SHIFT ENDED BY ${opName.toUpperCase()}`, timestamp: Date.now(), time };
         if (!window.isOfflineMode && db) push(ref(db, `shiftLedger/M${config.currentMachine}`), marker).catch(e => console.warn('Marker write:', e));
-        history = [];
-        lastAutoSaveCombo = "";
-        if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveTimer = null; }
-        if (!window.isOfflineMode && dbRef_History) set(dbRef_History, history).catch(e => console.warn(e));
-        window.renderHistoryCards();
-        if (store && store.lanes) {
-            store.lanes.forEach(l => { l.w = ''; l.locked = true; l.smartActive = false; l.stableCount = 0; });
-            if (!window.isOfflineMode && dbRef_Store) update(dbRef_Store, { lanes: store.lanes }).catch(e => console.warn(e));
-            window.updateUIFromCloud();
+    }
+    history = [];
+    lastAutoSaveCombo = "";
+    if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveTimer = null; }
+    if (!window.isOfflineMode && dbRef_History) set(dbRef_History, history).catch(e => console.warn(e));
+    window.renderHistoryCards();
+    if (store && store.lanes) {
+        store.lanes.forEach(l => { l.w = ''; l.locked = true; l.smartActive = false; l.stableCount = 0; });
+        if (!window.isOfflineMode && dbRef_Store) update(dbRef_Store, { lanes: store.lanes }).catch(e => console.warn(e));
+        window.updateUIFromCloud();
+    }
+    if (typeof window.clearYieldInputs === 'function') window.clearYieldInputs();
+    if (!isRemote) window.showAdminToast("🏁 Shift Ended & Board Cleared.");
+};
+
+window.listenForGlobalReset = function(machineKey) {
+    if (!machineKey || window.isOfflineMode) return;
+    if (unsubGlobalReset) { unsubGlobalReset(); unsubGlobalReset = null; }
+    const resetRef = ref(db, `stores/${machineKey}/lastShiftReset`);
+    unsubGlobalReset = onValue(resetRef, (snap) => {
+        const resetTimestamp = snap.val();
+        // Only act if the signal was sent AFTER this tablet's session started (prevents old signals firing on boot)
+        if (resetTimestamp && resetTimestamp > localSessionStartTime) {
+            window.performLocalWipe(true);
+            localSessionStartTime = Date.now(); // Reset so we don't trigger again
+            window.showAdminToast("🏁 Shift Reset by Supervisor.");
         }
-        if (typeof window.clearYieldInputs === 'function') window.clearYieldInputs();
-        window.showAdminToast("🏁 Shift Ended & Board Cleared.");
+    });
+};
+
+window.triggerGlobalShiftReset = function() {
+    if (confirm(window.t('endShiftConfirm'))) {
+        if (window.isOfflineMode) {
+            window.performLocalWipe(false);
+        } else {
+            window.performLocalWipe(false); // Local wipe + ledger marker
+            const killTime = Date.now();
+            set(ref(db, `stores/M${config.currentMachine}/lastShiftReset`), killTime)
+                .catch(err => console.error("Firebase reset error:", err));
+            localSessionStartTime = Date.now(); // Prevent self-trigger from the signal bouncing back
+        }
     }
 };
 
@@ -771,7 +806,7 @@ window.applyTheme = function() {
 };
 window.completeSetup  = function() { config.machines = parseInt(document.getElementById('setupMachines').value); config.lanes = parseInt(document.getElementById('setupLanes').value); config.product = document.getElementById('setupProd').value; localStorage.setItem('dsi_setup_done', 'true'); window.saveLocalSettings(); document.getElementById('setupWizard').style.display = 'none'; window.routeUserByRole(); };
 window.factoryReset   = function() { if (confirm("Erase LOCAL settings? Cloud data remains.")) { localStorage.clear(); location.reload(); } };
-window.switchMachine  = function(m) { config.currentMachine = m; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); };
+window.switchMachine = function(m) { config.currentMachine = m; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) { window.startCloudSync(); window.listenForGlobalReset(`M${m}`); } };
 window.switchProfile  = function() { config.lanes = parseInt(document.getElementById('setLanes').value); config.product = document.getElementById('setProd').value; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); };
 
 // =====================================================================
@@ -807,7 +842,10 @@ window.buildAdminUserCard = function(key, data, highlight) {
     <div class="admin-user-card" style="${highlight ? 'border-color:var(--warning);' : ''}">
         <div class="admin-user-id">ID: ${key}</div>
         <div class="admin-user-name">Device: <strong>${dispName}</strong></div>
-        <input type="text" placeholder="Admin Name" value="${adminName}" onblur="window.updateAdminName('${key}', this.value)" style="margin-bottom:8px; padding:8px; font-size:0.85rem; width:100%; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text);">
+        <div style="display:flex; gap:8px; margin-bottom:8px;">
+            <input type="text" placeholder="Admin Name" value="${adminName}" onblur="window.updateAdminName('${key}', this.value)" style="flex:2; padding:8px; font-size:0.85rem; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text);">
+            <input type="text" placeholder="PIN" value="${data.pin || ''}" maxlength="4" inputmode="numeric" onblur="window.updateUserPin('${key}', this.value)" style="flex:1; padding:8px; font-size:0.85rem; text-align:center; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text); font-weight:bold; letter-spacing:4px;">
+        </div>
         <div class="admin-user-row">
             <select onchange="window.updateUserRole('${key}', this.value)" style="padding:6px; font-size:0.8rem; width:40%; border-radius:6px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);">
                 <option value="operator" ${role === 'operator' ? 'selected' : ''}>Operator</option>
@@ -825,6 +863,44 @@ window.buildAdminUserCard = function(key, data, highlight) {
 window.closeAdmin         = function() { document.getElementById('adminModal').style.display = 'none'; };
 window.updateAdminName    = function(uid, name) { update(ref(db, `users/${uid}`), { adminName: name }).catch(e => window.showAdminToast("❌ Error: Could not update name.")); };
 window.updateUserRole     = function(uid, role) { update(ref(db, `users/${uid}`), { role }).catch(e => window.showAdminToast("❌ Error: Could not update role.")); };
+window.updateUserPin      = function(uid, pinStr) { update(ref(db, `users/${uid}`), { pin: pinStr.trim() }).catch(e => window.showAdminToast("❌ Error: Could not update PIN.")); };
+
+window.loginWithPin = function() {
+    const pinInput = document.getElementById('loginPin');
+    const pin = pinInput ? pinInput.value.trim() : '';
+    if (pin.length < 4) { alert("Please enter your 4-digit PIN."); return; }
+    get(ref(db, 'users')).then((snap) => {
+        const users = snap.val() || {};
+        let matchedProfile = null, oldUid = null;
+        for (const [uid, data] of Object.entries(users)) {
+            if (data.pin && data.pin === pin && data.approved === true) {
+                matchedProfile = data; oldUid = uid; break;
+            }
+        }
+        if (matchedProfile) {
+            const updates = {
+                approved: true, requestPending: false,
+                role: matchedProfile.role || 'operator',
+                displayName: matchedProfile.displayName || '',
+                adminName: matchedProfile.adminName || '',
+                pin, lastLogin: new Date().toLocaleString()
+            };
+            update(ref(db, `users/${window.myUid}`), updates).then(() => {
+                // Delete old ghost UID — but never delete admin or self
+                if (oldUid && oldUid !== window.myUid && oldUid !== window.ADMIN_UID) {
+                    set(ref(db, `users/${oldUid}`), null).catch(e => console.warn("Cleanup:", e));
+                }
+                if (pinInput) pinInput.value = '';
+                const name = matchedProfile.adminName || matchedProfile.displayName || 'Operator';
+                window.showAdminToast(`✅ Welcome back, ${name}!`);
+                // onValue listener in auth block detects approved:true and hides overlay automatically
+            });
+        } else {
+            window.showAdminToast("❌ Invalid PIN or account not approved.");
+            if (pinInput) pinInput.value = '';
+        }
+    }).catch(() => window.showAdminToast("❌ Network error verifying PIN."));
+};
 window.toggleUserApprove  = function(uid, isAppr) {
     update(ref(db, `users/${uid}`), { approved: isAppr, requestPending: false })
     .then(() => { if (isAppr) { notifiedSet.delete(uid); persistNotifiedSet(); } })
