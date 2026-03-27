@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, get, set, onValue, update, push, serverTimestamp, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, get, set, onValue, update, push, serverTimestamp, goOnline, goOffline, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -966,19 +966,29 @@ window.loginWithPin = function() {
         return; 
     }
     
-    get(ref(db, 'users')).then(snap => {
-        const users = snap.val() || {};
+    // Use a targeted query instead of fetching the whole users node
+    const usersRef = ref(db, 'users');
+    const pinQuery = query(usersRef, orderByChild('pin'), equalTo(pinInput));
+
+    get(pinQuery).then(snap => {
+        if (!snap.exists()) {
+            window.showAdminToast("❌ Invalid PIN or unapproved profile.");
+            if (pinInputEl) pinInputEl.value = '';
+            return;
+        }
+
         let foundUid = null;
         let foundData = null;
-        
-        for (const [uid, data] of Object.entries(users)) {
-            if (data.pin === pinInput && data.approved === true) {
-                foundUid = uid;
+
+        // Loop through results to ensure they are approved
+        snap.forEach(childSnap => {
+            const data = childSnap.val();
+            if (data.approved === true) {
+                foundUid = childSnap.key;
                 foundData = data;
-                break;
             }
-        }
-        
+        });
+
         if (foundUid && foundData) {
             const updates = {
                 approved: foundData.approved,
@@ -992,7 +1002,7 @@ window.loginWithPin = function() {
             
             update(ref(db, `users/${window.myUid}`), updates).then(() => {
                 // CRITICAL SAFEGUARD: Never delete the Admin or the current active profile
-                if (foundUid && foundUid !== window.myUid && foundUid !== window.ADMIN_UID) {
+                if (foundUid !== window.myUid && foundUid !== window.ADMIN_UID) {
                     set(ref(db, `users/${foundUid}`), null).catch(e => console.warn("Cleanup:", e));
                 }
                 
@@ -1002,13 +1012,13 @@ window.loginWithPin = function() {
                 
                 document.getElementById('accessDeniedOverlay').style.display = 'none';
                 window.routeUserByRole();
-            }).catch(e => console.warn(e));
+            }).catch(e => console.warn("Update Error:", e));
         } else {
             window.showAdminToast("❌ Invalid PIN or unapproved profile.");
             if (pinInputEl) pinInputEl.value = '';
         }
     }).catch(e => {
-        console.warn(e);
+        console.error("PIN Verification Error:", e);
         window.showAdminToast("❌ Network error verifying PIN.");
     });
 };
