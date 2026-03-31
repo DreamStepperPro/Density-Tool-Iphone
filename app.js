@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, get, set, onValue, update, push, serverTimestamp, goOnline, goOffline, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, get, set, onValue, update, push, serverTimestamp, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -123,8 +123,8 @@ let lastAutoSaveCombo  = "";
 let cloudPathKey       = "";
 let prevAvg            = null;
 let pendingTargetValue = null;
-let localSessionStartTime = Date.now();
-let unsubGlobalReset = null;
+let localSessionStartTime = Date.now(); // Global End Shift: marks when this tablet session started
+let unsubGlobalReset   = null;          // Global End Shift: holds the Firebase reset listener
 
 // =====================================================================
 // INIT
@@ -178,7 +178,7 @@ window.routeUserByRole = function() {
         document.getElementById('appContent').style.display = 'block';
         document.getElementById('appContent').style.filter = 'none';
         window.renderInterface();
-        if (!window.isOfflineMode) { window.startCloudSync(); window.listenForGlobalReset(`M${config.currentMachine}`); }
+        if (!window.isOfflineMode) window.startCloudSync();
     }
 };
 
@@ -221,7 +221,6 @@ window.pushLaneToCloud = function(idx) {
     updates[`lanes/${idx-1}/d`]           = lane.d;
     updates[`lanes/${idx-1}/w`]           = lane.w;
     updates[`lanes/${idx-1}/locked`]      = lane.locked;
-    updates[`lanes/${idx-1}/disabled`]    = lane.disabled || false;
     updates[`lanes/${idx-1}/attempts`]    = lane.attempts ?? 0;
     updates[`lanes/${idx-1}/smartActive`] = lane.smartActive ?? false;
     updates[`lanes/${idx-1}/lastD`]       = lane.lastD ?? null;
@@ -281,7 +280,7 @@ window.renderInterface = function() {
         container.innerHTML += `
             <div class="lane-card" id="card-${i}">
                 <div class="lane-header">
-                    <div class="lane-header-left"><span>${window.t('lane')} ${i}</span><span class="smart-tag" id="tag-${i}">SMART</span><button class="btn-icon" id="btnDisable-${i}" onclick="window.toggleLaneDisable(${i})" style="margin-left:8px; font-size:0.9rem; padding:0 5px;" title="Toggle Lane Power">⊘</button></div>
+                    <div class="lane-header-left"><span>${window.t('lane')} ${i}</span><span class="smart-tag" id="tag-${i}">SMART</span></div>
                     <span class="lane-trend" id="trend-${i}"></span>
                 </div>
                 <div>
@@ -353,16 +352,6 @@ window.updateUIFromCloud = function() {
             if (isAdmin) { wEl.readOnly = true; wEl.style.borderColor = 'var(--border)'; }
         }
         const card = document.getElementById(`card-${i}`);
-        const btnDis = document.getElementById(`btnDisable-${i}`);
-        if (lane.disabled) {
-            card.classList.add('lane-disabled');
-            if (btnDis) { btnDis.innerText = '⊘ OFF'; btnDis.style.color = 'var(--danger)'; }
-            dEl.disabled = true; if (wEl) wEl.disabled = true;
-        } else {
-            card.classList.remove('lane-disabled');
-            if (btnDis) { btnDis.innerText = '⊘'; btnDis.style.color = ''; }
-            dEl.disabled = false; if (wEl) wEl.disabled = false;
-        }
         if (config.smart === 'on' || (config.smart === 'auto' && lane.smartActive)) card.classList.add('smart-active');
         else card.classList.remove('smart-active');
     }
@@ -379,7 +368,6 @@ window.calculateLocal = function() {
     let weights = [], count = 0;
     for (let i = 1; i <= config.lanes; i++) {
         if (!store.lanes[i-1]) continue;
-        if (store.lanes[i-1].disabled) { document.getElementById(`resText-${i}`).innerText = 'OFF'; continue; }
         const lane    = store.lanes[i-1];
         const currD   = parseFloat(lane.d), currW = parseFloat(lane.w);
         const resText = document.getElementById(`resText-${i}`);
@@ -413,7 +401,6 @@ window.calculateLocal = function() {
             hiddenVal.value = newD.toFixed(3);
             resText.innerText = `${window.t('newDens')} ${newD.toFixed(3)}`;
             resBox.classList.add('has-value');
-
             // Predictive Velocity Engine (3-point smoothed with Density Barrier)
             let driftHtml = "";
             let runwayPct = 100;
@@ -421,90 +408,62 @@ window.calculateLocal = function() {
 
             if (history && history.length > 0) {
                 let recentWts = [], recentTimes = [];
-
                 for (let h = 0; h < history.length; h++) {
                     const lData = history[h].lanes && history[h].lanes[i-1] ? history[h].lanes[i-1] : null;
-
                     if (lData && lData.w && lData.w !== '--') {
                         const parsedW = parseFloat(lData.w);
                         if (isNaN(parsedW)) continue;
-
+                        // Density Barrier — if density changed since this check, history is stale, stop lookback
                         const histD = parseFloat(lData.d);
-
-                        // Density Barrier (prevents polluted history after adjustments)
                         if (!isNaN(histD) && Math.abs(histD - currD) > 0.005) break;
-
                         recentWts.push(parsedW);
                         recentTimes.push(history[h].timestamp);
-
                         if (recentWts.length >= 3) break;
                     }
                 }
-
                 if (recentWts.length > 0 && !isNaN(currW)) {
                     let velocity = 0;
-
-                    // Stabilization Override (no drift if weight hasn't meaningfully changed)
+                    // Stabilization Override — needs 2+ points; if weight barely moved, no drift signal
                     if (recentWts.length > 1 && Math.abs(currW - recentWts[0]) <= 0.4) {
                         velocity = 0;
                     } else {
-                        const oldestW = recentWts[recentWts.length - 1];
+                        const oldestW    = recentWts[recentWts.length - 1];
                         const oldestTime = recentTimes[recentTimes.length - 1];
-
                         if (oldestTime) {
-                            // Allow faster responsiveness for quick rechecks
+                            // 0.25 min floor allows accurate velocity on quick rechecks
                             const timeDiffMin = Math.max(0.25, (Date.now() - oldestTime) / 60000);
                             velocity = (currW - oldestW) / timeDiffMin;
                         }
                     }
-
                     if (Math.abs(velocity) > 0.015) {
                         let runway = 0;
-
-                        // Calculate runway toward ±2g boundary
-                        if (velocity > 0 && currW <= (target + 2)) {
-                            runway = (target + 2) - currW;
-                        } else if (velocity < 0 && currW >= (target - 2)) {
-                            runway = currW - (target - 2);
-                        }
-
+                        if (velocity > 0 && currW <= (target + 2)) runway = (target + 2) - currW;
+                        else if (velocity < 0 && currW >= (target - 2)) runway = currW - (target - 2);
                         if (runway > 0) {
                             const minsToDrift = Math.round(runway / Math.abs(velocity));
-
-                            // Normalize runway bar to 60-minute scale
                             runwayPct = Math.max(0, Math.min(100, (minsToDrift / 60) * 100));
-
                             if (minsToDrift < 120) {
                                 if (minsToDrift <= 15) {
                                     runwayColor = 'var(--danger)';
                                     driftHtml = `<span class="drift-alert-critical">${window.t('weighNow')}</span>`;
-
-                                    // Operator autonomy toast (rate-limited per lane)
+                                    // Operator autonomy toast — local cooldown per lane, never touches Firebase
                                     if (minsToDrift <= 5) {
                                         const now = Date.now();
-
                                         if (!window._driftToastTs) window._driftToastTs = {};
                                         const lastToast = window._driftToastTs[i] || 0;
-
                                         if (now - lastToast > 120000) {
                                             window._driftToastTs[i] = now;
                                             window.showAdminToast(`⚠️ ${window.t('lane')} ${i}: ${window.t('driftingFast')}`);
-
-                                            if (navigator.vibrate) {
-                                                navigator.vibrate([200, 100, 200]);
-                                            }
+                                            if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
                                         }
                                     }
                                 } else {
-                                    runwayColor = minsToDrift <= 30
-                                        ? 'var(--warning)'
-                                        : 'var(--perfect)';
-
+                                    runwayColor = minsToDrift <= 30 ? 'var(--warning)' : 'var(--perfect)';
                                     driftHtml = `<span style="font-size:0.7rem; margin-left:8px; font-weight:900; color:${runwayColor};">⏳ ${minsToDrift}m</span>`;
                                 }
                             }
                         } else {
-                            // Silence alert if already out of bounds
+                            // Already out of bounds — card color already communicates state, silence the alarm
                             runwayPct = 0;
                             runwayColor = 'transparent';
                             driftHtml = "";
@@ -512,11 +471,9 @@ window.calculateLocal = function() {
                     }
                 }
             }
-            
             const runwayHtml = runwayColor !== 'transparent'
                 ? `<div class="runway-track"><div class="runway-fill" style="width:${runwayPct}%; background:${runwayColor};"></div></div>`
                 : '';
-                
             const absDiff = Math.abs(diff);
             card.className = "lane-card";
             if (isSmart) card.classList.add('smart-active');
@@ -577,7 +534,6 @@ window.renderHistoryCards = function() {
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span class="hist-card-avg">Avg: <strong>${r.avg}g</strong></span>
                     <span class="hist-card-chevron">▼</span>
-                    <button class="btn-delete-row" title="Delete Row" onclick="event.stopPropagation(); window.deleteHistoryRow(${idx})">✕</button>
                 </div>
             </div>
             <div class="hist-card-body">
@@ -593,7 +549,6 @@ window.toggleHistCard = function(idx) { document.getElementById(`hcard-${idx}`).
 window.checkAutoSave = function() {
     let currentCombo = "", allFilled = true;
     for (let i = 1; i <= config.lanes; i++) {
-        if (store.lanes[i-1] && store.lanes[i-1].disabled) continue;
         const w = document.getElementById(`avgWt-${i}`).value;
         if (!w) { allFilled = false; break; }
         currentCombo += w + ",";
@@ -604,8 +559,6 @@ window.checkAutoSave = function() {
             lastAutoSaveCombo = currentCombo;
             window.saveToHistory();
             autoSaveTimer = null;
-            const saveBtn = document.querySelector('button[onclick="window.saveToHistory()"]');
-            if (saveBtn) { saveBtn.classList.add('btn-pop'); setTimeout(() => saveBtn.classList.remove('btn-pop'), 200); }
         }, 2500);
     }
 };
@@ -618,14 +571,10 @@ window.saveToHistory = function() {
     const opName    = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
     let row = { time, timestamp, avg, operator: opName, target: store.target, lanes: [] };
     for (let i = 1; i <= config.lanes; i++) {
-        if (store.lanes[i-1] && store.lanes[i-1].disabled) {
-            row.lanes.push({ w: 'OFF', d: '--' });
-        } else {
-            const wt   = store.lanes[i-1] ? store.lanes[i-1].w : '';
-            const calc = document.getElementById(`calcVal-${i}`).value;
-            const dens = store.lanes[i-1] ? store.lanes[i-1].d : '';
-            row.lanes.push({ w: wt ? `${wt}g` : '--', d: calc || dens || '--' });
-        }
+        const wt   = store.lanes[i-1] ? store.lanes[i-1].w : '';
+        const calc = document.getElementById(`calcVal-${i}`).value;
+        const dens = store.lanes[i-1] ? store.lanes[i-1].d : '';
+        row.lanes.push({ w: wt ? `${wt}g` : '--', d: calc || dens || '--' });
     }
     if (!Array.isArray(history)) history = [];
     history.unshift(row);
@@ -635,7 +584,6 @@ window.saveToHistory = function() {
         push(ref(db, `shiftLedger/M${config.currentMachine}`), row).catch(e => console.warn('Ledger write:', e));
     }
     window.renderHistoryCards();
-    if (navigator.vibrate) navigator.vibrate([40]);
 };
 
 window.clearHistory = function() {
@@ -648,57 +596,58 @@ window.clearHistory = function() {
     }
 };
 
-window.deleteHistoryRow = function(idx) {
-    if (!confirm("Delete this shift record?")) return;
-    history.splice(idx, 1);
-    if (!window.isOfflineMode && dbRef_History) {
-        set(dbRef_History, history).catch(e => window.showAdminToast("❌ Error deleting record."));
-    }
-    window.renderHistoryCards();
-    if (navigator.vibrate) navigator.vibrate([50, 50]);
-};
-
+// =====================================================================
+// GLOBAL END SHIFT ENGINE
+// =====================================================================
 window.performLocalWipe = function(isRemote = false) {
-    if (isRemote || confirm(window.t('endShiftConfirm'))) {
+    // Only write ledger marker if this tablet triggered the wipe (prevents all tablets from spamming the ledger)
+    if (!isRemote) {
         const opName = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
         const time   = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
         const marker = { isMarker: true, text: `🏁 SHIFT ENDED BY ${opName.toUpperCase()}`, timestamp: Date.now(), time };
-        if (!isRemote) {
-            if (!window.isOfflineMode && db) push(ref(db, `shiftLedger/M${config.currentMachine}`), marker).catch(e => console.warn('Marker write:', e));
-        }
-        history = [];
-        lastAutoSaveCombo = "";
-        if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveTimer = null; }
-        if (!window.isOfflineMode && dbRef_History) set(dbRef_History, history).catch(e => console.warn(e));
-        window.renderHistoryCards();
-        if (store && store.lanes) {
-            store.lanes.forEach(l => { l.w = ''; l.locked = true; l.smartActive = false; l.stableCount = 0; });
-            if (!window.isOfflineMode && dbRef_Store) update(dbRef_Store, { lanes: store.lanes }).catch(e => console.warn(e));
-            window.updateUIFromCloud();
-        }
-        if (typeof window.clearYieldInputs === 'function') window.clearYieldInputs();
-        if (!isRemote) window.showAdminToast("🏁 Shift Ended & Board Cleared.");
+        if (!window.isOfflineMode && db) push(ref(db, `shiftLedger/M${config.currentMachine}`), marker).catch(e => console.warn('Marker write:', e));
     }
+    history = [];
+    lastAutoSaveCombo = "";
+    if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveTimer = null; }
+    if (!window.isOfflineMode && dbRef_History) set(dbRef_History, history).catch(e => console.warn(e));
+    window.renderHistoryCards();
+    if (store && store.lanes) {
+        store.lanes.forEach(l => { l.w = ''; l.locked = true; l.smartActive = false; l.stableCount = 0; });
+        if (!window.isOfflineMode && dbRef_Store) update(dbRef_Store, { lanes: store.lanes }).catch(e => console.warn(e));
+        window.updateUIFromCloud();
+    }
+    if (typeof window.clearYieldInputs === 'function') window.clearYieldInputs();
+    if (!isRemote) window.showAdminToast("🏁 Shift Ended & Board Cleared.");
 };
 
 window.listenForGlobalReset = function(machineKey) {
+    if (!machineKey || window.isOfflineMode) return;
     if (unsubGlobalReset) { unsubGlobalReset(); unsubGlobalReset = null; }
     const resetRef = ref(db, `stores/${machineKey}/lastShiftReset`);
     unsubGlobalReset = onValue(resetRef, (snap) => {
-        const lastReset = snap.val();
-        if (lastReset && lastReset > localSessionStartTime) {
+        const resetTimestamp = snap.val();
+        // Only act if the signal was sent AFTER this tablet's session started (prevents old signals firing on boot)
+        if (resetTimestamp && resetTimestamp > localSessionStartTime) {
             window.performLocalWipe(true);
-            localSessionStartTime = Date.now();
-            window.showAdminToast('🏁 Shift Reset by Supervisor');
+            localSessionStartTime = Date.now(); // Reset so we don't trigger again
+            window.showAdminToast("🏁 Shift Reset by Supervisor.");
         }
     });
 };
 
 window.triggerGlobalShiftReset = function() {
-    window.performLocalWipe(false);
-    const ts = Date.now();
-    set(ref(db, `stores/M${config.currentMachine}/lastShiftReset`), ts);
-    localSessionStartTime = ts;
+    if (confirm(window.t('endShiftConfirm'))) {
+        if (window.isOfflineMode) {
+            window.performLocalWipe(false);
+        } else {
+            window.performLocalWipe(false); // Local wipe + ledger marker
+            const killTime = Date.now();
+            set(ref(db, `stores/M${config.currentMachine}/lastShiftReset`), killTime)
+                .catch(err => console.error("Firebase reset error:", err));
+            localSessionStartTime = Date.now(); // Prevent self-trigger from the signal bouncing back
+        }
+    }
 };
 
 // =====================================================================
@@ -769,7 +718,6 @@ window.toggleLock = function(i) {
     if (!store.lanes[i-1].locked) { el.readOnly = false; setTimeout(() => { el.focus(); el.style.borderColor = 'var(--info)'; }, 50); }
     else { el.readOnly = true; el.style.borderColor = 'var(--border)'; }
     window.pushLaneToCloud(i);
-    if (navigator.vibrate) navigator.vibrate([30]);
 };
 
 window.handleInput = function(i) { store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; window.calculateLocal(); };
@@ -810,19 +758,6 @@ window.lockWeightOnBlur = function(i) {
         if (document.activeElement === el) return;
         el.readOnly = true; el.style.borderColor = 'var(--border)';
     }, 150);
-};
-
-window.toggleLaneDisable = function(idx) {
-    if (!store.lanes) return;
-    const lane = store.lanes[idx-1];
-    lane.disabled = !lane.disabled;
-    if (lane.disabled) {
-        lane.w = ''; lane.d = ''; lane.locked = true; lane.smartActive = false;
-        document.getElementById(`avgWt-${idx}`).value = '';
-    }
-    window.pushLaneToCloud(idx);
-    window.updateUIFromCloud();
-    window.checkAutoSave();
 };
 
 // =====================================================================
@@ -883,7 +818,7 @@ window.applyTheme = function() {
 };
 window.completeSetup  = function() { config.machines = parseInt(document.getElementById('setupMachines').value); config.lanes = parseInt(document.getElementById('setupLanes').value); config.product = document.getElementById('setupProd').value; localStorage.setItem('dsi_setup_done', 'true'); window.saveLocalSettings(); document.getElementById('setupWizard').style.display = 'none'; window.routeUserByRole(); };
 window.factoryReset   = function() { if (confirm("Erase LOCAL settings? Cloud data remains.")) { localStorage.clear(); location.reload(); } };
-window.switchMachine  = function(m) { config.currentMachine = m; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) { window.startCloudSync(); window.listenForGlobalReset(`M${config.currentMachine}`); } };
+window.switchMachine = function(m) { config.currentMachine = m; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) { window.startCloudSync(); window.listenForGlobalReset(`M${m}`); } };
 window.switchProfile  = function() { config.lanes = parseInt(document.getElementById('setLanes').value); config.product = document.getElementById('setProd').value; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); };
 
 // =====================================================================
@@ -920,8 +855,8 @@ window.buildAdminUserCard = function(key, data, highlight) {
         <div class="admin-user-id">ID: ${key}</div>
         <div class="admin-user-name">Device: <strong>${dispName}</strong></div>
         <div style="display:flex; gap:8px; margin-bottom:8px;">
-            <input type="text" placeholder="Admin Name" value="${adminName}" onblur="window.updateAdminName('${key}', this.value)" style="padding:8px; font-size:0.85rem; flex:1; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text);">
-            <input type="text" placeholder="PIN" value="${data.pin || ''}" onblur="window.updateUserPin('${key}', this.value)" style="padding:8px; font-size:0.85rem; width:80px; text-align:center; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text);">
+            <input type="text" placeholder="Admin Name" value="${adminName}" onblur="window.updateAdminName('${key}', this.value)" style="flex:2; padding:8px; font-size:0.85rem; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text);">
+            <input type="text" placeholder="PIN" value="${data.pin || ''}" maxlength="4" inputmode="numeric" onblur="window.updateUserPin('${key}', this.value)" style="flex:1; padding:8px; font-size:0.85rem; text-align:center; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text); font-weight:bold; letter-spacing:4px;">
         </div>
         <div class="admin-user-row">
             <select onchange="window.updateUserRole('${key}', this.value)" style="padding:6px; font-size:0.8rem; width:40%; border-radius:6px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);">
@@ -940,6 +875,44 @@ window.buildAdminUserCard = function(key, data, highlight) {
 window.closeAdmin         = function() { document.getElementById('adminModal').style.display = 'none'; };
 window.updateAdminName    = function(uid, name) { update(ref(db, `users/${uid}`), { adminName: name }).catch(e => window.showAdminToast("❌ Error: Could not update name.")); };
 window.updateUserRole     = function(uid, role) { update(ref(db, `users/${uid}`), { role }).catch(e => window.showAdminToast("❌ Error: Could not update role.")); };
+window.updateUserPin      = function(uid, pinStr) { update(ref(db, `users/${uid}`), { pin: pinStr.trim() }).catch(e => window.showAdminToast("❌ Error: Could not update PIN.")); };
+
+window.loginWithPin = function() {
+    const pinInput = document.getElementById('loginPin');
+    const pin = pinInput ? pinInput.value.trim() : '';
+    if (pin.length < 4) { alert("Please enter your 4-digit PIN."); return; }
+    get(ref(db, 'users')).then((snap) => {
+        const users = snap.val() || {};
+        let matchedProfile = null, oldUid = null;
+        for (const [uid, data] of Object.entries(users)) {
+            if (data.pin && data.pin === pin && data.approved === true) {
+                matchedProfile = data; oldUid = uid; break;
+            }
+        }
+        if (matchedProfile) {
+            const updates = {
+                approved: true, requestPending: false,
+                role: matchedProfile.role || 'operator',
+                displayName: matchedProfile.displayName || '',
+                adminName: matchedProfile.adminName || '',
+                pin, lastLogin: new Date().toLocaleString()
+            };
+            update(ref(db, `users/${window.myUid}`), updates).then(() => {
+                // Delete old ghost UID — but never delete admin or self
+                if (oldUid && oldUid !== window.myUid && oldUid !== window.ADMIN_UID) {
+                    set(ref(db, `users/${oldUid}`), null).catch(e => console.warn("Cleanup:", e));
+                }
+                if (pinInput) pinInput.value = '';
+                const name = matchedProfile.adminName || matchedProfile.displayName || 'Operator';
+                window.showAdminToast(`✅ Welcome back, ${name}!`);
+                // onValue listener in auth block detects approved:true and hides overlay automatically
+            });
+        } else {
+            window.showAdminToast("❌ Invalid PIN or account not approved.");
+            if (pinInput) pinInput.value = '';
+        }
+    }).catch(() => window.showAdminToast("❌ Network error verifying PIN."));
+};
 window.toggleUserApprove  = function(uid, isAppr) {
     update(ref(db, `users/${uid}`), { approved: isAppr, requestPending: false })
     .then(() => { if (isAppr) { notifiedSet.delete(uid); persistNotifiedSet(); } })
@@ -1044,73 +1017,4 @@ window.toggleSandboxMode = function() {
     }
 
     window.toggleSettings();
-};
-
-window.loginWithPin = function() {
-    const pinInputEl = document.getElementById('loginPin');
-    const pinInput = pinInputEl ? pinInputEl.value.trim() : '';
-    if (!pinInput || pinInput.length < 4) { 
-        window.showAdminToast("⚠️ Please enter a 4-digit PIN."); 
-        return; 
-    }
-    
-    // Use a targeted query instead of fetching the whole users node
-    const usersRef = ref(db, 'users');
-    const pinQuery = query(usersRef, orderByChild('pin'), equalTo(pinInput));
-
-    get(pinQuery).then(snap => {
-        if (!snap.exists()) {
-            window.showAdminToast("❌ Invalid PIN or unapproved profile.");
-            if (pinInputEl) pinInputEl.value = '';
-            return;
-        }
-
-        let foundUid = null;
-        let foundData = null;
-
-        // Loop through results to ensure they are approved
-        snap.forEach(childSnap => {
-            const data = childSnap.val();
-            if (data.approved === true) {
-                foundUid = childSnap.key;
-                foundData = data;
-            }
-        });
-
-        if (foundUid && foundData) {
-            const updates = {
-                approved: foundData.approved,
-                requestPending: false,
-                role: foundData.role || 'operator',
-                displayName: foundData.displayName || '',
-                adminName: foundData.adminName || '',
-                pin: foundData.pin || '',
-                lastLogin: new Date().toLocaleString()
-            };
-            
-            update(ref(db, `users/${window.myUid}`), updates).then(() => {
-                // CRITICAL SAFEGUARD: Never delete the Admin or the current active profile
-                if (foundUid !== window.myUid && foundUid !== window.ADMIN_UID) {
-                    set(ref(db, `users/${foundUid}`), null).catch(e => console.warn("Cleanup:", e));
-                }
-                
-                if (pinInputEl) pinInputEl.value = '';
-                const welcomeName = foundData.adminName || foundData.displayName || 'Operator';
-                window.showAdminToast(`✅ Welcome back, ${welcomeName}!`);
-                
-                document.getElementById('accessDeniedOverlay').style.display = 'none';
-                window.routeUserByRole();
-            }).catch(e => console.warn("Update Error:", e));
-        } else {
-            window.showAdminToast("❌ Invalid PIN or unapproved profile.");
-            if (pinInputEl) pinInputEl.value = '';
-        }
-    }).catch(e => {
-        console.error("PIN Verification Error:", e);
-        window.showAdminToast("❌ Network error verifying PIN.");
-    });
-};
-
-window.updateUserPin = function(uid, pinStr) {
-    update(ref(db, `users/${uid}`), { pin: pinStr }).catch(e => console.warn(e));
 };
