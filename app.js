@@ -221,6 +221,7 @@ window.pushLaneToCloud = function(idx) {
     updates[`lanes/${idx-1}/d`]           = lane.d;
     updates[`lanes/${idx-1}/w`]           = lane.w;
     updates[`lanes/${idx-1}/locked`]      = lane.locked;
+    updates[`lanes/${idx-1}/disabled`]    = lane.disabled || false;
     updates[`lanes/${idx-1}/attempts`]    = lane.attempts ?? 0;
     updates[`lanes/${idx-1}/smartActive`] = lane.smartActive ?? false;
     updates[`lanes/${idx-1}/lastD`]       = lane.lastD ?? null;
@@ -280,7 +281,7 @@ window.renderInterface = function() {
         container.innerHTML += `
             <div class="lane-card" id="card-${i}">
                 <div class="lane-header">
-                    <div class="lane-header-left"><span>${window.t('lane')} ${i}</span><span class="smart-tag" id="tag-${i}">SMART</span></div>
+                    <div class="lane-header-left"><span>${window.t('lane')} ${i}</span><span class="smart-tag" id="tag-${i}">SMART</span><button class="btn-icon" id="btnDisable-${i}" onclick="window.toggleLaneDisable(${i})" style="margin-left:8px; font-size:0.9rem; padding:0 5px;" title="Toggle Lane Power">⊘</button></div>
                     <span class="lane-trend" id="trend-${i}"></span>
                 </div>
                 <div>
@@ -351,7 +352,17 @@ window.updateUIFromCloud = function() {
             wEl.value = lane.w || '';
             if (isAdmin) { wEl.readOnly = true; wEl.style.borderColor = 'var(--border)'; }
         }
-        const card = document.getElementById(`card-${i}`);
+        const card   = document.getElementById(`card-${i}`);
+        const btnDis = document.getElementById(`btnDisable-${i}`);
+        if (lane.disabled) {
+            card.classList.add('lane-disabled');
+            if (btnDis) { btnDis.innerText = '⊘ OFF'; btnDis.style.color = 'var(--danger)'; }
+            dEl.disabled = true; if (wEl) wEl.disabled = true;
+        } else {
+            card.classList.remove('lane-disabled');
+            if (btnDis) { btnDis.innerText = '⊘'; btnDis.style.color = ''; }
+            dEl.disabled = false; if (wEl) wEl.disabled = false;
+        }
         if (config.smart === 'on' || (config.smart === 'auto' && lane.smartActive)) card.classList.add('smart-active');
         else card.classList.remove('smart-active');
     }
@@ -368,6 +379,7 @@ window.calculateLocal = function() {
     let weights = [], count = 0;
     for (let i = 1; i <= config.lanes; i++) {
         if (!store.lanes[i-1]) continue;
+        if (store.lanes[i-1].disabled) { document.getElementById(`resText-${i}`).innerText = 'OFF'; continue; }
         const lane    = store.lanes[i-1];
         const currD   = parseFloat(lane.d), currW = parseFloat(lane.w);
         const resText = document.getElementById(`resText-${i}`);
@@ -549,6 +561,7 @@ window.toggleHistCard = function(idx) { document.getElementById(`hcard-${idx}`).
 window.checkAutoSave = function() {
     let currentCombo = "", allFilled = true;
     for (let i = 1; i <= config.lanes; i++) {
+        if (store.lanes[i-1] && store.lanes[i-1].disabled) continue;
         const w = document.getElementById(`avgWt-${i}`).value;
         if (!w) { allFilled = false; break; }
         currentCombo += w + ",";
@@ -571,10 +584,14 @@ window.saveToHistory = function() {
     const opName    = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
     let row = { time, timestamp, avg, operator: opName, target: store.target, lanes: [] };
     for (let i = 1; i <= config.lanes; i++) {
-        const wt   = store.lanes[i-1] ? store.lanes[i-1].w : '';
-        const calc = document.getElementById(`calcVal-${i}`).value;
-        const dens = store.lanes[i-1] ? store.lanes[i-1].d : '';
-        row.lanes.push({ w: wt ? `${wt}g` : '--', d: calc || dens || '--' });
+        if (store.lanes[i-1] && store.lanes[i-1].disabled) {
+            row.lanes.push({ w: 'OFF', d: '--' });
+        } else {
+            const wt   = store.lanes[i-1] ? store.lanes[i-1].w : '';
+            const calc = document.getElementById(`calcVal-${i}`).value;
+            const dens = store.lanes[i-1] ? store.lanes[i-1].d : '';
+            row.lanes.push({ w: wt ? `${wt}g` : '--', d: calc || dens || '--' });
+        }
     }
     if (!Array.isArray(history)) history = [];
     history.unshift(row);
@@ -702,6 +719,19 @@ window.applyResult = function(idx) {
         window.calculateLocal();
         window.pushLaneToCloud(idx);
     }
+};
+
+window.toggleLaneDisable = function(idx) {
+    if (!store.lanes) return;
+    const lane = store.lanes[idx-1];
+    lane.disabled = !lane.disabled;
+    if (lane.disabled) {
+        lane.w = ''; lane.d = ''; lane.locked = true; lane.smartActive = false;
+        document.getElementById(`avgWt-${idx}`).value = '';
+    }
+    window.pushLaneToCloud(idx);
+    window.updateUIFromCloud();
+    window.checkAutoSave();
 };
 
 window.unlockAndFocus = function(i) {
