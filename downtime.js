@@ -362,14 +362,25 @@ window.calculateSmartRoute = function(degradedCutterIds) {
     // Minimum viable: 1+1+2+1 = 5 healthy actuators
     if (totalHealthy < 5) return null;
 
-    // Allocation table — protect inside lanes (2 & 3) first
-    const allocationMap = {
-        8: { 1: 2, 2: 2, 3: 2, 4: 2 },
-        7: { 1: 1, 2: 2, 3: 2, 4: 2 },
-        6: { 1: 1, 2: 2, 3: 2, 4: 1 },
-        5: { 1: 1, 2: 1, 3: 2, 4: 1 }
-    };
-    const subLaneAllocations = allocationMap[totalHealthy];
+    let subLaneAllocations = { 1: 2, 2: 2, 3: 2, 4: 2 };
+
+    if (totalHealthy === 7) {
+        // Directional Load Balancing:
+        // Right-side breakdown (Actuators 5–8) → push unprocessed meat to Sub-lane 4 (outside right)
+        // Left-side breakdown  (Actuators 1–4) → push unprocessed meat to Sub-lane 1 (outside left)
+        const downCutter = degradedNumbers[0];
+        if (downCutter >= 5) {
+            subLaneAllocations = { 1: 2, 2: 2, 3: 2, 4: 1 };
+        } else {
+            subLaneAllocations = { 1: 1, 2: 2, 3: 2, 4: 2 };
+        }
+    } else if (totalHealthy === 6) {
+        // Both outside lanes absorb the hit — protect inside lanes 2 & 3
+        subLaneAllocations = { 1: 1, 2: 2, 3: 2, 4: 1 };
+    } else if (totalHealthy === 5) {
+        // Extreme degradation — Sub-lane 3 retains 2 cutters as last protected lane
+        subLaneAllocations = { 1: 1, 2: 1, 3: 2, 4: 1 };
+    }
 
     const assignments = [];
     let actuatorIndex = 0;
@@ -377,11 +388,11 @@ window.calculateSmartRoute = function(degradedCutterIds) {
     for (let subLane = 1; subLane <= 4; subLane++) {
         const cuttersNeeded = subLaneAllocations[subLane];
         if (cuttersNeeded === 2) {
-            // Rule 4: Path 2 (vertical) first, then Path 1 (horizontal)
+            // Default optimal pathing: Path 2 (vertical) fires first, then Path 1 (horizontal)
             assignments.push({ actuator: healthyActuators[actuatorIndex++], subLane, path: 2, mode: 'Cutter' });
             assignments.push({ actuator: healthyActuators[actuatorIndex++], subLane, path: 1, mode: 'Cutter' });
         } else {
-            // Rule 3: Solo cutter must be Path 1
+            // Solo Rule: single cutter must be Path 1 to prevent machine faults
             assignments.push({ actuator: healthyActuators[actuatorIndex++], subLane, path: 1, mode: 'Cutter' });
         }
     }
