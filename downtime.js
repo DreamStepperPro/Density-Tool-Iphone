@@ -15,6 +15,25 @@ let currentActiveDowntimes = {};
 // Sandbox local memory — keyed by machine number, never touches Firebase
 window.sandboxDowntimes = {};
 
+// =====================================================================
+// TIME-GATED SHIFT BARRIER
+// Active Window: Sunday 23:45 through Friday 08:02 AM
+// =====================================================================
+window.isShiftActive = function() {
+    const now  = new Date();
+    const day  = now.getDay(); // 0=Sun, 1=Mon ... 5=Fri, 6=Sat
+    const currentTime = now.getHours() + (now.getMinutes() / 60);
+    const shiftEnd = 8 + (2 / 60); // 08:02 AM exactly
+
+    if (day === 0 && currentTime >= 23.75) return true;          // Sunday night start
+    if (day >= 1 && day <= 4) {
+        if (currentTime < shiftEnd)  return true;                // Mon–Thu morning tail
+        if (currentTime >= 23.75)    return true;                // Mon–Thu night start
+    }
+    if (day === 5 && currentTime < shiftEnd) return true;        // Friday morning tail
+    return false;                                                 // Weekend / daytime
+};
+
 // Hook into startCloudSync so downtime listener auto-starts with the operator engine
 const _origStartCloudSync = window.startCloudSync;
 window.startCloudSync = function() {
@@ -109,6 +128,11 @@ window.populateFaultReasons = function(compId) {
 };
 
 window.toggleComponent = function(id, name) {
+    // Shift barrier — block non-admins from logging downtime outside active shift hours
+    if (!window.isShiftActive() && !(window.getIsAdmin && window.getIsAdmin())) {
+        window.showAdminToast("⚠️ Shift Inactive: Downtime logging is disabled.");
+        return;
+    }
     window.cancelFault();
     window.cancelReEnable();
     if (currentActiveDowntimes[id]) {
@@ -423,8 +447,46 @@ window.loadAndViewPhoto = function(imgEl) {
 };
 
 // Compliance clock
-setInterval(window.checkStreamTestCompliance, 30000);
-setTimeout(window.checkStreamTestCompliance, 2000);
+// =====================================================================
+// AUTO-CLOSE DAEMON
+// Forces active downtimes closed at 08:02 AM — runs on 30s interval
+// =====================================================================
+window.enforceShiftBoundaries = function() {
+    if (window.isShiftActive()) return; // Shift still active, nothing to close
+    const keys = Object.keys(currentActiveDowntimes);
+    if (keys.length === 0) return;
+    const m       = window.getConfig().currentMachine;
+    const now     = Date.now();
+    const timeStr = new Date().toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    keys.forEach(id => {
+        const faultData    = currentActiveDowntimes[id];
+        const durationMins = Math.max(1, Math.round((now - faultData.startTime) / 60000));
+        const permanentRecord = {
+            machine:    `M${m}`,
+            component:  faultData.name,
+            reason:     faultData.reason,
+            severity:   faultData.severity || 'degraded',
+            notes:      faultData.notes ? `${faultData.notes} (Auto-closed at shift end)` : '(Auto-closed at shift end)',
+            durationMins, startTime: faultData.startTime, endTime: now, timeStr,
+            loggedBy:   faultData.loggedBy,
+            clearedBy:  'SYSTEM (Auto-Close)'
+        };
+        if (window.isOfflineMode) {
+            if (window.sandboxDowntimes[m]) delete window.sandboxDowntimes[m][id];
+        } else if (db) {
+            push(ref(db, 'downtimeLogs'), permanentRecord)
+                .then(() => set(ref(db, `activeDowntimes/M${m}/${id}`), null));
+        }
+    });
+    if (window.isOfflineMode) {
+        currentActiveDowntimes = window.sandboxDowntimes[m] || {};
+        window.syncMatrixToCloud();
+    }
+};
+
+// Compliance clock + Auto-Close Daemon (every 30s, initial check after 2s)
+setInterval(() => { window.checkStreamTestCompliance(); window.enforceShiftBoundaries(); }, 30000);
+setTimeout(() => { window.checkStreamTestCompliance(); window.enforceShiftBoundaries(); }, 2000);
 
 // =====================================================================
 // ABOUT / OUR STORY
