@@ -435,8 +435,9 @@ window.calculateLocal = function() {
                 }
                 if (recentWts.length > 0 && !isNaN(currW)) {
                     let velocity = 0;
-                    // Stabilization Override — needs 2+ points; if weight barely moved, no drift signal
-                    if (recentWts.length > 1 && Math.abs(currW - recentWts[0]) <= 0.4) {
+                    // Stabilization Override — compare against oldest point, not most recent
+                    // This preserves slow steady drift signals across the full time window
+                    if (recentWts.length > 1 && Math.abs(currW - recentWts[recentWts.length - 1]) <= 0.4) {
                         velocity = 0;
                     } else {
                         const oldestW    = recentWts[recentWts.length - 1];
