@@ -152,6 +152,25 @@ window.toggleComponent = function(id, name) {
                 swapBtn.onclick = () => window.swapSeverity('down');
             }
         }
+        // Smart Route button — only show for degraded cutters (c1–c8)
+        let smartBtn = document.getElementById('btnSmartRoute');
+        if (!smartBtn) {
+            smartBtn = document.createElement('button');
+            smartBtn.id = 'btnSmartRoute';
+            if (swapBtn) {
+                swapBtn.parentNode.insertBefore(smartBtn, swapBtn.nextSibling);
+            }
+        }
+        if (smartBtn) {
+            if (id.startsWith('c') && faultData.severity === 'degraded') {
+                smartBtn.innerHTML = '🧠 SMART ROUTE OPTIMIZATION';
+                smartBtn.style.cssText = 'display:block;width:100%;margin-top:0;margin-bottom:10px;padding:12px;background:var(--info,#3498db);color:white;border:none;border-radius:8px;font-weight:bold;font-size:0.9rem;cursor:pointer;letter-spacing:0.03em;';
+                smartBtn.onclick = () => window.openSmartRoute();
+            } else {
+                smartBtn.style.display = 'none';
+            }
+        }
+
         document.getElementById('reEnableDrawer').classList.add('active');
         setTimeout(() => document.getElementById('reEnableDrawer').scrollIntoView({behavior:'smooth', block:'nearest'}), 50);
     } else {
@@ -168,9 +187,11 @@ window.toggleComponent = function(id, name) {
 window.cancelFault    = function() { document.getElementById('faultDrawer').classList.remove('active'); };
 window.cancelReEnable = function() {
     document.getElementById('reEnableDrawer').classList.remove('active');
-    // Hide swap button when drawer closes
+    // Hide swap button and smart route button when drawer closes
     const swapBtn = document.getElementById('btnSwapSeverity');
     if (swapBtn) swapBtn.style.display = 'none';
+    const smartBtn = document.getElementById('btnSmartRoute');
+    if (smartBtn) smartBtn.style.display = 'none';
 };
 
 window.swapSeverity = function(newSeverity) {
@@ -307,6 +328,144 @@ window.updateBannerState = function() {
             sub.innerText    = `${downCount} ${window.t('compsDown')}`;
         }
     }
+};
+
+// =====================================================================
+// SMART ROUTE OPTIMIZATION ENGINE
+// Triggered when a waterjet cutter (c1–c8) is marked as "degraded".
+// Produces an optimized DSI actuator grid with changed cells highlighted.
+//
+// Rules:
+//   Rule 1 – Anchor  : Sub-lanes 2 & 3 keep 2 cutters when possible.
+//   Rule 2 – Ergo    : Single-cutter sub-lanes go to outside lanes (1 or 4).
+//   Rule 3 – Solo    : A lone cutter in any sub-lane must be Path 1.
+//   Rule 4 – Sequence: In a 2-cutter sub-lane, Path 2 fires before Path 1.
+// =====================================================================
+
+const DSI_BASELINE = {
+    1: { subLane: 1, path: 2 },
+    2: { subLane: 1, path: 1 },
+    3: { subLane: 2, path: 2 },
+    4: { subLane: 2, path: 1 },
+    5: { subLane: 3, path: 2 },
+    6: { subLane: 3, path: 1 },
+    7: { subLane: 4, path: 2 },
+    8: { subLane: 4, path: 1 }
+};
+
+window.calculateSmartRoute = function(degradedCutterIds) {
+    const allActuators     = [1, 2, 3, 4, 5, 6, 7, 8];
+    const degradedNumbers  = degradedCutterIds.map(id => parseInt(id.replace('c', ''), 10));
+    const healthyActuators = allActuators.filter(a => !degradedNumbers.includes(a));
+    const totalHealthy     = healthyActuators.length;
+
+    // Minimum viable: 1+1+2+1 = 5 healthy actuators
+    if (totalHealthy < 5) return null;
+
+    // Allocation table — protect inside lanes (2 & 3) first
+    const allocationMap = {
+        8: { 1: 2, 2: 2, 3: 2, 4: 2 },
+        7: { 1: 1, 2: 2, 3: 2, 4: 2 },
+        6: { 1: 1, 2: 2, 3: 2, 4: 1 },
+        5: { 1: 1, 2: 1, 3: 2, 4: 1 }
+    };
+    const subLaneAllocations = allocationMap[totalHealthy];
+
+    const assignments = [];
+    let actuatorIndex = 0;
+
+    for (let subLane = 1; subLane <= 4; subLane++) {
+        const cuttersNeeded = subLaneAllocations[subLane];
+        if (cuttersNeeded === 2) {
+            // Rule 4: Path 2 (vertical) first, then Path 1 (horizontal)
+            assignments.push({ actuator: healthyActuators[actuatorIndex++], subLane, path: 2, mode: 'Cutter' });
+            assignments.push({ actuator: healthyActuators[actuatorIndex++], subLane, path: 1, mode: 'Cutter' });
+        } else {
+            // Rule 3: Solo cutter must be Path 1
+            assignments.push({ actuator: healthyActuators[actuatorIndex++], subLane, path: 1, mode: 'Cutter' });
+        }
+    }
+
+    // Mark degraded actuators as OFF
+    degradedNumbers.forEach(actNum => {
+        assignments.push({ actuator: actNum, subLane: '--', path: 'OFF', mode: 'Off' });
+    });
+
+    return assignments.sort((a, b) => a.actuator - b.actuator);
+};
+
+window.openSmartRoute = function() {
+    const activeFaults    = Object.values(currentActiveDowntimes || {});
+    const degradedCutters = activeFaults
+        .filter(f => f.id && f.id.startsWith('c') && f.severity === 'degraded')
+        .map(f => f.id);
+
+    if (degradedCutters.length === 0) {
+        window.showAdminToast('⚠️ No degraded cutters found to route.');
+        return;
+    }
+
+    const newRoute = window.calculateSmartRoute(degradedCutters);
+    if (!newRoute) {
+        window.showAdminToast('⚠️ Too many cutters down. Hard down recommended.');
+        return;
+    }
+
+    const HIGHLIGHT = 'background:#FFD700;color:#000;font-weight:bold;border-radius:4px;padding:4px 8px;';
+    const NORMAL    = 'padding:4px 8px;';
+    const OFF_STYLE = 'background:#e74c3c;color:#fff;font-weight:bold;border-radius:4px;padding:4px 8px;';
+
+    let gridHtml = `
+        <p style="font-size:0.78rem;color:#aaa;margin:0 0 10px;">
+            🟡 Yellow = changed from baseline &nbsp;|&nbsp; 🔴 Red = cutter OFF
+        </p>
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:4px;text-align:center;font-size:0.85rem;">
+            <div style="font-weight:bold;border-bottom:2px solid #444;padding-bottom:6px;">Actuator</div>
+            <div style="font-weight:bold;border-bottom:2px solid #444;padding-bottom:6px;">Mode</div>
+            <div style="font-weight:bold;border-bottom:2px solid #444;padding-bottom:6px;">Sub-Lane</div>
+            <div style="font-weight:bold;border-bottom:2px solid #444;padding-bottom:6px;">Path</div>
+    `;
+
+    newRoute.forEach(row => {
+        const base         = DSI_BASELINE[row.actuator];
+        const isOff        = row.path === 'OFF';
+        const subLaneStyle = isOff ? OFF_STYLE : (row.subLane !== base.subLane ? HIGHLIGHT : NORMAL);
+        const pathStyle    = isOff ? OFF_STYLE : (row.path    !== base.path    ? HIGHLIGHT : NORMAL);
+        const modeStyle    = isOff ? OFF_STYLE : NORMAL;
+
+        gridHtml += `
+            <div style="${NORMAL}border-bottom:1px solid #333;">Actuator ${row.actuator}</div>
+            <div style="${modeStyle}border-bottom:1px solid #333;">${row.mode}</div>
+            <div style="${subLaneStyle}border-bottom:1px solid #333;">${row.subLane}</div>
+            <div style="${pathStyle}border-bottom:1px solid #333;">${row.path}</div>
+        `;
+    });
+
+    gridHtml += `</div>
+        <p style="margin-top:12px;font-size:0.75rem;color:#888;border-top:1px solid #333;padding-top:8px;">
+            ⚙️ Go to DSI → Cutter Setup tab → update the highlighted cells.
+        </p>`;
+
+    // Remove any existing overlay
+    const existing = document.getElementById('smartRouteOverlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'smartRouteOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;padding:16px;';
+    overlay.innerHTML = `
+        <div style="background:var(--card-bg,#1e1e2e);border-radius:12px;width:100%;max-width:460px;padding:20px;box-shadow:0 8px 32px rgba(0,0,0,0.6);color:var(--text,#eee);font-family:inherit;max-height:90vh;overflow-y:auto;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <h2 style="margin:0;font-size:1rem;">🧠 Smart Route Optimization</h2>
+                <button onclick="document.getElementById('smartRouteOverlay').remove()"
+                    style="background:none;border:none;color:#aaa;font-size:1.4rem;cursor:pointer;line-height:1;">✕</button>
+            </div>
+            ${gridHtml}
+        </div>
+    `;
+
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
 };
 
 // =====================================================================
