@@ -5,7 +5,7 @@
 // =====================================================================
 
 import { getApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, update, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const db = getDatabase(getApp());
 
@@ -16,6 +16,8 @@ let unsubMaintLogs    = null;
 let cachedHistories   = null;
 let cachedShiftLedger = null;
 let cachedMaintLogs   = [];
+let cachedTargetStd   = 1.0; // Default STD ceiling — supervisor can adjust live
+let unsubTargetStd    = null;
 
 // Expose read-only getters for other modules (e.g. applyTranslations needs cachedHistories)
 window.getCachedHistories  = () => cachedHistories;
@@ -39,6 +41,50 @@ window.startSupervisorSync = function() {
             window.renderMaintHistory();
         }
     });
+    // Sync adjustable STD ceiling across all supervisor tablets
+    if (unsubTargetStd) { unsubTargetStd(); unsubTargetStd = null; }
+    unsubTargetStd = onValue(ref(db, 'stores/departmentTargetStd'), (snap) => {
+        cachedTargetStd = snap.val() || 1.0;
+        if (cachedHistories) window.renderSupervisorDashboard(cachedHistories);
+    });
+};
+
+// Save STD ceiling to Firebase so all supervisor tablets see the same limit
+window.updateTargetStdLimit = function(val) {
+    const num = parseFloat(val);
+    if (!isNaN(num) && num > 0 && db) {
+        update(ref(db, 'stores'), { departmentTargetStd: num })
+            .catch(e => console.warn("Failed to update STD ceiling:", e));
+    }
+};
+
+// Grand Mean + Grand STD across all active machines — uses getAbsoluteLatest for current weights
+window.calculateDepartmentStats = function(allHistories) {
+    let allWeights = [], laneDetails = [];
+    const cfg = window.getConfig();
+    for (let m = 1; m <= cfg.machines; m++) {
+        const latest = window.getAbsoluteLatest(allHistories[`M${m}`]);
+        if (latest && latest.entry && latest.entry.lanes) {
+            latest.entry.lanes.forEach((lane, index) => {
+                if (lane.disabled || !lane.w || lane.w === '--') return;
+                const w = parseFloat(lane.w);
+                if (!isNaN(w)) {
+                    allWeights.push(w);
+                    laneDetails.push({ machine: m, lane: index + 1, weight: w });
+                }
+            });
+        }
+    }
+    if (allWeights.length === 0) return null;
+    const grandMean = allWeights.reduce((sum, w) => sum + w, 0) / allWeights.length;
+    const variance  = allWeights.reduce((sum, w) => sum + Math.pow(w - grandMean, 2), 0) / allWeights.length;
+    const grandStd  = Math.sqrt(variance);
+    let worstLane = null, maxDev = -1;
+    laneDetails.forEach(lane => {
+        const dev = Math.abs(lane.weight - grandMean);
+        if (dev > maxDev) { maxDev = dev; worstLane = lane; }
+    });
+    return { grandMean: grandMean.toFixed(1), grandStd: grandStd.toFixed(2), snipeTarget: worstLane, maxDev: maxDev.toFixed(1) };
 };
 
 window.renderSupervisorDashboard = function(allHistories) {
@@ -58,14 +104,51 @@ window.renderSupervisorDashboard = function(allHistories) {
             container.innerHTML += `<div class="sup-card"><h3 style="color:gray;">DSI ${m}: No Data</h3></div>`;
         }
     }
-    if (allWeightsGlobal.length > 0) {
-        const mean = allWeightsGlobal.reduce((a, b) => a + b, 0) / allWeightsGlobal.length;
-        document.getElementById('machAvg').innerText = mean.toFixed(1);
-        if (allWeightsGlobal.length > 1) {
-            const v = allWeightsGlobal.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / allWeightsGlobal.length;
-            document.getElementById('stdDev').innerText = Math.sqrt(v).toFixed(2);
-        } else { document.getElementById('stdDev').innerText = "--"; }
-    } else { document.getElementById('machAvg').innerText = "--"; document.getElementById('stdDev').innerText = "--"; }
+    const stats = window.calculateDepartmentStats(allHistories);
+
+    // Ensure snipe alert box exists above the cards container
+    let alertBox = document.getElementById('snipeAlertBox');
+    if (!alertBox) {
+        alertBox = document.createElement('div');
+        alertBox.id = 'snipeAlertBox';
+        container.parentNode.insertBefore(alertBox, container);
+    }
+
+    if (stats) {
+        document.getElementById('machAvg').innerText = stats.grandMean;
+        const stdEl = document.getElementById('stdDev');
+        stdEl.innerText = stats.grandStd;
+
+        // Inject adjustable ceiling input once, next to the STD display
+        if (!document.getElementById('stdCeilingInput')) {
+            stdEl.insertAdjacentHTML('afterend', `
+                <div style="font-size:0.7rem; font-weight:normal; margin-top:4px; text-align:center;">
+                    Limit: <input type="number" id="stdCeilingInput" step="0.1" min="0.1"
+                        style="width:50px; padding:2px; font-size:0.7rem; text-align:center; border:1px solid var(--border); border-radius:4px; background:var(--input-bg); color:var(--text);"
+                        onblur="window.updateTargetStdLimit(this.value)">
+                </div>`);
+        }
+        const ceilingInput = document.getElementById('stdCeilingInput');
+        if (ceilingInput && document.activeElement !== ceilingInput) ceilingInput.value = cachedTargetStd;
+
+        if (parseFloat(stats.grandStd) > cachedTargetStd && stats.snipeTarget) {
+            stdEl.style.color = 'var(--danger)';
+            const diff = (stats.snipeTarget.weight - parseFloat(stats.grandMean)).toFixed(1);
+            const sign = parseFloat(diff) > 0 ? '+' : '';
+            alertBox.innerHTML = `
+                <div style="background:rgba(255,77,77,0.1); border:1px solid var(--danger); color:var(--danger); padding:10px; border-radius:8px; margin-bottom:15px; font-weight:bold; text-align:center; box-shadow:var(--shadow);">
+                    🎯 SNIPE TARGET: DSI ${stats.snipeTarget.machine}, Lane ${stats.snipeTarget.lane}
+                    <br><span style="font-size:0.85rem; font-weight:normal;">Pulling dept STD with ${sign}${diff}g from mean (${stats.snipeTarget.weight}g)</span>
+                </div>`;
+        } else {
+            stdEl.style.color = 'var(--perfect)';
+            alertBox.innerHTML = '';
+        }
+    } else {
+        document.getElementById('machAvg').innerText = "--";
+        document.getElementById('stdDev').innerText  = "--";
+        if (alertBox) alertBox.innerHTML = '';
+    }
 };
 
 window.getAbsoluteLatest = function(machineHistories) {
