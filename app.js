@@ -185,8 +185,9 @@ window.routeUserByRole = function() {
 // =====================================================================
 // OPERATOR ENGINE — Cloud Sync
 // =====================================================================
-let unsubStore = null, unsubHistory = null;
+let unsubStore = null, unsubHistory = null, unsubSnipe = null;
 let dbRef_Store = null, dbRef_History = null;
+window.departmentSnipe = { active: false }; // Initialize before listener fires
 
 window.startCloudSync = function() {
     if (!db) { setTimeout(window.startCloudSync, 500); return; }
@@ -210,6 +211,12 @@ window.startCloudSync = function() {
         const val = snapshot.val();
         history = val ? (Array.isArray(val) ? val : Object.values(val)) : [];
         window.renderHistoryCards();
+    });
+    // Snipe receiver — listen for supervisor broadcast, update UI when state changes
+    if (unsubSnipe) { unsubSnipe(); unsubSnipe = null; }
+    unsubSnipe = onValue(ref(db, 'stores/departmentSnipe'), (snapshot) => {
+        window.departmentSnipe = snapshot.val() || { active: false };
+        window.updateUIFromCloud();
     });
 };
 
@@ -363,8 +370,23 @@ window.updateUIFromCloud = function() {
             if (btnDis) { btnDis.innerText = '⊘'; btnDis.style.color = ''; }
             dEl.disabled = false; if (wEl) wEl.disabled = false;
         }
-        if (config.smart === 'on' || (config.smart === 'auto' && lane.smartActive)) card.classList.add('smart-active');
-        else card.classList.remove('smart-active');
+        const isSnipeLane = window.departmentSnipe && window.departmentSnipe.active
+            && config.currentMachine === window.departmentSnipe.machine
+            && i === window.departmentSnipe.lane;
+        const tagEl = document.getElementById(`tag-${i}`);
+        if (isSnipeLane) {
+            card.classList.add('smart-active');
+            card.style.boxShadow = '0 0 12px var(--danger)';
+            if (tagEl) { tagEl.innerText = 'SMART-S'; tagEl.style.background = 'var(--danger)'; }
+        } else {
+            card.style.boxShadow = '';
+            if (config.smart === 'on' || (config.smart === 'auto' && lane.smartActive)) {
+                card.classList.add('smart-active');
+            } else {
+                card.classList.remove('smart-active');
+            }
+            if (tagEl) { tagEl.innerText = 'SMART'; tagEl.style.background = ''; }
+        }
     }
     window.calculateLocal();
 };
@@ -388,9 +410,15 @@ window.calculateLocal = function() {
         const resBox  = document.getElementById(`resBox-${i}`);
         const trendEl = document.getElementById(`trend-${i}`);
         if (!isNaN(target) && !isNaN(currD) && !isNaN(currW)) {
-            const diff    = currW - target;
+            // SMART-S: if this lane is the snipe target, redirect math to the grand mean
+            const isSnipeLane = window.departmentSnipe && window.departmentSnipe.active
+                && config.currentMachine === window.departmentSnipe.machine
+                && i === window.departmentSnipe.lane;
+            const effectiveTarget = isSnipeLane ? window.departmentSnipe.grandMean : target;
+            const diff    = currW - effectiveTarget;
             let activeK   = baseK;
-            const isSmart = config.smart === 'on' || (config.smart === 'auto' && lane.smartActive);
+            // Smart Adapt fires normally OR when snipe mode forces it on
+            const isSmart = config.smart === 'on' || (config.smart === 'auto' && lane.smartActive) || isSnipeLane;
 
             if (isSmart && lane.lastD !== null && lane.lastW !== null) {
                 let dDelta = currD - lane.lastD, wDelta = currW - lane.lastW;
@@ -494,6 +522,10 @@ window.calculateLocal = function() {
             else if (absDiff <= 2) { card.classList.add('bg-success'); trendEl.innerHTML = `<span style="color:var(--success)">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}g</span>${driftHtml}${runwayHtml}`; }
             else if (absDiff <= 3) { card.classList.add('bg-warning'); trendEl.innerHTML = `<span style="color:var(--warning)">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}g</span>${driftHtml}${runwayHtml}`; }
             else { card.classList.add('bg-danger'); trendEl.innerHTML = `<span style="color:var(--danger)">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}g</span>${driftHtml}${runwayHtml}`; }
+            // SMART-S override — replaces trend text with fix target (runs after PVE so it wins)
+            if (isSnipeLane) {
+                trendEl.innerHTML = `<span style="color:var(--danger); font-weight:900; font-size:0.75rem;">🎯 FIX TO ${effectiveTarget.toFixed(1)}g</span>`;
+            }
             weights.push(currW); count++;
         } else {
             resText.innerText = `${window.t('newDens')} --`; hiddenVal.value = "";

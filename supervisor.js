@@ -144,6 +144,20 @@ window.renderSupervisorDashboard = function(allHistories) {
             stdEl.style.color = 'var(--perfect)';
             alertBox.innerHTML = '';
         }
+
+        // Broadcast snipe state to floor tablets — debounced to avoid Firebase spam
+        const isSnipe = parseFloat(stats.grandStd) > cachedTargetStd && !!stats.snipeTarget;
+        const snipePayload = isSnipe ? {
+            active: true,
+            machine: stats.snipeTarget.machine,
+            lane: stats.snipeTarget.lane,
+            grandMean: parseFloat(stats.grandMean)
+        } : { active: false };
+        if (JSON.stringify(snipePayload) !== JSON.stringify(window.lastSnipePayload)) {
+            window.lastSnipePayload = snipePayload;
+            update(ref(db, 'stores'), { departmentSnipe: snipePayload })
+                .catch(e => console.warn("Failed to broadcast Snipe Target:", e));
+        }
     } else {
         document.getElementById('machAvg').innerText = "--";
         document.getElementById('stdDev').innerText  = "--";
