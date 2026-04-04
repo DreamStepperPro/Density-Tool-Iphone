@@ -215,8 +215,24 @@ window.startCloudSync = function() {
     // Snipe receiver — listen for supervisor broadcast, update UI when state changes
     if (unsubSnipe) { unsubSnipe(); unsubSnipe = null; }
     unsubSnipe = onValue(ref(db, 'stores/departmentSnipe'), (snapshot) => {
-        window.departmentSnipe = snapshot.val() || { active: false };
-        window.updateUIFromCloud();
+        const newSnipe = snapshot.val() || { active: false };
+        const oldSnipe = window.departmentSnipe || { active: false };
+        window.departmentSnipe = newSnipe;
+        // Vibrate & toast only if THIS machine just became a new snipe target
+        if (newSnipe.active && config.currentMachine === newSnipe.machine) {
+            const isNewTarget = !oldSnipe.active
+                || oldSnipe.machine !== newSnipe.machine
+                || oldSnipe.lane !== newSnipe.lane;
+            if (isNewTarget) {
+                window.showAdminToast(`🚨 SMART-S OVERRIDE: Lane ${newSnipe.lane} Targeted.`);
+                if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
+            }
+        }
+        // Gate re-renders — only update UI if this machine is involved in the snipe change
+        if ((newSnipe.active && newSnipe.machine === config.currentMachine) ||
+            (oldSnipe.active && oldSnipe.machine === config.currentMachine)) {
+            window.updateUIFromCloud();
+        }
     });
 };
 
@@ -431,7 +447,13 @@ window.calculateLocal = function() {
                 }
             }
 
-            let rawNewD = currD + (diff * activeK);
+            let rawNewD;
+            // Tolerance Deadband: within ±0.5g of snipe target, lock density — stop hunting
+            if (isSnipeLane && Math.abs(diff) <= 0.5) {
+                rawNewD = currD;
+            } else {
+                rawNewD = currD + (diff * activeK);
+            }
             // Rule 3: Product-specific safety brake — bfast allows wider swings
             const maxStep = config.product === 'bfast' ? 0.100 : 0.080;
             let stepDelta = rawNewD - currD;
@@ -524,7 +546,13 @@ window.calculateLocal = function() {
             else { card.classList.add('bg-danger'); trendEl.innerHTML = `<span style="color:var(--danger)">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}g</span>${driftHtml}${runwayHtml}`; }
             // SMART-S override — replaces trend text with fix target (runs after PVE so it wins)
             if (isSnipeLane) {
-                trendEl.innerHTML = `<span style="color:var(--danger); font-weight:900; font-size:0.75rem;">🎯 FIX TO ${effectiveTarget.toFixed(1)}g</span>`;
+                if (Math.abs(diff) <= 0.5) {
+                    trendEl.innerHTML = `<span style="color:var(--perfect); font-weight:900; font-size:0.75rem;">🎯 LOCKED ON TARGET</span>`;
+                    card.style.boxShadow = '0 0 12px var(--perfect)';
+                } else {
+                    trendEl.innerHTML = `<span style="color:var(--danger); font-weight:900; font-size:0.75rem;">🎯 FIX TO ${effectiveTarget.toFixed(1)}g</span>`;
+                    card.style.boxShadow = '0 0 12px var(--danger)';
+                }
             }
             weights.push(currW); count++;
         } else {
