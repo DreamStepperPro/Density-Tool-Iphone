@@ -66,6 +66,12 @@ signInAnonymously(auth).then((result) => {
         if (document.getElementById('btnYieldOp')) document.getElementById('btnYieldOp').classList.remove('btn-hidden');
         if (document.getElementById('btnYieldSup')) document.getElementById('btnYieldSup').classList.remove('btn-hidden');
         window.startAdminRadar();
+    } else {
+        // SECURITY: Physically destroy admin buttons from the DOM — prevents iOS ghost-click tap bleed
+        const btnA    = document.getElementById('btnAdmin');
+        const btnASup = document.getElementById('btnAdminSup');
+        if (btnA)    btnA.remove();
+        if (btnASup) btnASup.remove();
     }
 
     const userRef = ref(db, `users/${currentUserUid}`);
@@ -917,6 +923,12 @@ window.switchProfile  = function() { config.lanes = parseInt(document.getElement
 // =====================================================================
 let usersDbRef;
 window.openAdmin = function() {
+    // CRITICAL SECURITY GATE: Hard-stop unauthorized execution at the function level
+    if (!isAdmin) {
+        window.showAdminToast("⛔ Unauthorized Access Blocked.");
+        console.error("Blocked unauthorized attempt to open Admin panel.");
+        return;
+    }
     document.getElementById('adminModal').style.display = 'flex';
     if (!usersDbRef) {
         usersDbRef = ref(db, 'users');
