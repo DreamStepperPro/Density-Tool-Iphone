@@ -316,7 +316,8 @@ window.openSupHistory = function(machineNum) {
                     : '';
                 return `<div style="background:${bg}; border:1px solid ${color}; border-radius:8px; padding:12px; text-align:center; font-weight:bold; font-size:0.85rem; margin-bottom:8px; color:${color}; flex-shrink:0; box-shadow:var(--shadow);">${r.text} • ${r.time}${photoHtml}</div>`;
             }
-            const laneGrid = r.lanes.map((l, li) => `
+            const safeLanes = r.lanes || [];
+            const laneGrid = safeLanes.map((l, li) => `
                 <div class="hist-lane-cell">
                     <span class="hist-lane-lbl">L${li+1}</span>
                     <span class="hist-lane-wt">${l.w}</span>
