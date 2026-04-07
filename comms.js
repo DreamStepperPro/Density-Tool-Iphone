@@ -4,6 +4,13 @@
 // To add a new message type: add a code to renderChat's displayText logic.
 // =====================================================================
 
+// XSS sanitizer — strips HTML tags from any user-generated text before DOM injection
+function escapeHTML(str) {
+    const div = document.createElement('div');
+    div.innerText = str;
+    return div.innerHTML;
+}
+
 import { getApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, push, update, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
@@ -35,25 +42,6 @@ window.sendCustomComms = function() {
     if (!text) return;
     window.sendCommsMsg('TEXT', text);
     input.value = '';
-};
-
-window.sendLaneWarning = function(machineName, laneNum) {
-    let confirmMsg = (window.t('dispatchWarningConfirm') || "Dispatch weight warning to {machine} Lane {lane}?")
-        .replace('{machine}', machineName).replace('{lane}', laneNum);
-
-    if (!confirm(confirmMsg)) return;
-
-    let dispatchMsg = (window.t('offTargetMsg') || "⚠️ OFF TARGET: Please check weight on {machine}, Lane {lane}.")
-        .replace('{machine}', machineName).replace('{lane}', laneNum);
-
-    if (window.isOfflineMode || !db) return;
-    const cfg  = window.getConfig();
-    const name = cfg.displayName || window.currentUserData.adminName || 'Supervisor';
-
-    push(ref(db, 'messages'), {
-        senderUid: window.myUid, senderName: name, role: 'supervisor',
-        machine: 'ADMIN', code: 'TEXT', text: dispatchMsg, timestamp: Date.now()
-    }).catch(e => window.showAdminToast('❌ Network Error: Warning not sent.'));
 };
 
 window.sendCommsMsg = function(code, customText = "") {
@@ -107,14 +95,14 @@ window.renderChat = function(messages) {
         const bubbleClass = isMe ? 'msg-me' : 'msg-them';
         const errClass   = isErr ? 'msg-err' : '';
         const timeStr    = new Date(msg.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
-        let displayText  = msg.text;
+        let displayText  = escapeHTML(msg.text);
         if (msg.code === 'ERR_WT')     displayText = window.t('errWt');
         if (msg.code === 'ERR_MECH')   displayText = window.t('errMech');
         if (msg.code === 'YIELD_UPDATE') {
             try {
                 const data = JSON.parse(msg.text);
-                displayText = `📊 ${window.t('liveYield')}\n🔪 ${window.t('trim')}: ${data.trim}\n🥩 ${window.t('fillets')}: ${data.fillet}\n🍗 ${window.t('nuggets')}: ${data.nugget}`;
-            } catch(e) { displayText = msg.text; }
+                displayText = `📊 ${window.t('liveYield')}\n🔪 ${window.t('trim')}: ${escapeHTML(data.trim)}\n🥩 ${window.t('fillets')}: ${escapeHTML(data.fillet)}\n🍗 ${window.t('nuggets')}: ${escapeHTML(data.nugget)}`;
+            } catch(e) { displayText = escapeHTML(msg.text); }
         }
         html += `
         <div class="msg-bubble ${bubbleClass} ${errClass}">

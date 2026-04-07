@@ -51,6 +51,7 @@ window.startSupervisorSync = function() {
 
 // Save STD ceiling to Firebase so all supervisor tablets see the same limit
 window.updateTargetStdLimit = function(val) {
+    if (window.currentUserData.role !== 'supervisor' && !window.getIsAdmin()) return;
     const num = parseFloat(val);
     if (!isNaN(num) && num > 0 && db) {
         update(ref(db, 'stores'), { departmentTargetStd: num })

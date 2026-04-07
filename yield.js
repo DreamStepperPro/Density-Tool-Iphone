@@ -51,7 +51,12 @@ window.calcYield = function() {
     if (totalInput > 0) {
         document.getElementById('yPctFillet').innerText = ((fillet  / totalInput) * 100).toFixed(2) + '%';
         document.getElementById('yPctNugget').innerText = ((nugget  / totalInput) * 100).toFixed(2) + '%';
-        document.getElementById('yPctTrim').innerText   = ((trim    / totalInput) * 100).toFixed(2) + '%';
+        const trimPct = ((trim / totalInput) * 100).toFixed(2);
+        const trimEl  = document.getElementById('yPctTrim');
+        trimEl.innerText = trimPct + '%';
+        // CI threshold: flag trim > 22% red
+        trimEl.style.color      = parseFloat(trimPct) > 22 ? 'var(--danger)' : 'var(--perfect)';
+        trimEl.style.fontWeight = 'bold';
     } else {
         document.getElementById('yPctFillet').innerText = '0.0%';
         document.getElementById('yPctNugget').innerText = '0.0%';
@@ -114,6 +119,7 @@ window.loadYieldHistory = function() {
 };
 
 window.wipeYieldHistory = function() {
+    if (window.currentUserData.role !== 'supervisor' && !window.getIsAdmin()) return;
     if (confirm("Permanently delete all saved yield history?")) {
         set(ref(db, 'yieldHistory'), null)
             .then(() => window.showAdminToast("🗑️ Yield history wiped."));
