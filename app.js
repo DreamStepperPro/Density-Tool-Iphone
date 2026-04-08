@@ -2,6 +2,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getDatabase, ref, get, set, onValue, update, push, serverTimestamp, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+// Global XSS sanitizer — all user-supplied strings must pass through this before innerHTML
+function escapeHTML(str) {
+    const div = document.createElement('div');
+    div.innerText = String(str ?? '');
+    return div.innerHTML;
+}
+
 const firebaseConfig = {
     apiKey: "AIzaSyA84WGuDvVMTci0KTZHVxDCle8dbiE1XB4",
     authDomain: "dsi-pro-bcb5c.firebaseapp.com",
@@ -600,15 +607,15 @@ window.renderHistoryCards = function() {
         const laneGrid = r.lanes.map((l, li) => `
             <div class="hist-lane-cell">
                 <span class="hist-lane-lbl">L${li+1}</span>
-                <span class="hist-lane-wt">${l.w}</span>
-                <span class="hist-lane-dens">${l.d}</span>
+                <span class="hist-lane-wt">${escapeHTML(l.w)}</span>
+                <span class="hist-lane-dens">${escapeHTML(l.d)}</span>
             </div>`).join('');
         return `
         <div class="hist-card" id="hcard-${idx}">
             <div class="hist-card-header" onclick="window.toggleHistCard(${idx})">
                 <div>
-                    <span class="hist-card-time">${r.time}</span>
-                    ${r.operator ? `<span style="font-size:0.72rem; opacity:0.6; margin-left:8px;">by ${r.operator}</span>` : ''}
+                    <span class="hist-card-time">${escapeHTML(r.time)}</span>
+                    ${r.operator ? `<span style="font-size:0.72rem; opacity:0.6; margin-left:8px;">by ${escapeHTML(r.operator)}</span>` : ''}
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span class="hist-card-avg">Avg: <strong>${r.avg}g</strong></span>
@@ -955,11 +962,11 @@ window.buildAdminUserCard = function(key, data, highlight) {
     const role      = data.role || 'operator';
     return `
     <div class="admin-user-card" style="${highlight ? 'border-color:var(--warning);' : ''}">
-        <div class="admin-user-id">ID: ${key}</div>
-        <div class="admin-user-name">Device: <strong>${dispName}</strong></div>
+        <div class="admin-user-id">ID: ${escapeHTML(key)}</div>
+        <div class="admin-user-name">Device: <strong>${escapeHTML(dispName)}</strong></div>
         <div style="display:flex; gap:8px; margin-bottom:8px;">
-            <input type="text" placeholder="Admin Name" value="${adminName}" onblur="window.updateAdminName('${key}', this.value)" style="flex:2; padding:8px; font-size:0.85rem; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text);">
-            <input type="text" placeholder="PIN" value="${data.pin || ''}" maxlength="4" inputmode="numeric" onblur="window.updateUserPin('${key}', this.value)" style="flex:1; padding:8px; font-size:0.85rem; text-align:center; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text); font-weight:bold; letter-spacing:4px;">
+            <input type="text" placeholder="Admin Name" value="${escapeHTML(adminName)}" onblur="window.updateAdminName('${key}', this.value)" style="flex:2; padding:8px; font-size:0.85rem; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text);">
+            <input type="text" placeholder="PIN" value="${escapeHTML(data.pin || '')}" maxlength="4" inputmode="numeric" onblur="window.updateUserPin('${key}', this.value)" style="flex:1; padding:8px; font-size:0.85rem; text-align:center; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text); font-weight:bold; letter-spacing:4px;">
         </div>
         <div class="admin-user-row">
             <select onchange="window.updateUserRole('${key}', this.value)" style="padding:6px; font-size:0.8rem; width:40%; border-radius:6px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);">

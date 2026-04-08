@@ -7,6 +7,13 @@
 import { getApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, update, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+// XSS sanitizer — strips HTML from Firebase user data before innerHTML injection
+function escapeHTML(str) {
+    const div = document.createElement('div');
+    div.innerText = String(str ?? '');
+    return div.innerHTML;
+}
+
 const db = getDatabase(getApp());
 
 // Module-level state — private to this file
@@ -258,7 +265,7 @@ window.buildSupCard = function(title, dataObj, recentChecks, m) {
             </div>
             <button class="btn-icon" style="border:none; font-size:1.3rem; height:40px; width:40px; background:rgba(128,128,128,0.1); flex-shrink:0;" onclick="window.openSupHistory(${m})" title="View Detailed Logs">📋</button>
         </div>
-        <div class="sup-operator">👤 ${opName}</div>
+        <div class="sup-operator">👤 ${escapeHTML(opName)}</div>
         <div class="sup-grid">${lanesHtml}</div>
         ${trendHtml}
     </div>`;
@@ -329,7 +336,7 @@ window.openSupHistory = function(machineNum) {
                 <div class="hist-card-header" style="cursor:default;">
                     <div>
                         <span class="hist-card-time">${r.time}</span>
-                        ${r.operator ? `<span style="font-size:0.72rem; opacity:0.6; margin-left:8px;">by ${r.operator}</span>` : ''}
+                        ${r.operator ? `<span style="font-size:0.72rem; opacity:0.6; margin-left:8px;">by ${escapeHTML(r.operator)}</span>` : ''}
                     </div>
                     <span class="hist-card-avg">Avg: <strong>${r.avg}g</strong></span>
                 </div>
@@ -415,7 +422,7 @@ window.renderMaintHistory = function() {
         <div class="maint-log-card">
             <div class="maint-log-header">
                 <span>${log.timeStr} • ${log.machine}</span>
-                <span>Logged by ${log.loggedBy}</span>
+                <span>Logged by ${escapeHTML(log.loggedBy)}</span>
             </div>
             <div class="maint-log-body">
                 <div class="maint-log-fault">
@@ -428,7 +435,7 @@ window.renderMaintHistory = function() {
             </div>
             ${log.notes ? `<div class="maint-log-notes">"${log.notes}"</div>` : ''}
             <div style="font-size:0.7rem; opacity:0.5; margin-top:8px; text-align:right;">
-                Repaired by ${log.clearedBy}
+                Repaired by ${escapeHTML(log.clearedBy)}
             </div>
         </div>`).join('');
 };
