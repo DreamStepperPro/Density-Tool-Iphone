@@ -44,6 +44,21 @@ window.sendCustomComms = function() {
     input.value = '';
 };
 
+window.sendLaneWarning = function(machineStr, laneNum) {
+    if (window.isOfflineMode) {
+        window.showAdminToast('📵 Line Dispatch unavailable offline');
+        return;
+    }
+    let confirmText = window.t('dispatchWarningConfirm') || `Dispatch weight warning to ${machineStr} Lane ${laneNum}?`;
+    confirmText = confirmText.replace('{machine}', machineStr).replace('{lane}', laneNum);
+    if (confirm(confirmText)) {
+        let msgText = window.t('offTargetMsg') || `⚠️ OFF TARGET: Please check weight on ${machineStr}, Lane ${laneNum}.`;
+        msgText = msgText.replace('{machine}', machineStr).replace('{lane}', laneNum);
+        window.sendCommsMsg('TEXT', msgText);
+        window.showAdminToast(`📣 Dispatch sent to ${machineStr} L${laneNum}`);
+    }
+};
+
 window.sendCommsMsg = function(code, customText = "") {
     if (window.isOfflineMode || !db) return;
     const cfg    = window.getConfig();
