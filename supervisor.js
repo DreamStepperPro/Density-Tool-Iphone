@@ -66,33 +66,65 @@ window.updateTargetStdLimit = function(val) {
     }
 };
 
-// Grand Mean + Grand STD across all active machines — uses getAbsoluteLatest for current weights
+// Grand Mean + Global Estimated Granular STD across all active machines
+// Pools last 5 checks per machine, applies √10 CLT multiplier to estimate true piece-by-piece STD
 window.calculateDepartmentStats = function(allHistories) {
-    let allWeights = [], laneDetails = [];
+    let allWeights = [];
+    let latestLaneDetails = [];
+    let laneHistories = {};
     const cfg = window.getConfig();
+
     for (let m = 1; m <= cfg.machines; m++) {
-        const latest = window.getAbsoluteLatest(allHistories[`M${m}`]);
-        if (latest && latest.entry && latest.entry.lanes) {
-            latest.entry.lanes.forEach((lane, index) => {
-                if (lane.disabled || !lane.w || lane.w === '--') return;
-                const w = parseFloat(lane.w);
-                if (!isNaN(w)) {
-                    allWeights.push(w);
-                    laneDetails.push({ machine: m, lane: index + 1, weight: w });
-                }
-            });
-        }
+        const recentChecks = window.getRecentChecks(allHistories[`M${m}`], 5);
+        recentChecks.forEach((check, checkIndex) => {
+            if (check && check.lanes) {
+                check.lanes.forEach((lane, laneIndex) => {
+                    if (lane.disabled || !lane.w || lane.w === '--') return;
+                    const w = parseFloat(lane.w);
+                    if (!isNaN(w)) {
+                        allWeights.push(w);
+                        const laneKey = `M${m}_L${laneIndex + 1}`;
+                        if (!laneHistories[laneKey]) laneHistories[laneKey] = [];
+                        laneHistories[laneKey].push(w);
+                        // Only latest check feeds snipe targeting
+                        if (checkIndex === 0) {
+                            latestLaneDetails.push({ machine: m, lane: laneIndex + 1, weight: w, key: laneKey });
+                        }
+                    }
+                });
+            }
+        });
     }
+
     if (allWeights.length === 0) return null;
+
     const grandMean = allWeights.reduce((sum, w) => sum + w, 0) / allWeights.length;
     const variance  = allWeights.reduce((sum, w) => sum + Math.pow(w - grandMean, 2), 0) / allWeights.length;
-    const grandStd  = Math.sqrt(variance);
+    const rawStd    = Math.sqrt(variance);
+    // Central Limit Theorem: multiply batch STD by √10 to estimate true piece-by-piece STD
+    const BATCH_SIZE = 10;
+    const trueEstimatedStd = rawStd * Math.sqrt(BATCH_SIZE);
+
     let worstLane = null, maxDev = -1;
-    laneDetails.forEach(lane => {
+    latestLaneDetails.forEach(lane => {
         const dev = Math.abs(lane.weight - grandMean);
-        if (dev > maxDev) { maxDev = dev; worstLane = lane; }
+        // Historical average deviation — identifies chronic outliers across 5 checks
+        const hist = laneHistories[lane.key];
+        const laneHistoricalAvg = hist.reduce((a, b) => a + b, 0) / hist.length;
+        const historicalDev = Math.abs(laneHistoricalAvg - grandMean);
+        if (dev > maxDev) {
+            maxDev = dev;
+            worstLane = { ...lane, historicalDev };
+        }
     });
-    return { grandMean: grandMean.toFixed(1), grandStd: grandStd.toFixed(2), snipeTarget: worstLane, maxDev: maxDev.toFixed(1) };
+
+    return {
+        grandMean: grandMean.toFixed(1),
+        rawStd: rawStd.toFixed(2),
+        grandStd: trueEstimatedStd.toFixed(2),
+        snipeTarget: worstLane,
+        maxDev: maxDev.toFixed(1)
+    };
 };
 
 window.renderSupervisorDashboard = function(allHistories) {
@@ -139,22 +171,31 @@ window.renderSupervisorDashboard = function(allHistories) {
         const ceilingInput = document.getElementById('stdCeilingInput');
         if (ceilingInput && document.activeElement !== ceilingInput) ceilingInput.value = cachedTargetStd;
 
-        if (parseFloat(stats.grandStd) > cachedTargetStd && stats.snipeTarget) {
+        // Snipe Logic: 1.5 leeway buffer above limit OR chronic outlier > 2.5g historical deviation
+        const baseLimit    = parseFloat(cachedTargetStd);
+        const leewayLimit  = baseLimit + 1.5;
+        const isOverLimit  = parseFloat(stats.grandStd) > leewayLimit;
+        const isGrossOutlier = stats.snipeTarget && stats.snipeTarget.historicalDev > 2.5;
+        const isSnipe      = (isOverLimit || isGrossOutlier) && !!stats.snipeTarget;
+
+        if (isSnipe) {
             stdEl.style.color = 'var(--danger)';
             const diff = (stats.snipeTarget.weight - parseFloat(stats.grandMean)).toFixed(1);
             const sign = parseFloat(diff) > 0 ? '+' : '';
+            const reasonText = isOverLimit
+                ? `Pulling dept STD with ${sign}${diff}g from mean (${stats.snipeTarget.weight}g)`
+                : `⚠️ CHRONIC OUTLIER: Consistently pulling mean by ${sign}${diff}g`;
             alertBox.innerHTML = `
                 <div style="background:rgba(255,77,77,0.1); border:1px solid var(--danger); color:var(--danger); padding:10px; border-radius:8px; margin-bottom:15px; font-weight:bold; text-align:center; box-shadow:var(--shadow);">
                     🎯 SNIPE TARGET: DSI ${stats.snipeTarget.machine}, Lane ${stats.snipeTarget.lane}
-                    <br><span style="font-size:0.85rem; font-weight:normal;">Pulling dept STD with ${sign}${diff}g from mean (${stats.snipeTarget.weight}g)</span>
+                    <br><span style="font-size:0.85rem; font-weight:normal;">${reasonText}</span>
                 </div>`;
         } else {
-            stdEl.style.color = 'var(--perfect)';
+            stdEl.style.color = parseFloat(stats.grandStd) > baseLimit ? 'var(--warning)' : 'var(--perfect)';
             alertBox.innerHTML = '';
         }
 
         // Broadcast snipe state to floor tablets — debounced to avoid Firebase spam
-        const isSnipe = parseFloat(stats.grandStd) > cachedTargetStd && !!stats.snipeTarget;
         const snipePayload = isSnipe ? {
             active: true,
             machine: stats.snipeTarget.machine,
