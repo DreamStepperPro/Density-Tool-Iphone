@@ -922,6 +922,8 @@ window.applyTheme = function() {
 };
 window.completeSetup  = function() { config.machines = parseInt(document.getElementById('setupMachines').value); config.lanes = parseInt(document.getElementById('setupLanes').value); config.product = document.getElementById('setupProd').value; localStorage.setItem('dsi_setup_done', 'true'); window.saveLocalSettings(); document.getElementById('setupWizard').style.display = 'none'; window.routeUserByRole(); };
 window.factoryReset   = function() { if (confirm("Erase LOCAL settings? Cloud data remains.")) { localStorage.clear(); location.reload(); } };
+window.openHelp  = function() { window.toggleSettings(); document.getElementById('helpModal').style.display = 'flex'; };
+window.closeHelp = function() { document.getElementById('helpModal').style.display = 'none'; };
 window.switchMachine = function(m) { config.currentMachine = m; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) { window.startCloudSync(); window.listenForGlobalReset(`M${m}`); } };
 window.switchProfile  = function() { config.lanes = parseInt(document.getElementById('setLanes').value); config.product = document.getElementById('setProd').value; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); };
 

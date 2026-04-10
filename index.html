@@ -21,34 +21,25 @@
 
 <!-- ACCESS PENDING -->
 <div class="modal-overlay" id="accessDeniedOverlay" style="display:flex; z-index:300; background:var(--bg);">
-    <div class="modal" style="text-align:center;">
-        <h2 style="color:var(--danger);" data-i18n="accessPending">🔒 Access Pending</h2>
-        <p style="font-size:0.9rem; margin-bottom:20px;" data-i18n="accessWait">Your device is waiting for Admin approval.</p>
-
-        <!-- NEW PIN LOGIN -->
-        <div style="background:rgba(128,128,128,0.05); padding:20px; border-radius:10px; border:1px solid var(--border); margin-bottom:20px;">
-            <p style="font-size:0.85rem; margin-top:0; margin-bottom:15px; color:var(--text); opacity:0.8;">Enter PIN to access the floor</p>
-            
-            <input type="password" id="loginPin" pattern="[0-9]*" inputmode="numeric" maxlength="4" placeholder="••••" 
-                style="margin-bottom:15px; font-size:2.5rem; font-weight:bold; text-align:center; letter-spacing:1.5rem; text-indent:1.5rem; width:100%; box-sizing:border-box; padding:15px; border-radius:10px; border:2px solid var(--border); background:var(--input-bg); color:var(--text);" 
+    <div class="modal" style="text-align:center; max-width:350px;">
+        <h2 style="color:var(--perfect); margin-top:0;">The Advantage</h2>
+        <p style="font-size:0.85rem; margin-bottom:15px; color:var(--text); opacity:0.8;">Enter your 4-digit PIN to access the floor.</p>
+        <div style="margin-bottom:20px;">
+            <input type="password" id="loginPin" pattern="[0-9]*" inputmode="numeric" maxlength="4" placeholder="••••"
+                style="font-size:2rem; text-align:center; letter-spacing:10px; width:100%; padding:10px; border-radius:10px; border:2px solid var(--border); background:var(--input-bg); color:var(--text); font-weight:bold; margin-bottom:10px;"
                 onkeydown="if(event.key==='Enter') window.loginWithPin()">
-            
-            <button class="modal-btn" onclick="window.loginWithPin()" style="margin-top:0; background:var(--perfect); color:black; font-weight:bold; letter-spacing:1px;">UNLOCK</button>
+            <button class="modal-btn" onclick="window.loginWithPin()" style="background:var(--success);">LOGIN</button>
         </div>
-
-        <details style="text-align:left; margin-bottom:20px; background:rgba(128,128,128,0.05); padding:10px; border-radius:10px; border:1px solid var(--border);">
-            <summary style="cursor:pointer; font-weight:bold; color:var(--text);">New User Request</summary>
+        <hr style="border:0; border-top:1px solid var(--border); margin:20px 0;">
+        <details style="text-align:left; background:rgba(128,128,128,0.05); padding:10px; border-radius:8px; border:1px solid var(--border);">
+            <summary style="font-size:0.8rem; font-weight:bold; cursor:pointer; opacity:0.8;">New Device? Request Access</summary>
             <div id="requestForm" style="margin-top:10px;">
-                <label style="margin-bottom:5px;" data-i18n="identify">Identify Yourself to Admin</label>
-                <input type="text" id="reqName" placeholder="Enter your name / role..." style="margin-bottom:10px; font-weight:normal; width:100%; box-sizing:border-box; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);" data-i18n-ph="enterName">
-                <button class="modal-btn" onclick="window.pingAdmin()" style="margin-top:0; background:var(--accent);" data-i18n="pingAdmin">PING ADMIN FOR ACCESS</button>
+                <input type="text" id="reqName" placeholder="Enter your name / role..." style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); margin-bottom:10px;" data-i18n-ph="enterName">
+                <button class="modal-btn" onclick="window.pingAdmin()" style="margin-top:0; background:var(--accent); font-size:0.85rem;" data-i18n="pingAdmin">PING ADMIN FOR ACCESS</button>
+                <div style="font-size:0.65rem; opacity:0.6; margin-top:10px; text-align:center; word-break:break-all;">Device: <span id="userIdDisplay">Loading...</span></div>
             </div>
         </details>
-
-        <p style="font-size:0.8rem; opacity:0.8; margin-bottom:5px;">Your Device ID:</p>
-        <code id="userIdDisplay" style="background:var(--input-bg); padding:10px; display:block; word-break:break-all; border-radius:8px; border:1px solid var(--border); font-weight:bold; margin-bottom:20px;">Loading...</code>
-        <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
-        <button class="modal-btn secondary" onclick="window.forceOfflineMode()" data-i18n="workOffline">WORK OFFLINE</button>
+        <button class="modal-btn secondary" onclick="window.forceOfflineMode()" style="margin-top:15px;" data-i18n="workOffline">WORK OFFLINE</button>
     </div>
 </div>
 
@@ -148,6 +139,7 @@
         </div>
         <button class="modal-btn" style="background:var(--perfect); color:black;" onclick="window.enableSystemNotifications()" data-i18n="enableAlerts">🔔 ENABLE SYSTEM ALERTS</button>
         <button class="modal-btn secondary" onclick="window.openAbout()" style="margin-top:6px; border-color:var(--accent); color:var(--accent);" data-i18n="ourStory">📖 OUR STORY</button>
+        <button class="modal-btn secondary" onclick="window.openHelp()" style="margin-top:6px; border-color:var(--info); color:var(--info);" data-i18n="systemGuideBtn">🧠 SYSTEM GUIDE</button>
         <button id="btnSandboxToggle" class="modal-btn btn-hidden" style="background:var(--warning); color:black; margin-top:6px;" onclick="window.toggleSandboxMode()">🧪 TOGGLE OFFLINE SANDBOX</button>
         <button class="modal-btn danger" onclick="window.factoryReset()" data-i18n="reset">FACTORY RESET (LOCAL)</button>
     </div>
@@ -331,6 +323,10 @@
         <div class="chat-box" id="chatBox">
             <div style="text-align:center; opacity:0.5; font-size:0.8rem; margin-top:auto;" data-i18n="radioOpen">Radio channel open...</div>
         </div>
+        <div class="quick-tap-grid" id="quickTaps">
+            <button class="btn-quick" onclick="window.sendCommsMsg('ERR_WT')" data-i18n="weightOff">⚖️ WEIGHT OFF</button>
+            <button class="btn-quick" onclick="window.sendCommsMsg('ERR_MECH')" data-i18n="maintReq">🔧 MAINTENANCE REQ</button>
+        </div>
         <div style="display:flex; gap:8px;">
             <input type="text" id="chatInput" placeholder="Type message..." style="flex:1; padding:10px;" data-i18n-ph="typeMsg" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();window.sendCustomComms();}">
             <button class="modal-btn" style="width:auto; margin-top:0; padding:0 20px;" onclick="window.sendCustomComms()" data-i18n="send">SEND</button>
@@ -455,6 +451,82 @@
             <p id="fullMissionText" style="white-space:pre-wrap; margin:0;"></p>
         </div>
         <button class="modal-btn secondary" onclick="document.getElementById('aboutModal').style.display='none'" style="margin-top:15px;" data-i18n="close">CLOSE</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="helpModal" style="display:none; z-index:270;">
+    <div class="modal" style="max-height:85vh; display:flex; flex-direction:column;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h2 style="color:var(--info); margin:0;" data-i18n="systemGuideTitle">🧠 System Guide</h2>
+            <button onclick="window.closeHelp()" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
+        </div>
+        <div style="overflow-y:auto; padding-right:10px; font-size:0.9rem; line-height:1.6; color:var(--text); flex:1; display:flex; flex-direction:column; gap:10px;">
+
+            <details class="shift-folder" style="background:rgba(128,128,128,0.03);">
+                <summary class="shift-folder-header" data-i18n="helpDotTitle">🟢 Status Dot & Connection Reset</summary>
+                <div class="shift-folder-content" data-i18n="helpDotText">
+                    <strong>What it does:</strong> Shows your real-time connection status to the floor database.<br><br>
+                    <strong>Colors:</strong> 🟢 Green = live and syncing. 🔴 Red = offline or disconnected. 🔵 Blue/pulsing = actively pushing data.<br><br>
+                    <strong>Tap to reset:</strong> If the dot is stuck red while you have Wi-Fi, tap it once. It will attempt a full radio reset — cutting and re-establishing the database connection. This fixes most dead-sync issues without reloading the app.
+                </div>
+            </details>
+
+            <details class="shift-folder" style="background:rgba(128,128,128,0.03);">
+                <summary class="shift-folder-header" data-i18n="helpPveTitle">⏱️ Predictive Velocity Engine (PVE)</summary>
+                <div class="shift-folder-content" data-i18n="helpPveText">
+                    <strong>What it does:</strong> Anticipates weight drift before it happens.<br><br>
+                    <strong>How it works:</strong> The system looks at your last 3 weight checks. It calculates the speed and direction of the weight change (velocity) to determine your "runway" time — how many minutes before the weight crosses the danger zone.<br><br>
+                    <strong>Why it triggers:</strong> If your lane is drifting fast and is predicted to cross the limit in under 15 minutes, the trend indicator turns red. Under 5 minutes, the tablet vibrates and shows "WEIGH NOW". A depleting bar shows how much runway you have left.
+                </div>
+            </details>
+
+            <details class="shift-folder" style="background:rgba(128,128,128,0.03);">
+                <summary class="shift-folder-header" data-i18n="helpAdaptTitle">🤖 SMART Adapt</summary>
+                <div class="shift-folder-content" data-i18n="helpAdaptText">
+                    <strong>What it does:</strong> Auto-tunes density instead of making you guess.<br><br>
+                    <strong>How it works:</strong> If you miss your target 2 times in a row, the lane enters SMART mode (blue tag). Instead of the default formula, it calculates a custom multiplier based on how that specific cutter is actually responding. It ignores swings over 15g (woody breast, double-stack) so bad data doesn't corrupt the formula.<br><br>
+                    <strong>Why it triggers:</strong> To get you back on target faster. It automatically turns off once the weight stabilizes within range twice in a row. If it fails 5 times, it shuts off and tells you to check the hardware.
+                </div>
+            </details>
+
+            <details class="shift-folder" style="background:rgba(128,128,128,0.03);">
+                <summary class="shift-folder-header" data-i18n="helpSnipeTitle">🎯 SMART-S (Snipe Override)</summary>
+                <div class="shift-folder-content" data-i18n="helpSnipeText">
+                    <strong>What it does:</strong> Reduces the department's total Standard Deviation (STD) across all machines.<br><br>
+                    <strong>How it works:</strong> The Supervisor Dashboard combines the last 5 checks from all machines. If the Global STD exceeds the ceiling (+1.5g leeway) OR one lane is a "Chronic Outlier" (averaging over 2.5g off the mean), the supervisor's tablet broadcasts a Snipe Override to that specific lane.<br><br>
+                    <strong>Why it triggers:</strong> Your lane card glows red with "🎯 FIX TO Xg". Once you hit that weight, it turns green with "LOCKED ON TARGET" and the density locks in place. The math is temporarily redirected away from the product target and toward the department grand mean to tighten the overall variance.
+                </div>
+            </details>
+
+            <details class="shift-folder" style="background:rgba(128,128,128,0.03);">
+                <summary class="shift-folder-header" data-i18n="helpMatrixTitle">🔧 Maintenance Matrix</summary>
+                <div class="shift-folder-content" data-i18n="helpMatrixText">
+                    <strong>What it does:</strong> Logs hardware faults and optimizes routing around broken cutters.<br><br>
+                    <strong>How it works:</strong> Tap a component to flag it as Degraded (reduced capacity) or Hard Down (stopped). The app logs the exact start time and records it in the OEE ledger. You can swap between severity levels without losing the downtime record.<br><br>
+                    <strong>Smart Route:</strong> If a waterjet cutter is degraded, tap 🧠 SMART ROUTE OPTIMIZATION to see the exact cutter-to-lane reassignment that keeps all 4 sub-lanes running with the remaining healthy cutters. Yellow cells = changed from baseline.
+                </div>
+            </details>
+
+            <details class="shift-folder" style="background:rgba(128,128,128,0.03);">
+                <summary class="shift-folder-header" data-i18n="helpYieldTitle">📊 Live Yield & Kerf Loss</summary>
+                <div class="shift-folder-content" data-i18n="helpYieldText">
+                    <strong>What it does:</strong> Calculates accurate meat recovery percentages from your EOS weights.<br><br>
+                    <strong>How it works:</strong> Enter your Fillets, Nuggets, and Trim weights. The system totals your Output, then multiplies by 1.03 to account for a 3% Kerf Loss — the physical meat vaporized by the 60,000 PSI waterjet stream. This matches what the company's EOS reports show.<br><br>
+                    <strong>Trim alert:</strong> If your Trim percentage exceeds 22%, it turns red. That is the CI management threshold. Broadcasting mid-shift sends the current percentages to the Line Dispatch channel so the whole team sees it instantly.
+                </div>
+            </details>
+
+            <details class="shift-folder" style="background:rgba(128,128,128,0.03);">
+                <summary class="shift-folder-header" data-i18n="helpStreamTitle">💧 Stream Test Compliance</summary>
+                <div class="shift-folder-content" data-i18n="helpStreamText">
+                    <strong>What it does:</strong> Tracks mandatory waterjet stream inspections during the shift.<br><br>
+                    <strong>When it fires:</strong> Three windows per night — 1:10 AM, 3:45 AM, and 5:45 AM. A banner appears and the tablet vibrates.<br><br>
+                    <strong>How to log it:</strong> Tap the banner, inspect the cardboard cutout for all active lanes, take a photo (optional), and tap Verified or Log Failure. The result is permanently stamped in the Supervisor Ledger with your name and time.
+                </div>
+            </details>
+
+        </div>
+        <button class="modal-btn secondary" onclick="window.closeHelp()" style="margin-top:15px;" data-i18n="close">CLOSE</button>
     </div>
 </div>
 
