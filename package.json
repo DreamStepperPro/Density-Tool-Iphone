@@ -1,0 +1,21 @@
+{
+  "name": "density-tool-iphone",
+  "version": "1.0.0",
+  "description": "Density Tool",
+  "main": "app.js",
+  "scripts": {
+    "test": "bun test"
+  },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DreamStepperPro/Density-Tool-Iphone.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/DreamStepperPro/Density-Tool-Iphone/issues"
+  },
+  "homepage": "https://github.com/DreamStepperPro/Density-Tool-Iphone#readme"
+}
