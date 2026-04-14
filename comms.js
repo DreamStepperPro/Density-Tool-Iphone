@@ -4,15 +4,9 @@
 // To add a new message type: add a code to renderChat's displayText logic.
 // =====================================================================
 
-// XSS sanitizer — strips HTML tags from any user-generated text before DOM injection
-function escapeHTML(str) {
-    const div = document.createElement('div');
-    div.innerText = str;
-    return div.innerHTML;
-}
-
 import { getApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, push, update, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { escapeHTML } from "./utils.js";
 
 const db  = getDatabase(getApp());
 
