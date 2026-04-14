@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, get, set, onValue, update, push, serverTimestamp, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { escapeHTML } from "./utils.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyA84WGuDvVMTci0KTZHVxDCle8dbiE1XB4",
@@ -89,7 +88,7 @@ signInAnonymously(auth).then((result) => {
             if (!appInitialized) {
                 appInitialized = true;
                 window.initApp();
-                window.startCommsListener();
+                typeof window.startCommsListener === "function" && window.startCommsListener();
             } else {
                 window.routeUserByRole();
             }
@@ -358,40 +357,44 @@ window.renderInterface = function() {
 window.updateUIFromCloud = function() {
     if (!store || !store.lanes) return;
     const tEl = document.getElementById('setTarget');
-    if (document.activeElement !== tEl) {
+    if (tEl && document.activeElement !== tEl) {
         tEl.value = store.target;
-        document.getElementById('displayTarget').innerText = `${window.t('target')}: ${store.target}g`;
-        document.getElementById('targetDisplay').innerText = `${store.target}g`;
+        const dispT = document.getElementById('displayTarget');
+        if (dispT) dispT.innerText = `${window.t('target')}: ${store.target}g`;
+        const targetD = document.getElementById('targetDisplay');
+        if (targetD) targetD.innerText = `${store.target}g`;
     }
     for (let i = 1; i <= config.lanes; i++) {
         const lane = store.lanes[i-1];
         if (!lane) continue;
         const dEl = document.getElementById(`currDens-${i}`);
-        if (document.activeElement !== dEl) {
+        if (dEl && document.activeElement !== dEl) {
             dEl.value = lane.d;
             if (lane.locked) {
                 dEl.readOnly = true; dEl.style.borderColor = 'var(--border)';
-                if (config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon locked'; document.getElementById(`lockDens-${i}`).innerText = '🔒'; }
+                const lockD = document.getElementById(`lockDens-${i}`);
+                if (lockD && config.inputMode === 'button') { lockD.className = 'btn-icon locked'; lockD.innerText = '🔒'; }
             } else {
                 dEl.readOnly = false; dEl.style.borderColor = 'var(--info)';
-                if (config.inputMode === 'button') { document.getElementById(`lockDens-${i}`).className = 'btn-icon'; document.getElementById(`lockDens-${i}`).innerText = '🔓'; }
+                const lockD = document.getElementById(`lockDens-${i}`);
+                if (lockD && config.inputMode === 'button') { lockD.className = 'btn-icon'; lockD.innerText = '🔓'; }
             }
         }
         const wEl = document.getElementById(`avgWt-${i}`);
-        if (document.activeElement !== wEl) {
+        if (wEl && document.activeElement !== wEl) {
             wEl.value = lane.w || '';
             if (isAdmin) { wEl.readOnly = true; wEl.style.borderColor = 'var(--border)'; }
         }
         const card   = document.getElementById(`card-${i}`);
         const btnDis = document.getElementById(`btnDisable-${i}`);
-        if (lane.disabled) {
+        if (card && lane.disabled) {
             card.classList.add('lane-disabled');
             if (btnDis) { btnDis.innerText = '⊘ OFF'; btnDis.style.color = 'var(--danger)'; }
-            dEl.disabled = true; if (wEl) wEl.disabled = true;
-        } else {
+            if (dEl) dEl.disabled = true; if (wEl) wEl.disabled = true;
+        } else if (card) {
             card.classList.remove('lane-disabled');
             if (btnDis) { btnDis.innerText = '⊘'; btnDis.style.color = ''; }
-            dEl.disabled = false; if (wEl) wEl.disabled = false;
+            if (dEl) dEl.disabled = false; if (wEl) wEl.disabled = false;
         }
         const isSnipeLane = window.departmentSnipe && window.departmentSnipe.active
             && config.currentMachine === window.departmentSnipe.machine
@@ -613,8 +616,6 @@ window.renderHistoryCards = function() {
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span class="hist-card-avg">Avg: <strong>${escapeHTML(r.avg)}g</strong></span>
-                    <span class="hist-card-avg">Avg: <strong>${r.avg}g</strong></span>
-                    <button onclick="event.stopPropagation(); window.deleteHistoryEntry(${idx})" style="background:transparent; border:none; color:var(--danger); font-size:1.1rem; cursor:pointer; padding:0 5px;" title="Delete Entry">🗑️</button>
                     <span class="hist-card-chevron">▼</span>
                 </div>
             </div>
@@ -678,19 +679,6 @@ window.clearHistory = function() {
         history = [];
         if (!window.isOfflineMode && dbRef_History) {
             set(dbRef_History, history).catch(e => window.showAdminToast("❌ Network Error: History not cleared."));
-        }
-        window.renderHistoryCards();
-    }
-};
-
-window.deleteHistoryEntry = function(idx) {
-    if (confirm("Delete this weight check?")) {
-        // Normalize to array regardless of Firebase object/array state
-        let arr = Array.isArray(history) ? [...history] : Object.values(history);
-        arr.splice(idx, 1);
-        history = arr;
-        if (!window.isOfflineMode && dbRef_History) {
-            set(dbRef_History, history).catch(e => window.showAdminToast("❌ Network Error: Entry not deleted."));
         }
         window.renderHistoryCards();
     }
@@ -1080,7 +1068,7 @@ document.addEventListener("visibilitychange", () => {
             const role = window.currentUserData ? window.currentUserData.role : 'operator';
             if (role === 'supervisor') { window.startSupervisorSync(); } else { window.startCloudSync(); }
         }
-        window.startCommsListener();
+        typeof window.startCommsListener === "function" && window.startCommsListener();
     }
 });
 
@@ -1101,7 +1089,7 @@ window.jumpstartNetwork = function() {
             const role = window.currentUserData ? window.currentUserData.role : 'operator';
             if (role === 'supervisor') { window.startSupervisorSync(); } else { window.startCloudSync(); }
         }
-        window.startCommsListener();
+        typeof window.startCommsListener === "function" && window.startCommsListener();
     }, 1000);
 };
 
@@ -1134,7 +1122,7 @@ window.toggleSandboxMode = function() {
             const role = window.currentUserData ? window.currentUserData.role : 'operator';
             if (role === 'supervisor') { window.startSupervisorSync(); } else { window.startCloudSync(); }
         }
-        window.startCommsListener();
+        typeof window.startCommsListener === "function" && window.startCommsListener();
     }
 
     window.toggleSettings();

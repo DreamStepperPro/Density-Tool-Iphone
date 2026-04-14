@@ -172,6 +172,6 @@ window.applyTranslations = function() {
     const supDash = document.getElementById('supervisorDashboard');
     const cachedHistories = window.getCachedHistories ? window.getCachedHistories() : null;
     if (supDash && supDash.style.display !== 'none' && cachedHistories) window.renderSupervisorDashboard(cachedHistories);
-    if (window.db && !window.isOfflineMode) window.startCommsListener();
+    if (window.db && !window.isOfflineMode && typeof window.startCommsListener === 'function') window.startCommsListener();
     if (typeof window.updateBannerState === 'function') window.updateBannerState();
 };
