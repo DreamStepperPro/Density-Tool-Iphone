@@ -1,13 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, get, set, onValue, update, push, serverTimestamp, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-// Global XSS sanitizer — all user-supplied strings must pass through this before innerHTML
-function escapeHTML(str) {
-    const div = document.createElement('div');
-    div.innerText = String(str ?? '');
-    return div.innerHTML;
-}
+import { escapeHTML } from "./utils.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyA84WGuDvVMTci0KTZHVxDCle8dbiE1XB4",

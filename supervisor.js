@@ -6,13 +6,7 @@
 
 import { getApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, update, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-// XSS sanitizer — strips HTML from Firebase user data before innerHTML injection
-function escapeHTML(str) {
-    const div = document.createElement('div');
-    div.innerText = String(str ?? '');
-    return div.innerHTML;
-}
+import { escapeHTML } from "./utils.js";
 
 const db = getDatabase(getApp());
 
