@@ -4,7 +4,7 @@ import { escapeHTML } from "./utils.js";
 test("escapeHTML should escape all required characters", () => {
     const input = '&<>"\'';
     const escaped = escapeHTML(input);
-    expect(escaped).toBe('&amp;&lt;&gt;&quot;&#39;');
+    expect(escaped).toBe('&amp;&lt;&gt;&quot;&#039;');
 });
 
 test("escapeHTML should handle XSS payload", () => {

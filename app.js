@@ -3,15 +3,8 @@ import { getDatabase, ref, get, set, onValue, update, push, serverTimestamp, goO
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { escapeHTML } from "./utils.js";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyA84WGuDvVMTci0KTZHVxDCle8dbiE1XB4",
-    authDomain: "dsi-pro-bcb5c.firebaseapp.com",
-    databaseURL: "https://dsi-pro-bcb5c-default-rtdb.firebaseio.com",
-    projectId: "dsi-pro-bcb5c",
-    storageBucket: "dsi-pro-bcb5c.firebasestorage.app",
-    messagingSenderId: "545898401770",
-    appId: "1:545898401770:web:01928966d9415a9cc82c93"
-};
+const response = await fetch('/__/firebase/init.json');
+const firebaseConfig = await response.json();
 
 const app  = initializeApp(firebaseConfig);
 const db   = getDatabase(app);
