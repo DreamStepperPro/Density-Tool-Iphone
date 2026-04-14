@@ -612,7 +612,9 @@ window.renderHistoryCards = function() {
                     ${r.operator ? `<span style="font-size:0.72rem; opacity:0.6; margin-left:8px;">by ${escapeHTML(r.operator)}</span>` : ''}
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="hist-card-avg">Avg: <strong>${escapeHTML(r.avg)}g</strong></span>
                     <span class="hist-card-avg">Avg: <strong>${r.avg}g</strong></span>
+                    <button onclick="event.stopPropagation(); window.deleteHistoryEntry(${idx})" style="background:transparent; border:none; color:var(--danger); font-size:1.1rem; cursor:pointer; padding:0 5px;" title="Delete Entry">🗑️</button>
                     <span class="hist-card-chevron">▼</span>
                 </div>
             </div>
@@ -676,6 +678,19 @@ window.clearHistory = function() {
         history = [];
         if (!window.isOfflineMode && dbRef_History) {
             set(dbRef_History, history).catch(e => window.showAdminToast("❌ Network Error: History not cleared."));
+        }
+        window.renderHistoryCards();
+    }
+};
+
+window.deleteHistoryEntry = function(idx) {
+    if (confirm("Delete this weight check?")) {
+        // Normalize to array regardless of Firebase object/array state
+        let arr = Array.isArray(history) ? [...history] : Object.values(history);
+        arr.splice(idx, 1);
+        history = arr;
+        if (!window.isOfflineMode && dbRef_History) {
+            set(dbRef_History, history).catch(e => window.showAdminToast("❌ Network Error: Entry not deleted."));
         }
         window.renderHistoryCards();
     }
@@ -961,8 +976,8 @@ window.buildAdminUserCard = function(key, data, highlight) {
         <div class="admin-user-id">ID: ${escapeHTML(key)}</div>
         <div class="admin-user-name">Device: <strong>${escapeHTML(dispName)}</strong></div>
         <div style="display:flex; gap:8px; margin-bottom:8px;">
-            <input type="text" placeholder="Admin Name" value="${escapeHTML(adminName)}" onblur="window.updateAdminName('${key}', this.value)" style="flex:2; padding:8px; font-size:0.85rem; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text);">
-            <input type="text" placeholder="PIN" value="${escapeHTML(data.pin || '')}" maxlength="4" inputmode="numeric" onblur="window.updateUserPin('${key}', this.value)" style="flex:1; padding:8px; font-size:0.85rem; text-align:center; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text); font-weight:bold; letter-spacing:4px;">
+            <input type="text" placeholder="Admin Name" value="${escapeHTML(adminName)}" onblur="window.updateAdminName('${escapeHTML(key)}', this.value)" style="flex:2; padding:8px; font-size:0.85rem; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text);">
+            <input type="text" placeholder="PIN" value="${escapeHTML(data.pin || '')}" maxlength="4" inputmode="numeric" onblur="window.updateUserPin('${escapeHTML(key)}', this.value)" style="flex:1; padding:8px; font-size:0.85rem; text-align:center; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text); font-weight:bold; letter-spacing:4px;">
         </div>
         <div class="admin-user-row">
             <select onchange="window.updateUserRole('${key}', this.value)" style="padding:6px; font-size:0.8rem; width:40%; border-radius:6px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);">
