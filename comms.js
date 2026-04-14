@@ -5,7 +5,6 @@
 // =====================================================================
 
 import { getApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { escapeHTML } from "./utils.js";
 import { getDatabase, ref, push, update, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { escapeHTML } from "./utils.js";
 

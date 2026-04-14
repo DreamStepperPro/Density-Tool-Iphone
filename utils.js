@@ -5,3 +5,7 @@ export function escapeHTML(str) {
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[m]));
 }
+
+if (typeof window !== 'undefined') {
+    window.escapeHTML = escapeHTML;
+}
