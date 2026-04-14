@@ -1,10 +1,7 @@
-/**
- * Global XSS sanitizer — all user-supplied strings must pass through this before innerHTML
- * @param {any} str
- * @returns {string}
- */
+// Shared utility functions
+
 export function escapeHTML(str) {
-    const div = document.createElement('div');
-    div.innerText = String(str ?? '');
-    return div.innerHTML;
+    return String(str ?? '').replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[m]));
 }

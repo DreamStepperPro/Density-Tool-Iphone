@@ -273,7 +273,7 @@ window.buildSupCard = function(title, dataObj, recentChecks, m) {
         const laneClickAttr = absDiff > 2.0
             ? `onclick="window.sendLaneWarning('M${m}', ${idx+1})" style="cursor:pointer;"`
             : '';
-        lanesHtml += `<div class="sup-lane ${colorClass}" ${laneClickAttr}><span class="sup-lane-lbl">${window.t('lane')} ${idx+1}</span><span class="sup-lane-wt">${l.w}</span><span class="sup-lane-dens">${l.d}</span>${stabilityHtml}</div>`;
+        lanesHtml += `<div class="sup-lane ${colorClass}" ${laneClickAttr}><span class="sup-lane-lbl">${window.t('lane')} ${idx+1}</span><span class="sup-lane-wt">${escapeHTML(l.w)}</span><span class="sup-lane-dens">${escapeHTML(l.d)}</span>${stabilityHtml}</div>`;
     });
     let trendHtml = `<div class="sup-trend"><span class="sup-trend-lbl">Trend:</span>`;
     for (let i = 0; i < Math.min(3, recentChecks.length); i++) {
@@ -357,23 +357,23 @@ window.openSupHistory = function(machineNum) {
                 const photoHtml = r.photoRef
                     ? `<img data-photoref="${r.photoRef}" style="width:100%; max-height:200px; object-fit:cover; border-radius:6px; margin-top:10px; border:1px solid rgba(0,0,0,0.2); cursor:pointer;" onclick="window.loadAndViewPhoto(this)">`
                     : '';
-                return `<div style="background:${bg}; border:1px solid ${color}; border-radius:8px; padding:12px; text-align:center; font-weight:bold; font-size:0.85rem; margin-bottom:8px; color:${color}; flex-shrink:0; box-shadow:var(--shadow);">${r.text} • ${r.time}${photoHtml}</div>`;
+                return `<div style="background:${bg}; border:1px solid ${color}; border-radius:8px; padding:12px; text-align:center; font-weight:bold; font-size:0.85rem; margin-bottom:8px; color:${color}; flex-shrink:0; box-shadow:var(--shadow);">${escapeHTML(r.text)} • ${escapeHTML(r.time)}${photoHtml}</div>`;
             }
             const safeLanes = r.lanes || [];
             const laneGrid = safeLanes.map((l, li) => `
                 <div class="hist-lane-cell">
                     <span class="hist-lane-lbl">L${li+1}</span>
-                    <span class="hist-lane-wt">${l.w}</span>
-                    <span class="hist-lane-dens">${l.d}</span>
+                    <span class="hist-lane-wt">${escapeHTML(l.w)}</span>
+                    <span class="hist-lane-dens">${escapeHTML(l.d)}</span>
                 </div>`).join('');
             return `
             <div class="hist-card expanded" style="margin-bottom:8px; flex-shrink:0;">
                 <div class="hist-card-header" style="cursor:default;">
                     <div>
-                        <span class="hist-card-time">${r.time}</span>
+                        <span class="hist-card-time">${escapeHTML(r.time)}</span>
                         ${r.operator ? `<span style="font-size:0.72rem; opacity:0.6; margin-left:8px;">by ${escapeHTML(r.operator)}</span>` : ''}
                     </div>
-                    <span class="hist-card-avg">Avg: <strong>${r.avg}g</strong></span>
+                    <span class="hist-card-avg">Avg: <strong>${escapeHTML(r.avg)}g</strong></span>
                 </div>
                 <div class="hist-card-body" style="display:block;">
                     <div style="font-size:0.72rem; opacity:0.55; margin-bottom:4px;">${window.t('target')}: ${r.target || '--'}g</div>
@@ -456,19 +456,19 @@ window.renderMaintHistory = function() {
     container.innerHTML = cachedMaintLogs.map(log => `
         <div class="maint-log-card">
             <div class="maint-log-header">
-                <span>${log.timeStr} • ${log.machine}</span>
+                <span>${escapeHTML(log.timeStr)} • ${escapeHTML(log.machine)}</span>
                 <span>Logged by ${escapeHTML(log.loggedBy)}</span>
             </div>
             <div class="maint-log-body">
                 <div class="maint-log-fault">
-                    <span class="maint-log-comp">${window.t(log.component) || log.component}</span>
-                    <span class="maint-log-reason">⚠️ ${window.t(log.reason) || log.reason}</span>
+                    <span class="maint-log-comp">${escapeHTML(window.t(log.component) || log.component)}</span>
+                    <span class="maint-log-reason">⚠️ ${escapeHTML(window.t(log.reason) || log.reason)}</span>
                 </div>
                 <div class="maint-log-duration">
-                    ${log.durationMins}<span style="font-size:0.8rem; font-weight:normal; opacity:0.7;">m</span>
+                    ${escapeHTML(log.durationMins)}<span style="font-size:0.8rem; font-weight:normal; opacity:0.7;">m</span>
                 </div>
             </div>
-            ${log.notes ? `<div class="maint-log-notes">"${log.notes}"</div>` : ''}
+            ${log.notes ? `<div class="maint-log-notes">"${escapeHTML(log.notes)}"</div>` : ''}
             <div style="font-size:0.7rem; opacity:0.5; margin-top:8px; text-align:right;">
                 Repaired by ${escapeHTML(log.clearedBy)}
             </div>

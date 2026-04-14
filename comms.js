@@ -5,6 +5,7 @@
 // =====================================================================
 
 import { getApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { escapeHTML } from "./utils.js";
 import { getDatabase, ref, push, update, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { escapeHTML } from "./utils.js";
 
@@ -115,7 +116,7 @@ window.renderChat = function(messages) {
         }
         html += `
         <div class="msg-bubble ${bubbleClass} ${errClass}">
-            <div class="msg-meta"><span>${msg.senderName} (${msg.machine})</span><span>${timeStr}</span></div>
+            <div class="msg-meta"><span>${escapeHTML(msg.senderName)} (${escapeHTML(msg.machine)})</span><span>${escapeHTML(timeStr)}</span></div>
             ${displayText}
         </div>`;
         if (msg.timestamp > lastNotifiedTs) {
