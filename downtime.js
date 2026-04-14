@@ -342,7 +342,8 @@ const DSI_BASELINE = {
 window.calculateSmartRoute = function(degradedCutterIds) {
     const allActuators    = [1, 2, 3, 4, 5, 6, 7, 8];
     const degradedNumbers = degradedCutterIds.map(id => parseInt(id.replace('c', ''), 10));
-    const healthyActuators = allActuators.filter(a => !degradedNumbers.includes(a));
+    const degradedSet     = new Set(degradedNumbers);
+    const healthyActuators = allActuators.filter(a => !degradedSet.has(a));
     const totalHealthy    = healthyActuators.length;
     if (totalHealthy < 5) return null;
     let subLaneAllocations = { 1: 2, 2: 2, 3: 2, 4: 2 };
