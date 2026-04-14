@@ -613,6 +613,8 @@ window.renderHistoryCards = function() {
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span class="hist-card-avg">Avg: <strong>${escapeHTML(r.avg)}g</strong></span>
+                    <span class="hist-card-avg">Avg: <strong>${r.avg}g</strong></span>
+                    <button onclick="event.stopPropagation(); window.deleteHistoryEntry(${idx})" style="background:transparent; border:none; color:var(--danger); font-size:1.1rem; cursor:pointer; padding:0 5px;" title="Delete Entry">🗑️</button>
                     <span class="hist-card-chevron">▼</span>
                 </div>
             </div>
@@ -676,6 +678,19 @@ window.clearHistory = function() {
         history = [];
         if (!window.isOfflineMode && dbRef_History) {
             set(dbRef_History, history).catch(e => window.showAdminToast("❌ Network Error: History not cleared."));
+        }
+        window.renderHistoryCards();
+    }
+};
+
+window.deleteHistoryEntry = function(idx) {
+    if (confirm("Delete this weight check?")) {
+        // Normalize to array regardless of Firebase object/array state
+        let arr = Array.isArray(history) ? [...history] : Object.values(history);
+        arr.splice(idx, 1);
+        history = arr;
+        if (!window.isOfflineMode && dbRef_History) {
+            set(dbRef_History, history).catch(e => window.showAdminToast("❌ Network Error: Entry not deleted."));
         }
         window.renderHistoryCards();
     }
