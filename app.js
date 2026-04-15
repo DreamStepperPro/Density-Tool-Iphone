@@ -946,40 +946,129 @@ window.openAdmin = function() {
                 else approved.push([key, data]);
             }
             const pendingSection = document.getElementById('adminPendingSection');
+            const pendingList = document.getElementById('adminPendingList');
+            const userList = document.getElementById('adminUserList');
+
             if (pending.length > 0) {
                 pendingSection.style.display = 'block';
-                document.getElementById('adminPendingList').innerHTML = pending.map(([k, d]) => window.buildAdminUserCard(k, d, true)).join('');
-            } else { pendingSection.style.display = 'none'; }
-            document.getElementById('adminUserList').innerHTML = approved.map(([k, d]) => window.buildAdminUserCard(k, d, false)).join('');
+                pendingList.innerHTML = '';
+                pending.forEach(([k, d]) => {
+                    pendingList.appendChild(window.buildAdminUserCard(k, d, true));
+                });
+            } else {
+                pendingSection.style.display = 'none';
+                pendingList.innerHTML = '';
+            }
+
+            userList.innerHTML = '';
+            approved.forEach(([k, d]) => {
+                userList.appendChild(window.buildAdminUserCard(k, d, false));
+            });
         });
     }
 };
 window.buildAdminUserCard = function(key, data, highlight) {
-    const isAppr    = data.approved ? 'checked' : '';
-    const adminName = data.adminName || '';
-    const dispName  = data.displayName || 'No Name Set';
-    const role      = data.role || 'operator';
-    return `
-    <div class="admin-user-card" style="${highlight ? 'border-color:var(--warning);' : ''}">
-        <div class="admin-user-id">ID: ${escapeHTML(key)}</div>
-        <div class="admin-user-name">Device: <strong>${escapeHTML(dispName)}</strong></div>
-        <div style="display:flex; gap:8px; margin-bottom:8px;">
-            <input type="text" placeholder="Admin Name" value="${escapeHTML(adminName)}" onblur="window.updateAdminName('${escapeHTML(key)}', this.value)" style="flex:2; padding:8px; font-size:0.85rem; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text);">
-            <input type="text" placeholder="PIN" value="${escapeHTML(data.pin || '')}" maxlength="4" inputmode="numeric" onblur="window.updateUserPin('${escapeHTML(key)}', this.value)" style="flex:1; padding:8px; font-size:0.85rem; text-align:center; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text); font-weight:bold; letter-spacing:4px;">
-        </div>
-        <div class="admin-user-row">
-            <select onchange="window.updateUserRole('${key}', this.value)" style="padding:6px; font-size:0.8rem; width:40%; border-radius:6px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);">
-                <option value="operator" ${role === 'operator' ? 'selected' : ''}>Operator</option>
-                <option value="supervisor" ${role === 'supervisor' ? 'selected' : ''}>Supervisor</option>
-            </select>
-            <label style="display:flex; align-items:center; gap:5px; font-weight:bold; font-size:0.85rem; cursor:pointer;">
-                <input type="checkbox" ${isAppr} onchange="window.toggleUserApprove('${key}', this.checked)" style="width:16px; height:16px;">
-                Apprv
-            </label>
-            <button onclick="if(confirm('Remove this user? They will need to request access again.')) window.deleteUser('${key}')" style="background:var(--danger); color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.8rem;">🗑️ Remove</button>
-        </div>
-        <div class="admin-user-last">Last seen: ${data.lastLogin || 'Unknown'}</div>
-    </div>`;
+    const card = document.createElement('div');
+    card.className = 'admin-user-card';
+    if (highlight) card.style.borderColor = 'var(--warning)';
+
+    const idDiv = document.createElement('div');
+    idDiv.className = 'admin-user-id';
+    idDiv.textContent = `ID: ${key}`;
+    card.appendChild(idDiv);
+
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'admin-user-name';
+    nameDiv.textContent = 'Device: ';
+    const nameStrong = document.createElement('strong');
+    nameStrong.textContent = data.displayName || 'No Name Set';
+    nameDiv.appendChild(nameStrong);
+    card.appendChild(nameDiv);
+
+    const inputsRow = document.createElement('div');
+    inputsRow.style.cssText = 'display:flex; gap:8px; margin-bottom:8px;';
+
+    const adminNameInput = document.createElement('input');
+    adminNameInput.type = 'text';
+    adminNameInput.placeholder = 'Admin Name';
+    adminNameInput.value = data.adminName || '';
+    adminNameInput.style.cssText = 'flex:2; padding:8px; font-size:0.85rem; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text);';
+    adminNameInput.addEventListener('blur', function() {
+        if (window.updateAdminName) window.updateAdminName(key, this.value);
+    });
+    inputsRow.appendChild(adminNameInput);
+
+    const pinInput = document.createElement('input');
+    pinInput.type = 'text';
+    pinInput.placeholder = 'PIN';
+    pinInput.value = data.pin || '';
+    pinInput.maxLength = 4;
+    pinInput.inputMode = 'numeric';
+    pinInput.style.cssText = 'flex:1; padding:8px; font-size:0.85rem; text-align:center; border:1px solid var(--border); border-radius:6px; background:var(--input-bg); color:var(--text); font-weight:bold; letter-spacing:4px;';
+    pinInput.addEventListener('blur', function() {
+        if (window.updateUserPin) window.updateUserPin(key, this.value);
+    });
+    inputsRow.appendChild(pinInput);
+
+    card.appendChild(inputsRow);
+
+    const controlsRow = document.createElement('div');
+    controlsRow.className = 'admin-user-row';
+
+    const roleSelect = document.createElement('select');
+    roleSelect.style.cssText = 'padding:6px; font-size:0.8rem; width:40%; border-radius:6px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);';
+    const role = data.role || 'operator';
+
+    const optOp = document.createElement('option');
+    optOp.value = 'operator';
+    optOp.textContent = 'Operator';
+    if (role === 'operator') optOp.selected = true;
+    roleSelect.appendChild(optOp);
+
+    const optSup = document.createElement('option');
+    optSup.value = 'supervisor';
+    optSup.textContent = 'Supervisor';
+    if (role === 'supervisor') optSup.selected = true;
+    roleSelect.appendChild(optSup);
+
+    roleSelect.addEventListener('change', function() {
+        if (window.updateUserRole) window.updateUserRole(key, this.value);
+    });
+    controlsRow.appendChild(roleSelect);
+
+    const apprvLabel = document.createElement('label');
+    apprvLabel.style.cssText = 'display:flex; align-items:center; gap:5px; font-weight:bold; font-size:0.85rem; cursor:pointer;';
+
+    const apprvCheck = document.createElement('input');
+    apprvCheck.type = 'checkbox';
+    apprvCheck.checked = !!data.approved;
+    apprvCheck.style.cssText = 'width:16px; height:16px;';
+    apprvCheck.addEventListener('change', function() {
+        if (window.toggleUserApprove) window.toggleUserApprove(key, this.checked);
+    });
+
+    apprvLabel.appendChild(apprvCheck);
+    apprvLabel.appendChild(document.createTextNode(' Apprv'));
+    controlsRow.appendChild(apprvLabel);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = '🗑️ Remove';
+    removeBtn.style.cssText = 'background:var(--danger); color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.8rem;';
+    removeBtn.addEventListener('click', function() {
+        if (confirm('Remove this user? They will need to request access again.')) {
+            if (window.deleteUser) window.deleteUser(key);
+        }
+    });
+    controlsRow.appendChild(removeBtn);
+
+    card.appendChild(controlsRow);
+
+    const lastSeenDiv = document.createElement('div');
+    lastSeenDiv.className = 'admin-user-last';
+    lastSeenDiv.textContent = `Last seen: ${data.lastLogin || 'Unknown'}`;
+    card.appendChild(lastSeenDiv);
+
+    return card;
 };
 window.closeAdmin         = function() { document.getElementById('adminModal').style.display = 'none'; };
 window.updateAdminName    = function(uid, name) { update(ref(db, `users/${uid}`), { adminName: name }).catch(e => window.showAdminToast("❌ Error: Could not update name.")); };
