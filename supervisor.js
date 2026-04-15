@@ -242,15 +242,25 @@ window.buildSupCard = function(title, dataObj, recentChecks, m) {
     const opName  = entry.operator || 'Unknown';
     const isStale = (Date.now() - (entry.timestamp || 0)) > 180000;
     let lanesHtml = '';
-    entry.lanes.forEach((l, idx) => {
-        let weightVal = parseFloat(l.w), colorClass = '';
-        let laneWeights = [];
+
+    const precomputedLaneWeights = [];
+    if (entry.lanes) {
+        entry.lanes.forEach((_, idx) => precomputedLaneWeights[idx] = []);
         recentChecks.forEach(check => {
-            if (check.lanes && check.lanes[idx]) {
-                let cw = parseFloat(check.lanes[idx].w);
-                if (!isNaN(cw)) laneWeights.push(cw);
+            if (check.lanes) {
+                for (let idx = 0; idx < entry.lanes.length; idx++) {
+                    if (check.lanes[idx]) {
+                        let cw = parseFloat(check.lanes[idx].w);
+                        if (!isNaN(cw)) precomputedLaneWeights[idx].push(cw);
+                    }
+                }
             }
         });
+    }
+
+    entry.lanes.forEach((l, idx) => {
+        let weightVal = parseFloat(l.w), colorClass = '';
+        let laneWeights = precomputedLaneWeights[idx] || [];
         let stabilityHtml = '';
         if (laneWeights.length > 1) {
             const lMean = laneWeights.reduce((a, b) => a + b, 0) / laneWeights.length;
