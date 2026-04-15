@@ -56,12 +56,14 @@
             <h2 style="color:var(--accent); margin:0;" data-i18n="cmdCenter">👑 Command Center</h2>
             <button onclick="window.closeAdmin()" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
         </div>
-        <div id="adminPendingSection" style="display:none;" class="admin-pending-section">
-            <div class="admin-pending-title" data-i18n="pendingAppr">⏳ Pending Approvals</div>
-            <div id="adminPendingList"></div>
+        <div class="admin-tabs">
+            <button class="admin-tab active" onclick="window.switchAdminTab('recent')" id="tabBtnRecent">Recent Requests (Last 3 Days)</button>
+            <button class="admin-tab" onclick="window.switchAdminTab('approved')" id="tabBtnApproved">Approved Users</button>
+            <button class="admin-tab" onclick="window.switchAdminTab('unapproved')" id="tabBtnUnapproved">Unapproved / Revoked</button>
         </div>
-        <div class="admin-all-title" data-i18n="allUsers">All Users</div>
-        <div id="adminUserList" style="max-height:55vh; overflow-y:auto;"></div>
+        <div id="adminTabRecent" style="max-height:55vh; overflow-y:auto; display:block;"></div>
+        <div id="adminTabApproved" style="max-height:55vh; overflow-y:auto; display:none;"></div>
+        <div id="adminTabUnapproved" style="max-height:55vh; overflow-y:auto; display:none;"></div>
     </div>
 </div>
 

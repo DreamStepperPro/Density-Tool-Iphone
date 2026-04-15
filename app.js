@@ -928,6 +928,27 @@ window.switchProfile  = function() { config.lanes = parseInt(document.getElement
 // ADMIN
 // =====================================================================
 let usersDbRef;
+window.switchAdminTab = function(tabId) {
+    document.getElementById('tabBtnRecent').classList.remove('active');
+    document.getElementById('tabBtnApproved').classList.remove('active');
+    document.getElementById('tabBtnUnapproved').classList.remove('active');
+
+    document.getElementById('adminTabRecent').style.display = 'none';
+    document.getElementById('adminTabApproved').style.display = 'none';
+    document.getElementById('adminTabUnapproved').style.display = 'none';
+
+    if (tabId === 'recent') {
+        document.getElementById('tabBtnRecent').classList.add('active');
+        document.getElementById('adminTabRecent').style.display = 'block';
+    } else if (tabId === 'approved') {
+        document.getElementById('tabBtnApproved').classList.add('active');
+        document.getElementById('adminTabApproved').style.display = 'block';
+    } else if (tabId === 'unapproved') {
+        document.getElementById('tabBtnUnapproved').classList.add('active');
+        document.getElementById('adminTabUnapproved').style.display = 'block';
+    }
+};
+
 window.openAdmin = function() {
     // CRITICAL SECURITY GATE: Hard-stop unauthorized execution at the function level
     if (!isAdmin) {
@@ -940,29 +961,37 @@ window.openAdmin = function() {
         usersDbRef = ref(db, 'users');
         onValue(usersDbRef, (snap) => {
             const users = snap.val() || {};
-            const pending = [], approved = [];
+            const recent = [], approved = [], unapproved = [];
+            const now = Date.now();
+            const THREE_DAYS_MS = 259200000;
+
             for (const [key, data] of Object.entries(users)) {
-                if (data.requestPending === true && data.approved !== true) pending.push([key, data]);
-                else approved.push([key, data]);
-            }
-            const pendingSection = document.getElementById('adminPendingSection');
-            const pendingList = document.getElementById('adminPendingList');
-            const userList = document.getElementById('adminUserList');
-
-            if (pending.length > 0) {
-                pendingSection.style.display = 'block';
-                pendingList.innerHTML = '';
-                pending.forEach(([k, d]) => {
-                    pendingList.appendChild(window.buildAdminUserCard(k, d, true));
-                });
-            } else {
-                pendingSection.style.display = 'none';
-                pendingList.innerHTML = '';
+                if (now - (data.requestTime || 0) <= THREE_DAYS_MS) {
+                    recent.push([key, data]);
+                } else if (data.approved === true) {
+                    approved.push([key, data]);
+                } else {
+                    unapproved.push([key, data]);
+                }
             }
 
-            userList.innerHTML = '';
+            const recentList = document.getElementById('adminTabRecent');
+            const approvedList = document.getElementById('adminTabApproved');
+            const unapprovedList = document.getElementById('adminTabUnapproved');
+
+            recentList.innerHTML = '';
+            recent.forEach(([k, d]) => {
+                recentList.appendChild(window.buildAdminUserCard(k, d, d.requestPending === true && d.approved !== true));
+            });
+
+            approvedList.innerHTML = '';
             approved.forEach(([k, d]) => {
-                userList.appendChild(window.buildAdminUserCard(k, d, false));
+                approvedList.appendChild(window.buildAdminUserCard(k, d, false));
+            });
+
+            unapprovedList.innerHTML = '';
+            unapproved.forEach(([k, d]) => {
+                unapprovedList.appendChild(window.buildAdminUserCard(k, d, false));
             });
         });
     }
