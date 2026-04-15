@@ -58,7 +58,7 @@ describe("escapeHTML utility", () => {
 
     test("escapes single quotes", () => {
         const input = "It's a test";
-        const expected = "It&#039;s a test";
+        const expected = "It&#39;s a test";
         expect(escapeHTML(input)).toBe(expected);
     });
 });

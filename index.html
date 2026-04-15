@@ -348,10 +348,10 @@
         </div>
         <div class="header-btns">
             <button class="lang-btn" id="langToggleBtnSup" onclick="window.toggleLanguage()">EN</button>
-            <button class="gear-btn btn-hidden" id="btnYieldSup" onclick="window.openYield()" style="color:var(--success);">📊</button>
-            <button class="gear-btn btn-hidden" id="btnMaintSup" onclick="window.openMaintenance()" style="color:var(--warning);">🔧</button>
-            <button class="gear-btn btn-hidden" id="btnAdminSup" onclick="window.openAdmin()" style="color:var(--accent);">👑</button>
-            <button class="gear-btn" onclick="window.toggleSettings()">⚙️</button>
+            <button class="gear-btn btn-hidden" id="btnYieldSup" aria-label="Yield Dashboard" onclick="window.openYield()" style="color:var(--success);">📊</button>
+            <button class="gear-btn btn-hidden" id="btnMaintSup" aria-label="Maintenance Matrix" onclick="window.openMaintenance()" style="color:var(--warning);">🔧</button>
+            <button class="gear-btn btn-hidden" id="btnAdminSup" aria-label="Command Center" onclick="window.openAdmin()" style="color:var(--accent);">👑</button>
+            <button class="gear-btn" aria-label="Settings" onclick="window.toggleSettings()">⚙️</button>
         </div>
     </div>
     <div id="supCardsContainer" style="margin-top:14px;"></div>
@@ -366,9 +366,9 @@
         </div>
         <div class="header-btns">
             <button class="lang-btn" id="langToggleBtnOp" onclick="window.toggleLanguage()">EN</button>
-            <button class="gear-btn btn-hidden" id="btnYieldOp" onclick="window.openYield()" style="color:var(--success);">📊</button>
-            <button class="gear-btn btn-hidden" id="btnAdmin" onclick="window.openAdmin()" style="color:var(--accent);">👑</button>
-            <button class="gear-btn" onclick="window.toggleSettings()">⚙️</button>
+            <button class="gear-btn btn-hidden" id="btnYieldOp" aria-label="Yield Dashboard" onclick="window.openYield()" style="color:var(--success);">📊</button>
+            <button class="gear-btn btn-hidden" id="btnAdmin" aria-label="Command Center" onclick="window.openAdmin()" style="color:var(--accent);">👑</button>
+            <button class="gear-btn" aria-label="Settings" onclick="window.toggleSettings()">⚙️</button>
         </div>
     </div>
     <div class="machine-nav" id="machineNav"></div>
