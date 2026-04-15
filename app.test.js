@@ -2,6 +2,7 @@ import { mock, test, expect, spyOn } from "bun:test";
 
 mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js", () => ({
     initializeApp: mock(() => ({})),
+    getApp: mock(() => ({})),
 }));
 
 const mockUpdate = mock(() => Promise.reject(new Error("Test update failed")));
