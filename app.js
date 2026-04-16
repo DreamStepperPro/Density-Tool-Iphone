@@ -494,53 +494,63 @@ window.calculateLocal = function() {
                     }
                 }
                 if (recentWts.length > 0 && !isNaN(currW)) {
-                    let velocity = 0;
-                    // Stabilization Override — compare against oldest point, not most recent
-                    // This preserves slow steady drift signals across the full time window
-                    if (recentWts.length > 1 && Math.abs(currW - recentWts[recentWts.length - 1]) <= 0.4) {
-                        velocity = 0;
-                    } else {
-                        const oldestW    = recentWts[recentWts.length - 1];
-                        const oldestTime = recentTimes[recentTimes.length - 1];
-                        if (oldestTime) {
-                            // 0.25 min floor allows accurate velocity on quick rechecks
-                            const timeDiffMin = Math.max(0.25, (Date.now() - oldestTime) / 60000);
-                            velocity = (currW - oldestW) / timeDiffMin;
-                        }
-                    }
-                    if (Math.abs(velocity) > 0.015) {
-                        let runway = 0;
-                        if (velocity > 0 && currW <= (target + 2)) runway = (target + 2) - currW;
-                        else if (velocity < 0 && currW >= (target - 2)) runway = currW - (target - 2);
-                        if (runway > 0) {
-                            const minsToDrift = Math.round(runway / Math.abs(velocity));
-                            runwayPct = Math.max(0, Math.min(100, (minsToDrift / 60) * 100));
-                            if (minsToDrift < 120) {
-                                if (minsToDrift <= 15) {
-                                    runwayColor = 'var(--danger)';
-                                    driftHtml = `<span class="drift-alert-critical">${window.t('weighNow')}</span>`;
-                                    // Operator autonomy toast — local cooldown per lane, never touches Firebase
-                                    if (minsToDrift <= 5) {
-                                        const now = Date.now();
-                                        if (!window._driftToastTs) window._driftToastTs = {};
-                                        const lastToast = window._driftToastTs[i] || 0;
-                                        if (now - lastToast > 120000) {
-                                            window._driftToastTs[i] = now;
-                                            window.showAdminToast(`⚠️ ${window.t('lane')} ${i}: ${window.t('driftingFast')}`);
-                                            if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-                                        }
-                                    }
-                                } else {
-                                    runwayColor = minsToDrift <= 30 ? 'var(--warning)' : 'var(--perfect)';
-                                    driftHtml = `<span style="font-size:0.7rem; margin-left:8px; font-weight:900; color:${runwayColor};">⏳ ${minsToDrift}m</span>`;
-                                }
-                            }
+                    // Green Zone Activation
+                    if (Math.abs(currW - target) <= 2.0) {
+                        let velocity = 0;
+                        // Stabilization Override — compare against oldest point, not most recent
+                        // This preserves slow steady drift signals across the full time window
+                        if (recentWts.length > 1 && Math.abs(currW - recentWts[recentWts.length - 1]) <= 0.4) {
+                            velocity = 0;
                         } else {
-                            // Already out of bounds — card color already communicates state, silence the alarm
-                            runwayPct = 0;
-                            runwayColor = 'transparent';
-                            driftHtml = "";
+                            const oldestW    = recentWts[recentWts.length - 1];
+                            const oldestTime = recentTimes[recentTimes.length - 1];
+                            // Intervention Gate — ignore massive jumps, assume manual intervention
+                            if (Math.abs(currW - oldestW) > 1.5) {
+                                velocity = 0;
+                            } else if (oldestTime) {
+                                // 0.25 min floor allows accurate velocity on quick rechecks
+                                const timeDiffMin = Math.max(0.25, (Date.now() - oldestTime) / 60000);
+                                velocity = (currW - oldestW) / timeDiffMin;
+                            }
                         }
+                        if (Math.abs(velocity) > 0.015) {
+                            let runway = 0;
+                            if (velocity > 0 && currW <= (target + 2)) runway = (target + 2) - currW;
+                            else if (velocity < 0 && currW >= (target - 2)) runway = currW - (target - 2);
+                            if (runway > 0) {
+                                const minsToDrift = Math.round(runway / Math.abs(velocity));
+                                runwayPct = Math.max(0, Math.min(100, (minsToDrift / 60) * 100));
+                                if (minsToDrift < 120) {
+                                    if (minsToDrift <= 15) {
+                                        runwayColor = 'var(--danger)';
+                                        driftHtml = `<span class="drift-alert-critical">${window.t('weighNow')}</span>`;
+                                        // Operator autonomy toast — local cooldown per lane, never touches Firebase
+                                        if (minsToDrift <= 5) {
+                                            const now = Date.now();
+                                            if (!window._driftToastTs) window._driftToastTs = {};
+                                            const lastToast = window._driftToastTs[i] || 0;
+                                            if (now - lastToast > 120000) {
+                                                window._driftToastTs[i] = now;
+                                                window.showAdminToast(`⚠️ ${window.t('lane')} ${i}: ${window.t('driftingFast')}`);
+                                                if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                                            }
+                                        }
+                                    } else {
+                                        runwayColor = minsToDrift <= 30 ? 'var(--warning)' : 'var(--perfect)';
+                                        driftHtml = `<span style="font-size:0.7rem; margin-left:8px; font-weight:900; color:${runwayColor};">⏳ ${minsToDrift}m</span>`;
+                                    }
+                                }
+                            } else {
+                                // Already out of bounds — card color already communicates state, silence the alarm
+                                runwayPct = 0;
+                                runwayColor = 'transparent';
+                                driftHtml = "";
+                            }
+                        }
+                    } else {
+                        runwayPct = 0;
+                        runwayColor = 'transparent';
+                        driftHtml = "";
                     }
                 }
             }
