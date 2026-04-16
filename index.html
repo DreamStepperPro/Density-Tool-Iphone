@@ -54,7 +54,7 @@
     <div class="modal">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h2 style="color:var(--accent); margin:0;" data-i18n="cmdCenter">👑 Command Center</h2>
-            <button onclick="window.closeAdmin()" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
+            <button aria-label="Close" onclick="window.closeAdmin()" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
         </div>
         <div class="admin-tabs">
             <button class="admin-tab active" onclick="window.switchAdminTab('recent')" id="tabBtnRecent">Recent Requests (Last 3 Days)</button>
@@ -92,7 +92,7 @@
     <div class="modal">
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <h2 style="margin:0;" data-i18n="options">⚙️ Options</h2>
-            <button onclick="window.toggleSettings()" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
+            <button aria-label="Close" onclick="window.toggleSettings()" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
         </div>
         <br>
         <div class="modal-opt">
@@ -152,7 +152,7 @@
     <div class="modal" style="max-width:500px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h2 style="color:var(--success); margin:0;">📊 Yield Calculator</h2>
-            <button onclick="window.closeYield()" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
+            <button aria-label="Close" onclick="window.closeYield()" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
         </div>
 
         <div class="yield-dash">
@@ -216,7 +216,7 @@
             <h2 style="margin:0;" id="maintModalTitle">🔧 M1 Hardware Matrix</h2>
             <div>
                 <button class="btn-icon" onclick="window.openMaintHistory()" style="border:none; font-size:1.2rem; margin-right:8px;" title="View Logs">📋</button>
-                <button class="btn-icon" onclick="window.closeMaintenance()" style="border:none; font-size:1.5rem;">×</button>
+                <button aria-label="Close" class="btn-icon" onclick="window.closeMaintenance()" style="border:none; font-size:1.5rem;">×</button>
             </div>
         </div>
         <p style="font-size:0.75rem; color:gray; margin-top:0; margin-bottom:15px;" data-i18n="maintHint">Tap a component to toggle its status.</p>
@@ -295,7 +295,7 @@
     <div class="modal">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h2 style="margin:0;" id="supHistoryTitle">📋 DSI 1 Ledger</h2>
-            <button class="btn-icon" onclick="window.closeSupHistory()" style="border:none; font-size:1.5rem;">×</button>
+            <button aria-label="Close" class="btn-icon" onclick="window.closeSupHistory()" style="border:none; font-size:1.5rem;">×</button>
         </div>
         <div id="supHistoryList" style="display:block; max-height:65vh; overflow-y:auto; padding-right:5px;"></div>
         <button class="modal-btn secondary" onclick="window.closeSupHistory()" style="margin-top:15px;">CLOSE</button>
@@ -306,7 +306,7 @@
     <div class="modal">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h2 style="margin:0;">📋 Maintenance Logs</h2>
-            <button class="btn-icon" onclick="window.closeMaintHistory()" style="border:none; font-size:1.5rem;">×</button>
+            <button aria-label="Close" class="btn-icon" onclick="window.closeMaintHistory()" style="border:none; font-size:1.5rem;">×</button>
         </div>
         <div id="maintSummaryBox" style="display:none; margin-bottom:15px;"></div>
         <div id="maintHistoryList" style="max-height:55vh; overflow-y:auto; display:flex; flex-direction:column; gap:10px;">
@@ -320,7 +320,7 @@
     <div class="modal" style="max-height:95vh; display:flex; flex-direction:column;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
             <h2 style="color:var(--danger); margin:0;" data-i18n="dispatch">📻 Line Dispatch</h2>
-            <button onclick="window.closeSos()" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
+            <button aria-label="Close" onclick="window.closeSos()" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
         </div>
         <div class="chat-box" id="chatBox">
             <div style="text-align:center; opacity:0.5; font-size:0.8rem; margin-top:auto;" data-i18n="radioOpen">Radio channel open...</div>
@@ -443,7 +443,7 @@
     <div class="modal" style="max-height:85vh; display:flex; flex-direction:column;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h2 style="color:var(--accent); margin:0;" data-i18n="ourStory">📖 Our Story</h2>
-            <button onclick="document.getElementById('aboutModal').style.display='none'" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
+            <button aria-label="Close" onclick="document.getElementById('aboutModal').style.display='none'" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
         </div>
         <div style="overflow-y:auto; padding-right:10px; font-size:0.92rem; line-height:1.7; color:var(--text); opacity:0.9; flex:1;">
             <div style="text-align:center; margin-bottom:20px;">
@@ -460,7 +460,7 @@
     <div class="modal" style="max-height:85vh; display:flex; flex-direction:column;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h2 style="color:var(--info); margin:0;" data-i18n="systemGuideTitle">🧠 System Guide</h2>
-            <button onclick="window.closeHelp()" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
+            <button aria-label="Close" onclick="window.closeHelp()" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
         </div>
         <div style="overflow-y:auto; padding-right:10px; font-size:0.9rem; line-height:1.6; color:var(--text); flex:1; display:flex; flex-direction:column; gap:10px;">
 
