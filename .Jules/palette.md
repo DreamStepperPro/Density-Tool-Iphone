@@ -4,3 +4,7 @@
 ## 2024-04-16 - Accessible Close Buttons
 **Learning:** Found a common pattern of icon-only close buttons (using "✕" or "×") in `index.html` modals without any accessible names, making them invisible to screen readers.
 **Action:** Always add `aria-label="Close"` to icon-only buttons. Can be easily searched using `grep -n "✕\|×"` in HTML files to find unlabelled close buttons.
+
+## 2026-04-17 - Missing Keyboard Support on Interactive Divs
+**Learning:** Found a pattern of using `<div>` tags with `onclick` handlers for interactive elements (like toast notifications, floating action buttons, and status banners) without providing keyboard navigation or screen reader support.
+**Action:** Always ensure that any `<div>` acting as a button includes `role="button"`, `tabindex="0"`, a descriptive `aria-label`, and an `onkeydown` event handler for 'Enter' and 'Space' keys. Or, prefer using actual `<button>` tags when possible.
