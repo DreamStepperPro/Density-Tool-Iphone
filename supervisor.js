@@ -67,8 +67,19 @@ window.calculateDepartmentStats = function(allHistories) {
     let laneHistories = {};
     const cfg = window.getConfig();
 
+    // Determine the absolute dominant product across all machines to prevent cross-product STD bleeding
+    let dominantProduct = null;
+    let absoluteLatestTimestamp = 0;
     for (let m = 1; m <= cfg.machines; m++) {
-        const recentChecks = window.getRecentChecks(allHistories[`M${m}`], 5);
+        const latest = window.getAbsoluteLatest(allHistories[`M${m}`]);
+        if (latest && latest.entry && latest.entry.timestamp > absoluteLatestTimestamp) {
+            absoluteLatestTimestamp = latest.entry.timestamp;
+            dominantProduct = latest.product;
+        }
+    }
+
+    for (let m = 1; m <= cfg.machines; m++) {
+        const recentChecks = window.getRecentChecks(allHistories[`M${m}`], 5, dominantProduct);
         recentChecks.forEach((check, checkIndex) => {
             if (check && check.lanes) {
                 check.lanes.forEach((lane, laneIndex) => {
@@ -116,7 +127,8 @@ window.calculateDepartmentStats = function(allHistories) {
         rawStd: rawStd.toFixed(2),
         grandStd: trueEstimatedStd.toFixed(2),
         snipeTarget: worstLane,
-        maxDev: maxDev.toFixed(1)
+        maxDev: maxDev.toFixed(1),
+        product: dominantProduct
     };
 };
 
@@ -129,7 +141,7 @@ window.renderSupervisorDashboard = function(allHistories) {
     for (let m = 1; m <= cfg.machines; m++) {
         const machHistories = allHistories[`M${m}`];
         const latest        = window.getAbsoluteLatest(machHistories);
-        const recentChecks  = window.getRecentChecks(machHistories, 5);
+        const recentChecks  = latest ? window.getRecentChecks(machHistories, 5, latest.product) : [];
         if (latest) {
             container.innerHTML += window.buildSupCard(`DSI ${m}`, latest, recentChecks, m);
             allWeightsGlobal = allWeightsGlobal.concat(window.extractWeights(latest.entry));
@@ -193,7 +205,8 @@ window.renderSupervisorDashboard = function(allHistories) {
             active: true,
             machine: stats.snipeTarget.machine,
             lane: stats.snipeTarget.lane,
-            grandMean: parseFloat(stats.grandMean)
+            grandMean: parseFloat(stats.grandMean),
+            product: stats.product
         } : { active: false };
         if (JSON.stringify(snipePayload) !== JSON.stringify(window.lastSnipePayload)) {
             window.lastSnipePayload = snipePayload;
@@ -220,10 +233,11 @@ window.getAbsoluteLatest = function(machineHistories) {
     return latestEntry ? { entry: latestEntry, product: activeProduct } : null;
 };
 
-window.getRecentChecks = function(machineHistories, n) {
+window.getRecentChecks = function(machineHistories, n, targetProduct = null) {
     if (!machineHistories) return [];
     let all = [];
     for (let prodKey in machineHistories) {
+        if (targetProduct && !prodKey.includes(targetProduct)) continue;
         let entries = Array.isArray(machineHistories[prodKey]) ? machineHistories[prodKey] : Object.values(machineHistories[prodKey]);
         entries.forEach(e => all.push(e));
     }
