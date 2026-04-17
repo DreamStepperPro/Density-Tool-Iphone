@@ -44,7 +44,7 @@
 </div>
 
 <!-- ADMIN TOAST -->
-<div id="adminToast" onclick="window.openAdmin()">
+<div id="adminToast" role="button" tabindex="0" aria-label="Open Command Center" onclick="window.openAdmin()" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.openAdmin(); }">
     <span style="font-size:1.4rem;">🚨</span>
     <span id="toastMsg">New Access Request!</span>
 </div>
@@ -337,7 +337,7 @@
 </div>
 
 <!-- SOS FAB -->
-<div class="fab-sos" id="btnSos" onclick="window.openSos()" style="display:none;">
+<div class="fab-sos" id="btnSos" role="button" tabindex="0" aria-label="Open SOS / Line Dispatch" onclick="window.openSos()" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.openSos(); }" style="display:none;">
     🚨<div class="fab-badge" id="sosBadge" style="display:none;">0</div>
 </div>
 
@@ -363,7 +363,7 @@
 <div class="container" id="appContent" style="display:none; filter:blur(5px); padding-bottom:90px;">
     <div class="header">
         <div style="display:flex; align-items:center;">
-            <div id="statusDot" class="status-dot" onclick="window.jumpstartNetwork()" title="Tap to reset connection"></div>
+            <div id="statusDot" class="status-dot" role="button" tabindex="0" aria-label="Reset Connection" onclick="window.jumpstartNetwork()" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.jumpstartNetwork(); }" title="Tap to reset connection"></div>
             <h1 class="brand-title" data-i18n="title">The Advantage</h1><span class="moon-icon">🌙</span>
         </div>
         <div class="header-btns">
@@ -375,13 +375,13 @@
     </div>
     <div class="machine-nav" id="machineNav"></div>
     <div id="systemStatusContainer" class="system-status-container" style="margin-top:8px;">
-        <div id="statusBanner" class="system-banner banner-running" onclick="window.openMaintenance()">
+        <div id="statusBanner" class="system-banner banner-running" role="button" tabindex="0" aria-label="Open Maintenance Matrix" onclick="window.openMaintenance()" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.openMaintenance(); }">
             <span id="bannerTitle">🟢 M1: RUNNING</span>
             <span id="bannerSub" class="banner-subtext">All components active. Tap for Maintenance.</span>
         </div>
     </div>
 
-    <div id="streamTestBanner" style="display:none; background:rgba(0,198,240,0.15); color:var(--perfect); padding:12px; border-radius:10px; text-align:center; font-weight:900; margin-bottom:12px; box-shadow:var(--shadow); cursor:pointer; border:2px solid var(--perfect); animation: pulseWarning 2s infinite;" onclick="window.openStreamTestModal()">
+    <div id="streamTestBanner" style="display:none; background:rgba(0,198,240,0.15); color:var(--perfect); padding:12px; border-radius:10px; text-align:center; font-weight:900; margin-bottom:12px; box-shadow:var(--shadow); cursor:pointer; border:2px solid var(--perfect); animation: pulseWarning 2s infinite;" role="button" tabindex="0" aria-label="Log Stream Test" onclick="window.openStreamTestModal()" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.openStreamTestModal(); }">
         <div style="font-size:1.1rem; margin-bottom:4px;" data-i18n="streamReq">💧 STREAM TEST REQUIRED</div>
         <div style="font-size:0.8rem; font-weight:normal; color:var(--text);" data-i18n="tapToLog">Tap here to log results</div>
     </div>
@@ -436,7 +436,7 @@
 
 <div id="photoViewerModal" style="display:none; position:fixed; inset:0; z-index:999; background:rgba(0,0,0,0.95); align-items:center; justify-content:center; cursor:pointer;" onclick="this.style.display='none'">
     <img id="photoViewerImg" style="max-width:95vw; max-height:95vh; object-fit:contain;" onclick="event.stopPropagation()">
-    <div style="position:absolute; top:20px; right:24px; color:white; font-size:2rem; font-weight:bold;">×</div>
+    <button aria-label="Close photo viewer" style="position:absolute; top:20px; right:24px; color:white; font-size:2rem; font-weight:bold; background:none; border:none; cursor:pointer;" onclick="document.getElementById('photoViewerModal').style.display='none'; event.stopPropagation();">×</button>
 </div>
 
 <div class="modal-overlay" id="aboutModal" style="display:none; z-index:260;">
