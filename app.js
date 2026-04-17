@@ -147,6 +147,7 @@ window.initApp = function() {
     const fieldMap = { setMachines:'machines', setLanes:'lanes', setProd:'product', setSmart:'smart', setInputMode:'inputMode', setTheme:'theme' };
     for (const [id, key] of Object.entries(fieldMap)) { const el = document.getElementById(id); if (el) el.value = config[key]; }
     if (document.getElementById('setDispName')) document.getElementById('setDispName').value = config.displayName || '';
+    window.departmentSnipe = { active: false };
     const hasSetup = localStorage.getItem('dsi_setup_done');
     if (!hasSetup) document.getElementById('setupWizard').style.display = 'flex';
     else window.routeUserByRole();
@@ -221,7 +222,10 @@ window.startCloudSync = function() {
     // Snipe receiver — listen for supervisor broadcast, update UI when state changes
     if (unsubSnipe) { unsubSnipe(); unsubSnipe = null; }
     unsubSnipe = onValue(ref(db, 'stores/departmentSnipe'), (snapshot) => {
-        const newSnipe = snapshot.val() || { active: false };
+        let newSnipe = snapshot.val() || { active: false };
+        if (newSnipe.active && newSnipe.product && newSnipe.product !== config.product) {
+            newSnipe = { active: false };
+        }
         const oldSnipe = window.departmentSnipe || { active: false };
         window.departmentSnipe = newSnipe;
         // Vibrate & toast only if THIS machine just became a new snipe target
@@ -932,7 +936,7 @@ window.factoryReset   = function() { if (confirm("Erase LOCAL settings? Cloud da
 window.openHelp  = function() { window.toggleSettings(); document.getElementById('helpModal').style.display = 'flex'; };
 window.closeHelp = function() { document.getElementById('helpModal').style.display = 'none'; };
 window.switchMachine = function(m) { config.currentMachine = m; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) { window.startCloudSync(); window.listenForGlobalReset(`M${m}`); } };
-window.switchProfile  = function() { config.lanes = parseInt(document.getElementById('setLanes').value); config.product = document.getElementById('setProd').value; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); };
+window.switchProfile  = function() { window.departmentSnipe = { active: false }; config.lanes = parseInt(document.getElementById('setLanes').value); config.product = document.getElementById('setProd').value; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); };
 
 // =====================================================================
 // ADMIN
