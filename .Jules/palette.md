@@ -8,3 +8,7 @@
 ## 2026-04-17 - Missing Keyboard Support on Interactive Divs
 **Learning:** Found a pattern of using `<div>` tags with `onclick` handlers for interactive elements (like toast notifications, floating action buttons, and status banners) without providing keyboard navigation or screen reader support.
 **Action:** Always ensure that any `<div>` acting as a button includes `role="button"`, `tabindex="0"`, a descriptive `aria-label`, and an `onkeydown` event handler for 'Enter' and 'Space' keys. Or, prefer using actual `<button>` tags when possible.
+
+## 2024-05-18 - Matrix Button Accessibility
+**Learning:** Discovered that the complex grid of `<div>` elements serving as toggle buttons in the "Maintenance Matrix" completely lacked screen reader and keyboard accessibility, isolating users relying on those technologies from a core piece of functionality.
+**Action:** Always apply `role="button"`, `tabindex="0"`, descriptive `aria-label`s, and `onkeydown` handlers to `<div>` elements acting as buttons. Crucially, also include a `:focus-visible` CSS rule so keyboard users have a visual indicator of their current tab focus.
