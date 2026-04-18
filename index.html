@@ -223,29 +223,29 @@
 
         <div class="matrix-section-title" data-i18n="globalSys">System Level</div>
         <div class="matrix-grid" style="grid-template-columns: 1fr; margin-bottom:15px;">
-            <div class="matrix-btn running" id="comp-sys" onclick="window.toggleComponent('sys','comp_sys')" style="flex-direction:row; padding:15px; justify-content:flex-start;">
+            <div class="matrix-btn running" id="comp-sys" role="button" tabindex="0" aria-label="Toggle Entire Machine" onclick="window.toggleComponent('sys','comp_sys')" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.toggleComponent('sys','comp_sys'); }" style="flex-direction:row; padding:15px; justify-content:flex-start;">
                 <div class="matrix-dot"></div><span data-i18n="comp_sys" style="margin-left:8px; font-size:1rem;">Entire Machine (Hard Stop)</span>
             </div>
         </div>
 
         <div class="matrix-section-title" data-i18n="waterjets">Waterjet Cutters</div>
         <div class="matrix-grid">
-            <div class="matrix-btn running" id="comp-c1" onclick="window.toggleComponent('c1','Cutter 1')"><div class="matrix-dot"></div>C1</div>
-            <div class="matrix-btn running" id="comp-c2" onclick="window.toggleComponent('c2','Cutter 2')"><div class="matrix-dot"></div>C2</div>
-            <div class="matrix-btn running" id="comp-c3" onclick="window.toggleComponent('c3','Cutter 3')"><div class="matrix-dot"></div>C3</div>
-            <div class="matrix-btn running" id="comp-c4" onclick="window.toggleComponent('c4','Cutter 4')"><div class="matrix-dot"></div>C4</div>
-            <div class="matrix-btn running" id="comp-c5" onclick="window.toggleComponent('c5','Cutter 5')"><div class="matrix-dot"></div>C5</div>
-            <div class="matrix-btn running" id="comp-c6" onclick="window.toggleComponent('c6','Cutter 6')"><div class="matrix-dot"></div>C6</div>
-            <div class="matrix-btn running" id="comp-c7" onclick="window.toggleComponent('c7','Cutter 7')"><div class="matrix-dot"></div>C7</div>
-            <div class="matrix-btn running" id="comp-c8" onclick="window.toggleComponent('c8','Cutter 8')"><div class="matrix-dot"></div>C8</div>
+            <div class="matrix-btn running" id="comp-c1" role="button" tabindex="0" aria-label="Toggle Cutter 1" onclick="window.toggleComponent('c1','Cutter 1')" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.toggleComponent('c1','Cutter 1'); }"><div class="matrix-dot"></div>C1</div>
+            <div class="matrix-btn running" id="comp-c2" role="button" tabindex="0" aria-label="Toggle Cutter 2" onclick="window.toggleComponent('c2','Cutter 2')" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.toggleComponent('c2','Cutter 2'); }"><div class="matrix-dot"></div>C2</div>
+            <div class="matrix-btn running" id="comp-c3" role="button" tabindex="0" aria-label="Toggle Cutter 3" onclick="window.toggleComponent('c3','Cutter 3')" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.toggleComponent('c3','Cutter 3'); }"><div class="matrix-dot"></div>C3</div>
+            <div class="matrix-btn running" id="comp-c4" role="button" tabindex="0" aria-label="Toggle Cutter 4" onclick="window.toggleComponent('c4','Cutter 4')" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.toggleComponent('c4','Cutter 4'); }"><div class="matrix-dot"></div>C4</div>
+            <div class="matrix-btn running" id="comp-c5" role="button" tabindex="0" aria-label="Toggle Cutter 5" onclick="window.toggleComponent('c5','Cutter 5')" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.toggleComponent('c5','Cutter 5'); }"><div class="matrix-dot"></div>C5</div>
+            <div class="matrix-btn running" id="comp-c6" role="button" tabindex="0" aria-label="Toggle Cutter 6" onclick="window.toggleComponent('c6','Cutter 6')" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.toggleComponent('c6','Cutter 6'); }"><div class="matrix-dot"></div>C6</div>
+            <div class="matrix-btn running" id="comp-c7" role="button" tabindex="0" aria-label="Toggle Cutter 7" onclick="window.toggleComponent('c7','Cutter 7')" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.toggleComponent('c7','Cutter 7'); }"><div class="matrix-dot"></div>C7</div>
+            <div class="matrix-btn running" id="comp-c8" role="button" tabindex="0" aria-label="Toggle Cutter 8" onclick="window.toggleComponent('c8','Cutter 8')" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.toggleComponent('c8','Cutter 8'); }"><div class="matrix-dot"></div>C8</div>
         </div>
 
         <div class="matrix-section-title" data-i18n="belts">Transport Belts</div>
         <div class="matrix-grid" style="grid-template-columns: repeat(2, 1fr);">
-            <div class="matrix-btn running" id="comp-bin"  onclick="window.toggleComponent('bin','comp_bin')"><div class="matrix-dot"></div><span data-i18n="infeed">Infeed</span></div>
-            <div class="matrix-btn running" id="comp-bout" onclick="window.toggleComponent('bout','comp_bout')"><div class="matrix-dot"></div><span data-i18n="outfeed">Outfeed</span></div>
-            <div class="matrix-btn running" id="comp-bnug" onclick="window.toggleComponent('bnug','comp_bnug')"><div class="matrix-dot"></div><span data-i18n="nuggetBelt">Nuggets</span></div>
-            <div class="matrix-btn running" id="comp-bfil" onclick="window.toggleComponent('bfil','comp_bfil')"><div class="matrix-dot"></div><span data-i18n="filletBelt">Fillets</span></div>
+            <div class="matrix-btn running" id="comp-bin"  role="button" tabindex="0" aria-label="Toggle Infeed Belt" onclick="window.toggleComponent('bin','comp_bin')" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.toggleComponent('bin','comp_bin'); }"><div class="matrix-dot"></div><span data-i18n="infeed">Infeed</span></div>
+            <div class="matrix-btn running" id="comp-bout" role="button" tabindex="0" aria-label="Toggle Outfeed Belt" onclick="window.toggleComponent('bout','comp_bout')" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.toggleComponent('bout','comp_bout'); }"><div class="matrix-dot"></div><span data-i18n="outfeed">Outfeed</span></div>
+            <div class="matrix-btn running" id="comp-bnug" role="button" tabindex="0" aria-label="Toggle Nuggets Belt" onclick="window.toggleComponent('bnug','comp_bnug')" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.toggleComponent('bnug','comp_bnug'); }"><div class="matrix-dot"></div><span data-i18n="nuggetBelt">Nuggets</span></div>
+            <div class="matrix-btn running" id="comp-bfil" role="button" tabindex="0" aria-label="Toggle Fillets Belt" onclick="window.toggleComponent('bfil','comp_bfil')" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.toggleComponent('bfil','comp_bfil'); }"><div class="matrix-dot"></div><span data-i18n="filletBelt">Fillets</span></div>
         </div>
 
         <div id="faultDrawer" class="fault-drawer">
