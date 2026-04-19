@@ -1,0 +1,54 @@
+{
+  "rules": {
+    "users": {
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() == 'supervisor' || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1' || (query.orderByChild == 'pin' && query.equalTo != null))",
+      ".indexOn": ["pin"],
+      "$uid": {
+        ".write": "auth != null && (auth.uid == $uid || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1')"
+      }
+    },
+    "stores": {
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('approved').val() == true || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1')",
+      ".write": "auth != null && (root.child('users').child(auth.uid).child('approved').val() == true || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1')"
+    },
+    "histories": {
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('approved').val() == true || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1')",
+      ".write": "auth != null && (root.child('users').child(auth.uid).child('approved').val() == true || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1')",
+      ".indexOn": ["timestamp"]
+    },
+    "messages": {
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('approved').val() == true || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1')",
+      ".write": "auth != null && (root.child('users').child(auth.uid).child('approved').val() == true || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1')",
+      ".indexOn": ["timestamp"]
+    },
+    "yieldHistory": {
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() == 'supervisor' || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1')",
+      ".write": "(auth != null && (root.child('users').child(auth.uid).child('role').val() == 'supervisor' || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1')) && (newData.exists() || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1')"
+    },
+    "activeDowntimes": {
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('approved').val() == true || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1')",
+      ".write": "auth != null && (root.child('users').child(auth.uid).child('approved').val() == true || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1')"
+    },
+    "downtimeLogs": {
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() == 'supervisor' || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1')",
+      ".write": "auth != null && (root.child('users').child(auth.uid).child('approved').val() == true || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1')",
+      ".indexOn": ["machine", "endTime"]
+    },
+    "shiftLedger": {
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() == 'supervisor' || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1')",
+      ".write": "auth != null && (root.child('users').child(auth.uid).child('approved').val() == true || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1')"
+    },
+    "streamPhotos": {
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() == 'supervisor' || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1')",
+      ".write": "auth != null && (root.child('users').child(auth.uid).child('approved').val() == true || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1')"
+    },
+    "activeShift": {
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('approved').val() == true || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1')",
+      ".write": "auth != null && (root.child('users').child(auth.uid).child('approved').val() == true || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1')"
+    },
+    "tenants": {
+      ".read": "auth != null && auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1'",
+      ".write": "auth != null && auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1'"
+    }
+  }
+}
