@@ -29,6 +29,9 @@ mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js", ()
     serverTimestamp: mock(() => ({})),
     goOnline: mock(() => {}),
     goOffline: mock(() => {}),
+    query: mock(() => ({})),
+    orderByChild: mock(() => ({})),
+    equalTo: mock(() => ({}))
 }));
 
 mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js", () => ({
