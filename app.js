@@ -1025,6 +1025,10 @@ window.openAdmin = function() {
             unapproved.forEach(([k, d]) => {
                 unapprovedList.appendChild(window.buildAdminUserCard(k, d, false));
             });
+        }, (error) => {
+            console.error("Firebase permission denied:", error);
+            window.showAdminToast("Access Denied: Supervisor clearance required.");
+            document.getElementById('adminModal').style.display = 'none';
         });
     }
 };
