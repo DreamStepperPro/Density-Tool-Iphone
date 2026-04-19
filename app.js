@@ -332,7 +332,7 @@ window.renderInterface = function() {
                         <button class="btn-icon btn-recheck" onclick="window.recheckLane(${i})">↻</button>
                     </div>
                 </div>
-                <div class="result-box" id="resBox-${i}" onclick="window.applyResult(${i})">
+                <div class="result-box" id="resBox-${i}" role="button" tabindex="0" aria-label="Apply new density for lane ${i}" onclick="window.applyResult(${i})" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.applyResult(${i}); }">
                     <span id="resText-${i}">${window.t('newDens')} --</span>
                     <span class="tap-hint">${window.t('tapApply')}</span>
                 </div>
@@ -623,7 +623,7 @@ window.renderHistoryCards = function() {
             </div>`).join('');
         return `
         <div class="hist-card" id="hcard-${idx}">
-            <div class="hist-card-header" onclick="window.toggleHistCard(${idx})">
+            <div class="hist-card-header" role="button" tabindex="0" aria-label="Toggle history details for entry ${idx}" onclick="window.toggleHistCard(${idx})" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.toggleHistCard(${idx}); }">
                 <div>
                     <span class="hist-card-time">${escapeHTML(r.time)}</span>
                     ${r.operator ? `<span style="font-size:0.72rem; opacity:0.6; margin-left:8px;">by ${escapeHTML(r.operator)}</span>` : ''}
