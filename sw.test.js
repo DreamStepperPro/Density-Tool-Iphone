@@ -23,6 +23,48 @@ beforeEach(() => {
         delete: mock(() => Promise.resolve()),
         match: mock(() => Promise.resolve("cached-response"))
     };
+    global.self.skipWaiting.mockClear();
+});
+
+test("Install event calls skipWaiting and caches assets", async () => {
+    await import("./sw.js?isolated=install");
+
+    const waitUntilMock = mock((promise) => promise);
+    const event = {
+        waitUntil: waitUntilMock
+    };
+
+    listeners['install'](event);
+
+    expect(global.self.skipWaiting).toHaveBeenCalled();
+
+    await waitUntilMock.mock.calls[0][0];
+
+    expect(global.caches.open).toHaveBeenCalledWith('dsi-advantage-v2');
+    expect(mockCache.addAll).toHaveBeenCalledWith([
+        './',
+        './index.html',
+        './styles.css',
+        './app.js',
+        './manifest.json'
+    ]);
+});
+
+test("Activate event deletes old caches and keeps current cache", async () => {
+    await import("./sw.js?isolated=activate");
+
+    const waitUntilMock = mock((promise) => promise);
+    const event = {
+        waitUntil: waitUntilMock
+    };
+
+    listeners['activate'](event);
+
+    await waitUntilMock.mock.calls[0][0];
+
+    expect(global.caches.keys).toHaveBeenCalled();
+    expect(global.caches.delete).toHaveBeenCalledWith('old-cache');
+    expect(global.caches.delete).not.toHaveBeenCalledWith('dsi-advantage-v2');
 });
 
 test("Fetch event fallback to cache on network failure", async () => {
