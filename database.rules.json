@@ -4,6 +4,7 @@
       ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() == 'supervisor' || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1' || (query.orderByChild == 'pin' && query.equalTo != null))",
       ".indexOn": ["pin"],
       "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1')",
         ".write": "auth != null && (auth.uid == $uid || auth.uid == 'aq1MtAQ5FdXPH9D0l8gTyKCEUWg1')"
       }
     },
