@@ -347,3 +347,34 @@ test("renderChat triggers notification for new messages", () => {
     expect(notifySpy).toHaveBeenCalledWith('DSI Alert: M1', 'alert');
     notifySpy.mockRestore();
 });
+
+test("sendCommsMsg logs warning if message prune fails", async () => {
+    const { push, onValue, update } = require("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js");
+
+    push.mockImplementationOnce(() => Promise.resolve());
+
+    // Create 101 messages to trigger pruning
+    const fakeMsgs = {};
+    for (let i = 0; i < 101; i++) {
+        fakeMsgs[`msg${i}`] = { timestamp: i };
+    }
+    const fakeSnap = { val: () => fakeMsgs };
+
+    onValue.mockImplementationOnce((ref, cb) => {
+        cb(fakeSnap);
+    });
+
+    const simError = new Error("Simulated Prune Error");
+    update.mockImplementationOnce(() => Promise.reject(simError));
+
+    const warnSpy = spyOn(console, "warn").mockImplementation(() => {});
+
+    await window.sendCommsMsg('TEXT', 'test prune');
+
+    // Wait for the microtask queue to process the catch block
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    expect(warnSpy).toHaveBeenCalledWith('Prune failed:', simError);
+
+    warnSpy.mockRestore();
+});
