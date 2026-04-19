@@ -36,7 +36,8 @@ mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js", ()
             global.onValueCallbacks[ref] = callback;
         }
     }),
-    update: mock(() => Promise.resolve()), push: mock(() => ({})), serverTimestamp: mock(() => ({})), goOnline: mock(() => {}), goOffline: mock(() => {})
+    update: mock(() => Promise.resolve()), push: mock(() => ({})), serverTimestamp: mock(() => ({})), goOnline: mock(() => {}), goOffline: mock(() => {}),
+    query: mock(() => ({})), orderByChild: mock(() => ({})), equalTo: mock(() => ({}))
 }));
 
 mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js", () => ({

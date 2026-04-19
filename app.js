@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, get, set, onValue, update, push, serverTimestamp, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, get, set, onValue, update, push, serverTimestamp, goOnline, goOffline, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -1140,14 +1140,25 @@ window.loginWithPin = function() {
     const pinInput = document.getElementById('loginPin');
     const pin = pinInput ? pinInput.value.trim() : '';
     if (pin.length < 4) { alert("Please enter your 4-digit PIN."); return; }
-    get(ref(db, 'users')).then((snap) => {
-        const users = snap.val() || {};
-        let matchedProfile = null, oldUid = null;
-        for (const [uid, data] of Object.entries(users)) {
-            if (data.pin && data.pin === pin && data.approved === true) {
-                matchedProfile = data; oldUid = uid; break;
+
+    const pinQuery = query(ref(db, 'users'), orderByChild('pin'), equalTo(pin));
+    get(pinQuery).then((snap) => {
+        let matchedProfile = null;
+        let oldUid = null;
+
+        if (snap.exists()) {
+            const users = snap.val();
+            // Since multiple users could theoretically have the same PIN initially (though unlikely),
+            // find the first one that is approved.
+            for (const [uid, data] of Object.entries(users)) {
+                if (data.approved === true) {
+                    matchedProfile = data;
+                    oldUid = uid;
+                    break;
+                }
             }
         }
+
         if (matchedProfile) {
             const updates = {
                 approved: true, requestPending: false,
