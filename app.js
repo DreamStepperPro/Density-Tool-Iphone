@@ -1025,6 +1025,10 @@ window.openAdmin = function() {
             unapproved.forEach(([k, d]) => {
                 unapprovedList.appendChild(window.buildAdminUserCard(k, d, false));
             });
+        }, (error) => {
+            console.error("Firebase permission denied:", error);
+            window.showAdminToast("Access Denied: Supervisor clearance required.");
+            document.getElementById('adminModal').style.display = 'none';
         });
     }
 };
@@ -1140,12 +1144,12 @@ window.loginWithPin = function() {
     const pinInput = document.getElementById('loginPin');
     const pin = pinInput ? pinInput.value.trim() : '';
     if (pin.length < 4) { alert("Please enter your 4-digit PIN."); return; }
-
+    
     const pinQuery = query(ref(db, 'users'), orderByChild('pin'), equalTo(pin));
     get(pinQuery).then((snap) => {
         let matchedProfile = null;
         let oldUid = null;
-
+        
         if (snap.exists()) {
             const users = snap.val();
             // Since multiple users could theoretically have the same PIN initially (though unlikely),
@@ -1158,7 +1162,7 @@ window.loginWithPin = function() {
                 }
             }
         }
-
+        
         if (matchedProfile) {
             const updates = {
                 approved: true, requestPending: false,
