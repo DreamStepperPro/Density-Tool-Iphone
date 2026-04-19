@@ -576,6 +576,11 @@ window.loadAndViewPhoto = function(imgEl) {
 // =====================================================================
 window.enforceShiftBoundaries = function() {
     if (window.isShiftActive()) return;
+    // AUTH GATE: Prevent unapproved background clients from spamming the server
+    const isApproved = window.currentUserData && window.currentUserData.approved === true;
+    const isAdminUser = typeof window.getIsAdmin === 'function' && window.getIsAdmin();
+    if (!window.isOfflineMode && !isApproved && !isAdminUser) return;
+
     const cfg     = window.getConfig();
     const now     = Date.now();
     const timeStr = new Date().toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
