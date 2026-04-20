@@ -4,10 +4,19 @@ const mockPush = mock(() => Promise.reject(new Error("Test push failed")));
 const mockUpdate = mock(() => Promise.resolve());
 
 mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js", () => ({
+    initializeApp: mock(() => ({})),
     getApp: mock(() => ({})),
 }));
 
 mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js", () => ({
+    serverTimestamp: mock(() => ({})),
+    goOnline: mock(() => ({})),
+    goOffline: mock(() => ({})),
+    push: mock(() => ({})),
+    limitToLast: mock(() => ({})),
+    query: mock(() => ({})),
+    orderByChild: mock(() => ({})),
+    equalTo: mock(() => ({})),
     getDatabase: mock(() => ({})),
     ref: mock(() => ({})),
     push: mockPush,

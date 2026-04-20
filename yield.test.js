@@ -6,6 +6,14 @@ mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js", () => (
 }));
 
 mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js", () => ({
+    serverTimestamp: mock(() => ({})),
+    goOnline: mock(() => ({})),
+    goOffline: mock(() => ({})),
+    push: mock(() => ({})),
+    limitToLast: mock(() => ({})),
+    query: mock(() => ({})),
+    orderByChild: mock(() => ({})),
+    equalTo: mock(() => ({})),
     getDatabase: mock(() => ({})),
     ref: mock((db, path) => path),
     push: mock((ref, data) => {

@@ -12,6 +12,7 @@ const db = getDatabase(getApp());
 // ---- Downtime State ----
 let unsubDowntime        = null;
 let currentActiveDowntimes = {};
+window.getCurrentActiveDowntimes = () => currentActiveDowntimes;
 // Sandbox local memory — keyed by machine number, never touches Firebase
 window.sandboxDowntimes = {};
 

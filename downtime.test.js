@@ -1,12 +1,21 @@
 import { mock, test, expect, spyOn } from "bun:test";
 
 mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js", () => ({
+    initializeApp: mock(() => ({})),
     getApp: mock(() => ({})),
 }));
 
 const mockUpdate = mock(() => Promise.reject(new Error("Test update failed")));
 
 mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js", () => ({
+    serverTimestamp: mock(() => ({})),
+    goOnline: mock(() => ({})),
+    goOffline: mock(() => ({})),
+    push: mock(() => ({})),
+    limitToLast: mock(() => ({})),
+    query: mock(() => ({})),
+    orderByChild: mock(() => ({})),
+    equalTo: mock(() => ({})),
     getDatabase: mock(() => ({})),
     ref: mock(() => ({})),
     set: mock(() => Promise.resolve()),
@@ -199,6 +208,14 @@ test("confirmReEnable saves log, clears downtime, and shows toast", async () => 
     const mockPush = mock(() => Promise.resolve());
 
     mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js", () => ({
+    serverTimestamp: mock(() => ({})),
+    goOnline: mock(() => ({})),
+    goOffline: mock(() => ({})),
+    push: mock(() => ({})),
+    limitToLast: mock(() => ({})),
+    query: mock(() => ({})),
+    orderByChild: mock(() => ({})),
+    equalTo: mock(() => ({})),
         getDatabase: mock(() => ({})),
         ref: mock(() => ({})),
         set: mockSet,
@@ -305,6 +322,14 @@ test("confirmReEnable catches push error and shows admin toast", async () => {
     const mockPushReject = mock(() => Promise.reject(new Error("Network Error")));
 
     mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js", () => ({
+    serverTimestamp: mock(() => ({})),
+    goOnline: mock(() => ({})),
+    goOffline: mock(() => ({})),
+    push: mock(() => ({})),
+    limitToLast: mock(() => ({})),
+    query: mock(() => ({})),
+    orderByChild: mock(() => ({})),
+    equalTo: mock(() => ({})),
         getDatabase: mock(() => ({})),
         ref: mock(() => ({})),
         set: mockSet,
