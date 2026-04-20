@@ -281,3 +281,59 @@ test("confirmReEnable sandbox offline mode bypass works correctly", async () => 
     // Verify it was deleted from sandbox memory
     expect(global.window.sandboxDowntimes[1]['c3']).toBeUndefined();
 });
+
+test("confirmReEnable catches push error and shows admin toast", async () => {
+    // Enable push error mock
+    global.mockPushError = true;
+
+    global.document = {
+        getElementById: mock((id) => {
+            if (id === 'pendingCompId') return { value: 'c2' };
+            return { classList: { remove: mock(), add: mock() } };
+        })
+    };
+
+    global.window.showAdminToast = mock();
+    global.window.cancelReEnable = mock();
+    global.window.getConfig = mock(() => ({ currentMachine: 1 }));
+    global.window.currentUserData = { adminName: 'AdminAlice' };
+    global.window.isOfflineMode = false;
+    global.window.t = mock((key) => key);
+
+    // Setup Firebase mocks that reject push
+    const mockSet = mock(() => Promise.resolve());
+    const mockPushReject = mock(() => Promise.reject(new Error("Network Error")));
+
+    mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js", () => ({
+        getDatabase: mock(() => ({})),
+        ref: mock(() => ({})),
+        set: mockSet,
+        push: mockPushReject,
+        update: mock(() => Promise.resolve()),
+        onValue: mock(() => () => {}),
+        get: mock(() => Promise.resolve()),
+    }));
+
+    await import("./downtime.js?isolated=true");
+
+    global.window.isOfflineMode = true;
+    global.window.sandboxDowntimes = {
+        1: {
+            'c2': {
+                name: 'Cutter 2',
+                reason: 'f_orifice',
+                severity: 'degraded',
+                startTime: Date.now() - 120000,
+                loggedBy: 'Operator'
+            }
+        }
+    };
+    global.window.startDowntimeListener();
+    global.window.isOfflineMode = false;
+
+    window.confirmReEnable();
+
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    expect(global.window.showAdminToast).toHaveBeenCalledWith("❌ Network Error: Could not save log.");
+});
