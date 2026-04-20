@@ -246,9 +246,11 @@ window.getRecentChecks = function(machineHistories, n, targetProduct = null) {
 };
 
 window.extractWeights = function(entry) {
-    let wts = [];
-    entry.lanes.forEach(l => { let val = parseFloat(l.w); if (!isNaN(val)) wts.push(val); });
-    return wts;
+    return entry.lanes.reduce((acc, l) => {
+        let val = parseFloat(l.w);
+        if (!isNaN(val)) acc.push(val);
+        return acc;
+    }, []);
 };
 
 window.buildSupCard = function(title, dataObj, recentChecks, m) {
