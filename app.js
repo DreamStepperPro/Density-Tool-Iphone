@@ -318,7 +318,7 @@ window.renderInterface = function() {
                     <span class="lane-trend" id="trend-${i}"></span>
                 </div>
                 <div>
-                    <label>${labelText}</label>
+                    <label for="currDens-${i}">${labelText}</label>
                     <div class="input-group">
                         <button class="btn-icon" tabindex="-1" onclick="window.toggleDensitySign(${i})" style="min-width:38px; padding:0; font-weight:bold; background:var(--input-bg);">±</button>
                         <input type="number" id="currDens-${i}" class="density-input" step="0.001" readonly inputmode="decimal" oninput="window.handleInput(${i})" onblur="window.lockOnBlur(${i})">
@@ -326,7 +326,7 @@ window.renderInterface = function() {
                     </div>
                 </div>
                 <div>
-                    <label>${window.t('avgWt')} ${isAdmin ? '(×2)' : ''}</label>
+                    <label for="avgWt-${i}">${window.t('avgWt')} ${isAdmin ? '(×2)' : ''}</label>
                     <div class="input-group">
                         ${weightHtml}
                         <button class="btn-icon btn-recheck" onclick="window.recheckLane(${i})">↻</button>

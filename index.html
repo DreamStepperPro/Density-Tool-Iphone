@@ -72,15 +72,15 @@
     <div class="modal">
         <h2>Initial Setup</h2>
         <div class="modal-opt">
-            <label data-i18n="machines">Number of Machines</label>
+            <label data-i18n="machines" for="setupMachines">Number of Machines</label>
             <select id="setupMachines"><option value="1">1 Machine</option><option value="2" selected>2 Machines</option></select>
         </div>
         <div class="modal-opt">
-            <label data-i18n="config">Lane Configuration</label>
+            <label data-i18n="config" for="setupLanes">Lane Configuration</label>
             <select id="setupLanes"><option value="2">Dual Lane (2)</option><option value="4" selected>Quad Lane (4)</option></select>
         </div>
         <div class="modal-opt">
-            <label data-i18n="prodMode">Default Product</label>
+            <label data-i18n="prodMode" for="setupProd">Default Product</label>
             <select id="setupProd"><option value="lunch">Lunch (0.01)</option><option value="bfast">Breakfast (0.017)</option></select>
         </div>
         <button class="modal-btn" onclick="window.completeSetup()">START APP</button>
@@ -96,11 +96,11 @@
         </div>
         <br>
         <div class="modal-opt">
-            <label data-i18n="dispName">Your Display Name</label>
+            <label data-i18n="dispName" for="setDispName">Your Display Name</label>
             <input type="text" id="setDispName" onblur="window.saveDisplayName()" placeholder="e.g., Big Mike" style="font-weight:normal;">
         </div>
         <div class="modal-opt">
-            <label data-i18n="targetWt">Target Weight (g)</label>
+            <label data-i18n="targetWt" for="setTarget">Target Weight (g)</label>
             <input type="number" id="setTarget" inputmode="decimal" oninput="window.onTargetInput()" style="background:var(--input-bg);">
             <div class="target-confirm" id="targetConfirm">
                 <span data-i18n="changeTarget">⚠️ Change target weight mid-shift?</span>
@@ -112,7 +112,7 @@
         </div>
         <hr style="border:0; border-top:1px solid var(--border); margin:12px 0;">
         <div class="modal-opt">
-            <label data-i18n="unlockMethod">Unlock Method</label>
+            <label data-i18n="unlockMethod" for="setInputMode">Unlock Method</label>
             <select id="setInputMode" onchange="window.saveLocalSettings()">
                 <option value="button" data-i18n="lockBtn">Lock Button (Default)</option>
                 <option value="longpress" data-i18n="longPress">Long Press (1s)</option>
@@ -120,23 +120,23 @@
             </select>
         </div>
         <div class="modal-opt">
-            <label data-i18n="machines">Machines</label>
+            <label data-i18n="machines" for="setMachines">Machines</label>
             <select id="setMachines" onchange="window.saveLocalSettings()"><option value="1">1 Machine</option><option value="2">2 Machines</option></select>
         </div>
         <div class="modal-opt">
-            <label data-i18n="config">Configuration</label>
+            <label data-i18n="config" for="setLanes">Configuration</label>
             <select id="setLanes" onchange="window.switchProfile()"><option value="2" data-i18n="dualLane">Dual Lane</option><option value="4" data-i18n="quadLane">Quad Lane</option></select>
         </div>
         <div class="modal-opt">
-            <label data-i18n="prodMode">Product Mode</label>
+            <label data-i18n="prodMode" for="setProd">Product Mode</label>
             <select id="setProd" onchange="window.switchProfile()"><option value="lunch" data-i18n="lunch">Lunch</option><option value="bfast" data-i18n="bfast">Breakfast</option></select>
         </div>
         <div class="modal-opt">
-            <label data-i18n="smartMode">Smart Mode (Adaptive)</label>
+            <label data-i18n="smartMode" for="setSmart">Smart Mode (Adaptive)</label>
             <select id="setSmart" onchange="window.saveLocalSettings()"><option value="off">Off</option><option value="on">On</option><option value="auto">Auto</option></select>
         </div>
         <div class="modal-opt">
-            <label data-i18n="theme">Theme</label>
+            <label data-i18n="theme" for="setTheme">Theme</label>
             <select id="setTheme" onchange="window.toggleTheme()"><option value="light">Light</option><option value="dark">Dark</option></select>
         </div>
         <button class="modal-btn" style="background:var(--perfect); color:black;" onclick="window.enableSystemNotifications()" data-i18n="enableAlerts">🔔 ENABLE SYSTEM ALERTS</button>
@@ -172,21 +172,21 @@
         <div style="max-height:40vh; overflow-y:auto; padding-right:5px;">
             <h3 class="y-sec-title">🥩 Fillets</h3>
             <div class="y-grid">
-                <div><label>10130 (Lunch)</label><input type="number" id="y10130" oninput="window.calcYield()" placeholder="lbs" inputmode="decimal"></div>
-                <div><label>10070 (Bfast)</label><input type="number" id="y10070" oninput="window.calcYield()" placeholder="lbs" inputmode="decimal"></div>
+                <div><label for="y10130">10130 (Lunch)</label><input type="number" id="y10130" oninput="window.calcYield()" placeholder="lbs" inputmode="decimal"></div>
+                <div><label for="y10070">10070 (Bfast)</label><input type="number" id="y10070" oninput="window.calcYield()" placeholder="lbs" inputmode="decimal"></div>
             </div>
             <h3 class="y-sec-title">🍗 Nuggets</h3>
             <div class="y-grid">
-                <div><label>10114</label><input type="number" id="y10114" oninput="window.calcYield()" placeholder="lbs" inputmode="decimal"></div>
+                <div><label for="y10114">10114</label><input type="number" id="y10114" oninput="window.calcYield()" placeholder="lbs" inputmode="decimal"></div>
             </div>
             <h3 class="y-sec-title">🔪 Trim</h3>
             <div class="y-grid">
-                <div><label>30212</label><input type="number" id="y30212" oninput="window.calcYield()" placeholder="lbs" inputmode="decimal"></div>
-                <div><label>30211</label><input type="number" id="y30211" oninput="window.calcYield()" placeholder="lbs" inputmode="decimal"></div>
-                <div><label>15530</label><input type="number" id="y15530" oninput="window.calcYield()" placeholder="lbs" inputmode="decimal"></div>
-                <div><label>15531</label><input type="number" id="y15531" oninput="window.calcYield()" placeholder="lbs" inputmode="decimal"></div>
+                <div><label for="y30212">30212</label><input type="number" id="y30212" oninput="window.calcYield()" placeholder="lbs" inputmode="decimal"></div>
+                <div><label for="y30211">30211</label><input type="number" id="y30211" oninput="window.calcYield()" placeholder="lbs" inputmode="decimal"></div>
+                <div><label for="y15530">15530</label><input type="number" id="y15530" oninput="window.calcYield()" placeholder="lbs" inputmode="decimal"></div>
+                <div><label for="y15531">15531</label><input type="number" id="y15531" oninput="window.calcYield()" placeholder="lbs" inputmode="decimal"></div>
                 <div style="grid-column:span 2;">
-                    <label>40030 (BOXES — 40 lbs ea)</label>
+                    <label for="y40030boxes">40030 (BOXES — 40 lbs ea)</label>
                     <input type="number" id="y40030boxes" oninput="window.calcYield()" placeholder="# of boxes" inputmode="numeric">
                 </div>
             </div>
@@ -250,7 +250,7 @@
 
         <div id="faultDrawer" class="fault-drawer">
             <h3 id="faultTitle" style="margin-top:0; font-size:1rem; color:var(--danger);">Disable Component</h3>
-            <label data-i18n="faultReason">Fault Reason</label>
+            <label data-i18n="faultReason" for="faultReason">Fault Reason</label>
             <select id="faultReason" style="margin-bottom:10px; width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);">
                 <option value="" data-i18n="selectReason">-- Select Reason --</option>
                 <option value="f_orifice" data-i18n="f_orifice">Orifice</option>
@@ -262,12 +262,12 @@
                 <option value="f_jam" data-i18n="f_jam">Product Jam</option>
                 <option value="f_other" data-i18n="f_other">Other</option>
             </select>
-            <label data-i18n="impactLevel" style="margin-top:5px;">Impact Level</label>
+            <label data-i18n="impactLevel" style="margin-top:5px;" for="faultSeverity">Impact Level</label>
             <select id="faultSeverity" style="margin-bottom:10px; width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);">
                 <option value="degraded" data-i18n="impactDegraded">⚠️ Reduces Capacity (Degraded)</option>
                 <option value="down" data-i18n="impactDown">🔴 Stops Machine (Hard Down)</option>
             </select>
-            <label data-i18n="notesOpt">Notes (Optional)</label>
+            <label data-i18n="notesOpt" for="faultNotes">Notes (Optional)</label>
             <input type="text" id="faultNotes" placeholder="Describe the issue..." data-i18n-ph="notesOpt" style="margin-bottom:10px; width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); box-sizing:border-box;">
             <div style="display:flex; gap:10px;">
                 <button class="modal-btn danger" onclick="window.confirmFault()" style="margin-top:0;" data-i18n="disable">DISABLE</button>
