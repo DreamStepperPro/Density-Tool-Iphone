@@ -5,7 +5,7 @@
 // =====================================================================
 
 import { getApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, push, update, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, push, update, onValue, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { escapeHTML } from "./utils.js";
 
 const db  = getDatabase(getApp());
@@ -87,9 +87,10 @@ window.sendCommsMsg = function(code, customText = "") {
 window.startCommsListener = function() {
     if (window.isOfflineMode || !db) return;
     if (unsubComms) { unsubComms(); unsubComms = null; }
-    unsubComms = onValue(ref(db, 'messages'), (snap) => {
-        const msgs = snap.val() || {};
-        const sorted = Object.values(msgs).sort((a, b) => a.timestamp - b.timestamp).slice(-30);
+    const messagesQuery = query(ref(db, 'messages'), orderByChild('timestamp'), limitToLast(30));
+    unsubComms = onValue(messagesQuery, (snap) => {
+        const sorted = [];
+        snap.forEach(child => { sorted.push(child.val()); });
         window.renderChat(sorted);
     });
 };

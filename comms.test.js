@@ -1,11 +1,16 @@
 import { mock, test, expect, beforeEach, spyOn } from "bun:test";
 
 mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js", () => ({
+    initializeApp: mock(() => ({})),
+    getApp: mock(() => ({})),
     getApp: mock(() => ({})),
     initializeApp: mock(() => ({})),
 }));
 
 mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js", () => ({
+    query: mock(() => ({})),
+    orderByChild: mock(() => ({})),
+    limitToLast: mock(() => ({})),
     getDatabase: mock(() => ({})),
     ref: mock(() => ({})),
     push: mock(() => Promise.resolve()),
