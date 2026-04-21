@@ -12,3 +12,7 @@
 ## 2024-05-18 - Matrix Button Accessibility
 **Learning:** Discovered that the complex grid of `<div>` elements serving as toggle buttons in the "Maintenance Matrix" completely lacked screen reader and keyboard accessibility, isolating users relying on those technologies from a core piece of functionality.
 **Action:** Always apply `role="button"`, `tabindex="0"`, descriptive `aria-label`s, and `onkeydown` handlers to `<div>` elements acting as buttons. Crucially, also include a `:focus-visible` CSS rule so keyboard users have a visual indicator of their current tab focus.
+
+## 2024-05-19 - Accessible Modals and Previews
+**Learning:** Found a pattern of interactive images and modales with `onclick` handlers (e.g. `streamPhotoPreview`, `photoViewerModal`) without providing keyboard navigation or screen reader support.
+**Action:** Always apply `role="button"`, `tabindex="0"`, descriptive `aria-label`s, and `onkeydown` handlers to `<img>` and `<div>` elements acting as buttons or interactive previews.

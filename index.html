@@ -25,7 +25,7 @@
         <h2 style="color:var(--perfect); margin-top:0;">The Advantage</h2>
         <p style="font-size:0.85rem; margin-bottom:15px; color:var(--text); opacity:0.8;">Enter your 4-digit PIN to access the floor.</p>
         <div style="margin-bottom:20px;">
-            <input type="password" id="loginPin" pattern="[0-9]*" inputmode="numeric" maxlength="4" placeholder="••••"
+            <input type="password" id="loginPin" aria-label="Enter your 4-digit PIN" pattern="[0-9]*" inputmode="numeric" maxlength="4" placeholder="••••"
                 style="font-size:2rem; text-align:center; letter-spacing:10px; width:100%; padding:10px; border-radius:10px; border:2px solid var(--border); background:var(--input-bg); color:var(--text); font-weight:bold; margin-bottom:10px;"
                 onkeydown="if(event.key==='Enter') window.loginWithPin()">
             <button class="modal-btn" onclick="window.loginWithPin()" style="background:var(--success);">LOGIN</button>
@@ -34,7 +34,7 @@
         <details style="text-align:left; background:rgba(128,128,128,0.05); padding:10px; border-radius:8px; border:1px solid var(--border);">
             <summary style="font-size:0.8rem; font-weight:bold; cursor:pointer; opacity:0.8;">New Device? Request Access</summary>
             <div id="requestForm" style="margin-top:10px;">
-                <input type="text" id="reqName" placeholder="Enter your name / role..." style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); margin-bottom:10px;" data-i18n-ph="enterName">
+                <input type="text" id="reqName" aria-label="Enter your name or role" placeholder="Enter your name / role..." style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); margin-bottom:10px;" data-i18n-ph="enterName">
                 <button class="modal-btn" onclick="window.pingAdmin()" style="margin-top:0; background:var(--accent); font-size:0.85rem;" data-i18n="pingAdmin">PING ADMIN FOR ACCESS</button>
                 <div style="font-size:0.65rem; opacity:0.6; margin-top:10px; text-align:center; word-break:break-all;">Device: <span id="userIdDisplay">Loading...</span></div>
             </div>
@@ -207,7 +207,7 @@
         <hr style="border:0; border-top:1px solid var(--border); margin:20px 0 10px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <h3 style="margin:0; font-size:1rem;">Weekly History</h3>
-            <button class="btn-icon" style="border:none; color:var(--danger); font-size:1rem;" onclick="window.wipeYieldHistory()">🗑️ WIPE</button>
+            <button class="btn-icon" aria-label="Wipe Yield History" style="border:none; color:var(--danger); font-size:1rem;" onclick="window.wipeYieldHistory()">🗑️ WIPE</button>
         </div>
         <div id="yieldHistoryList" style="margin-top:10px; display:flex; flex-direction:column; gap:8px;"></div>
     </div>
@@ -219,7 +219,7 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
             <h2 style="margin:0;" id="maintModalTitle">🔧 M1 Hardware Matrix</h2>
             <div>
-                <button class="btn-icon" onclick="window.openMaintHistory()" style="border:none; font-size:1.2rem; margin-right:8px;" title="View Logs">📋</button>
+                <button class="btn-icon" aria-label="View Logs" onclick="window.openMaintHistory()" style="border:none; font-size:1.2rem; margin-right:8px;" title="View Logs">📋</button>
                 <button aria-label="Close" class="btn-icon" onclick="window.closeMaintenance()" style="border:none; font-size:1.5rem;">×</button>
             </div>
         </div>
@@ -334,7 +334,7 @@
             <button class="btn-quick" onclick="window.sendCommsMsg('ERR_MECH')" data-i18n="maintReq">🔧 MAINTENANCE REQ</button>
         </div>
         <div style="display:flex; gap:8px;">
-            <input type="text" id="chatInput" placeholder="Type message..." style="flex:1; padding:10px;" data-i18n-ph="typeMsg" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();window.sendCustomComms();}">
+            <input type="text" id="chatInput" aria-label="Type message" placeholder="Type message..." style="flex:1; padding:10px;" data-i18n-ph="typeMsg" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();window.sendCustomComms();}">
             <button class="modal-btn" style="width:auto; margin-top:0; padding:0 20px;" onclick="window.sendCustomComms()" data-i18n="send">SEND</button>
         </div>
     </div>
@@ -353,7 +353,7 @@
             <h1 style="margin:0; font-size:1.35rem; font-weight:800; letter-spacing:-0.5px;">DSI Line <span style="font-size:0.78rem; color:var(--accent); vertical-align:middle;">(OEE VIEW)</span></h1>
         </div>
         <div class="header-btns">
-            <button class="lang-btn" id="langToggleBtnSup" onclick="window.toggleLanguage()">EN</button>
+            <button class="lang-btn" id="langToggleBtnSup" aria-label="Toggle Language" onclick="window.toggleLanguage()">EN</button>
             <button class="gear-btn btn-hidden" id="btnYieldSup" aria-label="Yield Dashboard" onclick="window.openYield()" style="color:var(--success);">📊</button>
             <button class="gear-btn btn-hidden" id="btnMaintSup" aria-label="Maintenance Matrix" onclick="window.openMaintenance()" style="color:var(--warning);">🔧</button>
             <button class="gear-btn btn-hidden" id="btnAdminSup" aria-label="Command Center" onclick="window.openAdmin()" style="color:var(--accent);">👑</button>
@@ -371,7 +371,7 @@
             <h1 class="brand-title" data-i18n="title">The Advantage</h1><span class="moon-icon">🌙</span>
         </div>
         <div class="header-btns">
-            <button class="lang-btn" id="langToggleBtnOp" onclick="window.toggleLanguage()">EN</button>
+            <button class="lang-btn" id="langToggleBtnOp" aria-label="Toggle Language" onclick="window.toggleLanguage()">EN</button>
             <button class="gear-btn btn-hidden" id="btnYieldOp" aria-label="Yield Dashboard" onclick="window.openYield()" style="color:var(--success);">📊</button>
             <button class="gear-btn btn-hidden" id="btnAdmin" aria-label="Command Center" onclick="window.openAdmin()" style="color:var(--accent);">👑</button>
             <button class="gear-btn" aria-label="Settings" onclick="window.toggleSettings()">⚙️</button>
@@ -431,7 +431,7 @@
         <div style="background:rgba(128,128,128,0.05); border:1px solid var(--border); border-radius:10px; padding:15px; text-align:center; margin-bottom:15px;">
             <input type="file" accept="image/*" capture="environment" id="streamCameraInput" style="display:none;" onchange="window.handleStreamPhoto(event)">
             <button class="modal-btn secondary" id="btnTakePhoto" onclick="document.getElementById('streamCameraInput').click()" style="margin-top:0; border:2px dashed var(--info); color:var(--info); background:transparent;" data-i18n="takePhoto">📸 Take Photo (Optional)</button>
-            <img id="streamPhotoPreview" style="display:none; width:100%; max-height:200px; object-fit:contain; border-radius:8px; margin-top:10px; border:1px solid var(--border);" onclick="event.stopPropagation(); window.openFullSizePhoto(this.src)">
+            <img id="streamPhotoPreview" role="button" tabindex="0" aria-label="View Full Size Stream Photo" style="display:none; width:100%; max-height:200px; object-fit:contain; border-radius:8px; margin-top:10px; border:1px solid var(--border);" onclick="event.stopPropagation(); window.openFullSizePhoto(this.src)" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.openFullSizePhoto(this.src); }">
         </div>
         <button class="modal-btn" style="background:var(--success); margin-bottom:10px;" onclick="window.passStreamTest()" data-i18n="stPass">✅ ALL STREAMS VERIFIED</button>
         <button class="modal-btn" style="background:var(--warning); color:black;" onclick="window.failStreamTest()" data-i18n="stFail">⚠️ LOG A FAILURE</button>
@@ -439,7 +439,7 @@
     </div>
 </div>
 
-<div id="photoViewerModal" style="display:none; position:fixed; inset:0; z-index:999; background:rgba(0,0,0,0.95); align-items:center; justify-content:center; cursor:pointer;" onclick="this.style.display='none'">
+<div id="photoViewerModal" role="button" tabindex="0" aria-label="Close photo viewer" style="display:none; position:fixed; inset:0; z-index:999; background:rgba(0,0,0,0.95); align-items:center; justify-content:center; cursor:pointer;" onclick="this.style.display='none'" onkeydown="if(event.key==='Enter'||event.key===' '||event.key==='Escape') { event.preventDefault(); this.style.display='none'; }">
     <img id="photoViewerImg" style="max-width:95vw; max-height:95vh; object-fit:contain;" onclick="event.stopPropagation()">
     <button aria-label="Close photo viewer" style="position:absolute; top:20px; right:24px; color:white; font-size:2rem; font-weight:bold; background:none; border:none; cursor:pointer;" onclick="document.getElementById('photoViewerModal').style.display='none'; event.stopPropagation();">×</button>
 </div>
