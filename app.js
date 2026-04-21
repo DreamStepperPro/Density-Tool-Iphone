@@ -122,6 +122,7 @@ const FACTORS = { lunch: 0.01, bfast: 0.017 };
 let pressTimer;
 
 window.weightDebounceTimers = {};
+window.localWriteLocks = {};
 window.FACTORS = FACTORS;
 
 let autoSaveTimer      = null;
@@ -371,6 +372,12 @@ window.updateUIFromCloud = function() {
     for (let i = 1; i <= config.lanes; i++) {
         const lane = store.lanes[i-1];
         if (!lane) continue;
+
+        // Write Lock Check: Ignore cloud updates for this lane if edited locally within 1.5s
+        if (window.localWriteLocks[i] && (Date.now() - window.localWriteLocks[i] < 1500)) {
+            continue;
+        }
+
         const dEl = document.getElementById(`currDens-${i}`);
         if (dEl && document.activeElement !== dEl) {
             dEl.value = lane.d;
@@ -857,9 +864,14 @@ window.toggleLock = function(i) {
     window.pushLaneToCloud(i);
 };
 
-window.handleInput = function(i) { store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value; window.calculateLocal(); };
+window.handleInput = function(i) {
+    window.localWriteLocks[i] = Date.now();
+    store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value;
+    window.calculateLocal();
+};
 
 window.handleWeightInput = function(i) {
+    window.localWriteLocks[i] = Date.now();
     store.lanes[i-1].w = document.getElementById(`avgWt-${i}`).value;
     window.calculateLocal();
     clearTimeout(window.weightDebounceTimers[i]);
