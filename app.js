@@ -2,6 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getDatabase, ref, get, set, onValue, update, push, serverTimestamp, goOnline, goOffline, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+import { escapeHTML } from "./utils.js";
 const firebaseConfig = {
     apiKey: "AIzaSyA84WGuDvVMTci0KTZHVxDCle8dbiE1XB4",
     authDomain: "dsi-pro-bcb5c.firebaseapp.com",
@@ -658,6 +659,7 @@ window.renderHistoryCards = function() {
                     ${r.operator ? `<span style="font-size:0.72rem; opacity:0.6; margin-left:8px;">by ${escapeHTML(r.operator)}</span>` : ''}
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
+                    <button class="btn-icon" style="color:var(--danger); font-size:1rem; padding:0 5px; margin-right:8px;" onclick="event.stopPropagation(); window.deleteHistoryEntry(${idx})" title="Delete Entry">🗑️</button>
                     <span class="hist-card-avg">Avg: <strong>${escapeHTML(r.avg)}g</strong></span>
                     <span class="hist-card-chevron">▼</span>
                 </div>
@@ -715,6 +717,16 @@ window.saveToHistory = function() {
         push(ref(db, `shiftLedger/M${config.currentMachine}`), row).catch(e => console.warn('Ledger write:', e));
     }
     window.renderHistoryCards();
+};
+
+window.deleteHistoryEntry = function(idx) {
+    if (!confirm(window.t('deleteEntryConfirm') || "Delete this history entry?")) return;
+    history.splice(idx, 1);
+    if (!window.isOfflineMode && dbRef_History) {
+        set(dbRef_History, history).catch(e => window.showAdminToast("❌ Network Error: Could not delete entry."));
+    }
+    window.renderHistoryCards();
+    window.calculateLocal(); // Re-trigger velocity math without the bad data point
 };
 
 window.clearHistory = function() {
