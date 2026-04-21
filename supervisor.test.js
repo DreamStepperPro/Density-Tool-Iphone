@@ -8,6 +8,14 @@ mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js", () => (
 const mockUpdate = mock(() => Promise.reject(new Error("Test STD update failed")));
 
 mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js", () => ({
+    serverTimestamp: mock(() => ({})),
+    goOnline: mock(() => ({})),
+    goOffline: mock(() => ({})),
+    push: mock(() => ({})),
+    limitToLast: mock(() => ({})),
+    query: mock(() => ({})),
+    orderByChild: mock(() => ({})),
+    equalTo: mock(() => ({})),
     getDatabase: mock(() => ({})),
     ref: mock(() => ({})),
     update: mockUpdate,

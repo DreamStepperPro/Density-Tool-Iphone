@@ -8,6 +8,11 @@ mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js", () => (
 }));
 
 mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js", () => ({
+    serverTimestamp: mock(() => ({})),
+    goOnline: mock(() => ({})),
+    goOffline: mock(() => ({})),
+    push: mock(() => ({})),
+    limitToLast: mock(() => ({})),
     query: mock(() => ({})),
     orderByChild: mock(() => ({})),
     limitToLast: mock(() => ({})),

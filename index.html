@@ -139,6 +139,10 @@
             <label data-i18n="theme" for="setTheme">Theme</label>
             <select id="setTheme" onchange="window.toggleTheme()"><option value="light">Light</option><option value="dark">Dark</option></select>
         </div>
+        <div class="modal-opt" id="copilotSettingContainer" style="display:none;">
+            <label for="setCopilot">Beta: AI Copilot</label>
+            <input type="checkbox" id="setCopilot" onchange="window.saveLocalSettings()" style="width:24px; height:24px;">
+        </div>
         <button class="modal-btn" style="background:var(--perfect); color:black;" onclick="window.enableSystemNotifications()" data-i18n="enableAlerts">🔔 ENABLE SYSTEM ALERTS</button>
         <button class="modal-btn secondary" onclick="window.openAbout()" style="margin-top:6px; border-color:var(--accent); color:var(--accent);" data-i18n="ourStory">📖 OUR STORY</button>
         <button class="modal-btn secondary" onclick="window.openHelp()" style="margin-top:6px; border-color:var(--info); color:var(--info);" data-i18n="systemGuideBtn">🧠 SYSTEM GUIDE</button>
@@ -390,6 +394,7 @@
         <span id="displayConfig">Quad Lane • Lunch</span>
         <span id="displayTarget">Target: --g</span>
     </div>
+        <div id="copilotQueue" style="display:none; position:sticky; top:60px; z-index:100; margin:10px; display:flex; flex-direction:column; gap:8px;"></div>
     <div id="lanesContainer"></div>
     <div class="history-section">
         <label style="font-size:0.9rem; margin-bottom:10px; display:block;" data-i18n="history">Shift History</label>
