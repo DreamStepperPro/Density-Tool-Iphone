@@ -1381,7 +1381,7 @@ window.generateCopilotActions = function() {
                 activeK = activeK * buffer;
             }
 
-            const rawNewD = currD - (drift * activeK);
+            const rawNewD = currD + (drift * activeK);
             let suggestedD = rawNewD.toFixed(3);
             if (suggestedD === currD.toFixed(3)) {
                 suggestedD = (currD + (drift > 0 ? -0.001 : 0.001)).toFixed(3);
