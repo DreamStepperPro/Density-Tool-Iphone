@@ -462,6 +462,7 @@ window.calculateLocal = function() {
         let stepDelta = rawNewD - currD;
         stepDelta = Math.max(-maxStep, Math.min(maxStep, stepDelta));
         let newD = currD + stepDelta;
+        lane.currentK = activeK;
         return Math.max(-0.500, Math.min(0.500, newD)); // Hard machine limits
     }
 
@@ -1372,28 +1373,7 @@ window.generateCopilotActions = function() {
 
         const drift = currW - target;
         if (Math.abs(drift) > 1.5) {
-            let activeK = baseK;
-
-            // Check history for dynamic K factor
-            if (history && history.length > 0) {
-                for (let h = 0; h < history.length; h++) {
-                    const lData = history[h].lanes && history[h].lanes[i-1] ? history[h].lanes[i-1] : null;
-                    if (lData && lData.w && lData.w !== '--' && lData.d && lData.d !== '--') {
-                        const histW = parseFloat(lData.w);
-                        const histD = parseFloat(lData.d);
-                        if (!isNaN(histW) && !isNaN(histD)) {
-                            let wDelta = currW - histW;
-                            let dDelta = currD - histD;
-                            if (Math.abs(wDelta) > 0.5 && Math.abs(dDelta) > 0.001) {
-                                let observedK = dDelta / wDelta;
-                                observedK = Math.max(baseK * 0.5, Math.min(observedK, baseK * 3.5));
-                                activeK = (observedK * 0.6) + (baseK * 0.4);
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
+            let activeK = lane.currentK || baseK;
 
             // Buffer math if cutters are down (e.g. reduce change severity by 10% per down cutter)
             if (downComponents > 0) {
