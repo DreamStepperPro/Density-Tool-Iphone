@@ -124,6 +124,8 @@ let pressTimer;
 
 window.weightDebounceTimers = {};
 window.localWriteLocks = {};
+window.betaData = JSON.parse(localStorage.getItem('dsi_beta_data') || '[]');
+window.pendingBetaActions = JSON.parse(localStorage.getItem('dsi_beta_pending') || '{}');
 window.FACTORS = FACTORS;
 
 let autoSaveTimer      = null;
@@ -715,6 +717,21 @@ window.saveToHistory = function() {
     prevAvg         = parseFloat(avg) || null;
     const opName    = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
     let row = { time, timestamp, avg, operator: opName, target: store.target, lanes: [] };
+    if (isAdmin && config.copilotEnabled) {
+        for (let i = 1; i <= config.lanes; i++) {
+            if (window.pendingBetaActions[i]) {
+                const wt = store.lanes[i-1] ? store.lanes[i-1].w : '';
+                if (wt && wt !== '--') {
+                    window.pendingBetaActions[i].resultingW = wt;
+                    window.betaData.push(window.pendingBetaActions[i]);
+                    window.pendingBetaActions[i] = null;
+                    localStorage.setItem('dsi_beta_data', JSON.stringify(window.betaData));
+                    localStorage.setItem('dsi_beta_pending', JSON.stringify(window.pendingBetaActions));
+                }
+            }
+        }
+    }
+
     for (let i = 1; i <= config.lanes; i++) {
         if (store.lanes[i-1] && store.lanes[i-1].disabled) {
             row.lanes.push({ w: 'OFF', d: '--' });
@@ -830,6 +847,19 @@ window.applyResult = function(idx) {
     const currD = parseFloat(lane.d), currW = parseFloat(lane.w);
     if (val && !isNaN(currD)) {
         window.saveToHistory();
+
+        if (isAdmin && config.copilotEnabled) {
+            let downC = 0;
+            const faults = typeof window.getCurrentActiveDowntimes === 'function' ? window.getCurrentActiveDowntimes() : {};
+            for (const id in faults) { if (id.startsWith('c')) downC++; }
+            const laneState = store.lanes[idx-1];
+            const isSnipe = window.departmentSnipe && window.departmentSnipe.active && window.departmentSnipe.lane === idx;
+            const isSmart = config.smart === 'on' || (config.smart === 'auto' && laneState.smartActive);
+            const source = isSnipe ? 'Snipe' : (isSmart ? 'SmartAdapt' : 'Manual');
+            window.pendingBetaActions[idx] = { timestamp: new Date().toLocaleString(), lane: idx, target: store.target, source: source, cuttersDown: downC, initialW: laneState.w, appliedD: val, resultingW: null };
+            localStorage.setItem('dsi_beta_pending', JSON.stringify(window.pendingBetaActions));
+        }
+
         lane.lastD = currD; lane.lastW = currW;
         const target = parseFloat(store.target);
         if (Math.abs(currW - target) > 2) {
@@ -964,13 +994,31 @@ window.toggleSettings = function() {
                 if (document.getElementById('setTarget') && store.target) document.getElementById('setTarget').value = store.target;
         if (isAdmin) {
             document.getElementById('copilotSettingContainer').style.display = 'flex';
+            if (document.getElementById('btnExportBeta')) document.getElementById('btnExportBeta').style.display = 'block';
             if (document.getElementById('setCopilot')) document.getElementById('setCopilot').checked = config.copilotEnabled === true;
         } else {
             document.getElementById('copilotSettingContainer').style.display = 'none';
+            if (document.getElementById('btnExportBeta')) document.getElementById('btnExportBeta').style.display = 'none';
         }
         document.getElementById('targetConfirm').classList.remove('show');
     }
 };
+window.exportBetaData = function() {
+    if (window.betaData.length === 0) { window.showAdminToast("⚠️ No beta data to export."); return; }
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.betaData, null, 2));
+    const dlAnchorElem = document.createElement('a');
+    dlAnchorElem.setAttribute("href", dataStr);
+    dlAnchorElem.setAttribute("download", `dsi_beta_analytics_${Date.now()}.json`);
+    document.body.appendChild(dlAnchorElem);
+    dlAnchorElem.click();
+    dlAnchorElem.remove();
+    if (confirm("Clear local beta data after export?")) {
+        window.betaData = [];
+        localStorage.removeItem('dsi_beta_data');
+        window.showAdminToast("🗑️ Beta data cleared.");
+    }
+};
+
 window.saveLocalSettings = function() {
     if (document.getElementById('setMachines')) config.machines   = parseInt(document.getElementById('setMachines').value);
     if (document.getElementById('setLanes'))    config.lanes      = parseInt(document.getElementById('setLanes').value);
@@ -1429,6 +1477,14 @@ window.applyCopilotAction = function(idx, suggestedDensity) {
 
     // Save current to history before applying
     window.saveToHistory();
+
+    if (isAdmin && config.copilotEnabled) {
+        let downC = 0;
+        const faults = typeof window.getCurrentActiveDowntimes === 'function' ? window.getCurrentActiveDowntimes() : {};
+        for (const id in faults) { if (id.startsWith('c')) downC++; }
+        window.pendingBetaActions[idx] = { timestamp: new Date().toLocaleString(), lane: idx, target: store.target, source: 'Copilot', cuttersDown: downC, initialW: store.lanes[idx-1].w, appliedD: suggestedDensity, resultingW: null };
+        localStorage.setItem('dsi_beta_pending', JSON.stringify(window.pendingBetaActions));
+    }
 
     const lane = store.lanes[idx-1];
     lane.lastD = parseFloat(lane.d);
