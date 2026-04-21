@@ -207,7 +207,22 @@ window.startCloudSync = function() {
     dbRef_History = ref(db, `histories/${cloudPathKey}`);
     unsubStore = onValue(dbRef_Store, (snapshot) => {
         const val = snapshot.val();
-        if (val) { store = val; window.updateUIFromCloud(); }
+        if (val) {
+            // State Preservation: Inject locked local data into the incoming payload before memory overwrite
+            if (store && store.lanes && val.lanes) {
+                for (let i = 1; i <= config.lanes; i++) {
+                    if (window.localWriteLocks[i] && (Date.now() - window.localWriteLocks[i] < 1500)) {
+                        if (val.lanes[i-1] && store.lanes[i-1]) {
+                            val.lanes[i-1].w = store.lanes[i-1].w;
+                            val.lanes[i-1].d = store.lanes[i-1].d;
+                            val.lanes[i-1].locked = store.lanes[i-1].locked;
+                        }
+                    }
+                }
+            }
+            store = val;
+            window.updateUIFromCloud();
+        }
         else {
             if (!store.target) {
                 const defaultTarget = config.product === 'bfast' ? '63' : '102';
