@@ -125,7 +125,7 @@ let pressTimer;
 window.weightDebounceTimers = {};
 window.localWriteLocks = {};
 window.betaData = JSON.parse((typeof localStorage !== 'undefined' ? localStorage.getItem('dsi_beta_data') : null) || '[]');
-window.sessionContext = JSON.parse((typeof localStorage !== 'undefined' ? localStorage.getItem('dsi_session_context') : null) || '{}');
+window.sessionContext = JSON.parse(localStorage.getItem('dsi_session_context') || '{}');
 window.pendingBetaActions = JSON.parse((typeof localStorage !== 'undefined' ? localStorage.getItem('dsi_beta_pending') : null) || '{}');
 window.FACTORS = FACTORS;
 
@@ -153,6 +153,10 @@ window.initApp = function() {
     for (const [id, key] of Object.entries(fieldMap)) { const el = document.getElementById(id); if (el) el.value = config[key]; }
     if (document.getElementById('setDispName')) document.getElementById('setDispName').value = config.displayName || '';
     window.departmentSnipe = { active: false };
+
+    const bsInput = document.getElementById('mainBeltSpeed');
+    if (bsInput && window.sessionContext.beltSpeed) { bsInput.value = window.sessionContext.beltSpeed; }
+
     const hasSetup = localStorage.getItem('dsi_setup_done');
     if (!hasSetup) document.getElementById('setupWizard').style.display = 'flex';
     else window.routeUserByRole();
@@ -922,6 +926,11 @@ window.toggleLock = function(i) {
     if (!store.lanes[i-1].locked) { el.readOnly = false; setTimeout(() => { el.focus(); el.style.borderColor = 'var(--info)'; }, 50); }
     else { el.readOnly = true; el.style.borderColor = 'var(--border)'; }
     window.pushLaneToCloud(i);
+};
+
+window.updateBeltSpeed = function(val) {
+    window.sessionContext.beltSpeed = val ? parseFloat(val) : null;
+    localStorage.setItem('dsi_session_context', JSON.stringify(window.sessionContext));
 };
 
 window.handleInput = function(i) {

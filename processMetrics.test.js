@@ -19,9 +19,7 @@ global.localStorage = {
     getItem: mock()
 };
 
-global.console = {
-    warn: mock()
-};
+global.console.warn = mock();
 
 mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js", () => ({
     ref: mock((db, path) => path),
@@ -58,9 +56,11 @@ describe('Process Metrics Tests', () => {
     test('openProcessMetrics renders 4 lanes inputs', () => {
         window.openProcessMetrics();
         expect(mockModal.style.display).toBe('flex');
-        expect(mockModal.innerHTML).toContain('pm-belt-speed');
+        expect(mockModal.innerHTML).not.toContain('pm-belt-speed');
         expect(mockModal.innerHTML).toContain('pm-process-yield');
-        expect(mockModal.innerHTML).toContain('pm-bird-weight');
+        expect(mockModal.innerHTML).not.toContain('pm-bird-weight');
+        expect(mockModal.innerHTML).toContain('pm-weight-s1s2');
+        expect(mockModal.innerHTML).toContain('pm-weight-s3s4');
         expect(mockModal.innerHTML).toContain('pm-height-s1s2');
         expect(mockModal.innerHTML).toContain('pm-height-s3s4');
         expect(mockModal.innerHTML).not.toContain('pm-height-s1"'); // S1 alone shouldn't be there
@@ -70,9 +70,11 @@ describe('Process Metrics Tests', () => {
         window.config.lanes = 2;
         window.openProcessMetrics();
         expect(mockModal.style.display).toBe('flex');
-        expect(mockModal.innerHTML).toContain('pm-belt-speed');
+        expect(mockModal.innerHTML).not.toContain('pm-belt-speed');
         expect(mockModal.innerHTML).toContain('pm-process-yield');
-        expect(mockModal.innerHTML).toContain('pm-bird-weight');
+        expect(mockModal.innerHTML).not.toContain('pm-bird-weight');
+        expect(mockModal.innerHTML).toContain('pm-weight-s1"');
+        expect(mockModal.innerHTML).toContain('pm-weight-s2"');
         expect(mockModal.innerHTML).toContain('pm-height-s1"');
         expect(mockModal.innerHTML).toContain('pm-height-s2"');
         expect(mockModal.innerHTML).not.toContain('pm-height-s1s2');
@@ -88,9 +90,9 @@ describe('Process Metrics Tests', () => {
         global.document.getElementById.mockImplementation((id) => {
             if (id === 'processMetricsModal') return mockModal;
             const values = {
-                'pm-belt-speed': '12.5',
                 'pm-process-yield': '85.2',
-                'pm-bird-weight': '4.1',
+                'pm-weight-s1s2': '4.1',
+                'pm-weight-s3s4': '4.2',
                 'pm-height-s1s2': '10',
                 'pm-height-s3s4': '11'
             };
@@ -104,9 +106,9 @@ describe('Process Metrics Tests', () => {
 
         window.saveProcessMetrics();
 
-        expect(window.sessionContext.beltSpeed).toBe(12.5);
         expect(window.sessionContext.processYield).toBe(85.2);
-        expect(window.sessionContext.birdWeight).toBe(4.1);
+        expect(window.sessionContext.weightS1S2).toBe(4.1);
+        expect(window.sessionContext.weightS3S4).toBe(4.2);
         expect(window.sessionContext.heightS1S2).toBe(10);
         expect(window.sessionContext.heightS3S4).toBe(11);
 
@@ -121,7 +123,8 @@ describe('Process Metrics Tests', () => {
         global.document.getElementById.mockImplementation((id) => {
             if (id === 'processMetricsModal') return mockModal;
             const values = {
-                'pm-belt-speed': '10.5',
+                'pm-weight-s1': '4.3',
+                'pm-weight-s2': '4.4',
                 'pm-height-s1': '15',
                 'pm-height-s2': '16'
             };
@@ -135,7 +138,8 @@ describe('Process Metrics Tests', () => {
 
         window.saveProcessMetrics();
 
-        expect(window.sessionContext.beltSpeed).toBe(10.5);
+        expect(window.sessionContext.weightS1).toBe(4.3);
+        expect(window.sessionContext.weightS2).toBe(4.4);
         expect(window.sessionContext.heightS1).toBe(15);
         expect(window.sessionContext.heightS2).toBe(16);
         expect(window.sessionContext.processYield).toBeNull(); // Was not set
