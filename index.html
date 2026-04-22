@@ -355,6 +355,7 @@
         </div>
         <div class="header-btns">
             <button class="lang-btn" id="langToggleBtnSup" aria-label="Toggle Language" onclick="window.toggleLanguage()">EN</button>
+            <button class="gear-btn btn-hidden" id="btnMetricsSup" aria-label="Process Metrics" onclick="window.openProcessMetrics()" style="color:var(--info);">🎛️</button>
             <button class="gear-btn btn-hidden" id="btnYieldSup" aria-label="Yield Dashboard" onclick="window.openYield()" style="color:var(--success);">📊</button>
             <button class="gear-btn btn-hidden" id="btnMaintSup" aria-label="Maintenance Matrix" onclick="window.openMaintenance()" style="color:var(--warning);">🔧</button>
             <button class="gear-btn btn-hidden" id="btnAdminSup" aria-label="Command Center" onclick="window.openAdmin()" style="color:var(--accent);">👑</button>
@@ -553,7 +554,9 @@
 <script type="module" src="translations.js"></script>
 <script type="module" src="comms.js"></script>
 <script type="module" src="supervisor.js"></script>
+<script type="module" src="processMetrics.js"></script>
 <script type="module" src="yield.js"></script>
 <script type="module" src="downtime.js"></script>
+<div id="processMetricsModal" class="modal-overlay" style="display:none; align-items:center; justify-content:center;"></div>
 </body>
 </html>

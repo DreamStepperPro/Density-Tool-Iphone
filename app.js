@@ -124,8 +124,9 @@ let pressTimer;
 
 window.weightDebounceTimers = {};
 window.localWriteLocks = {};
-window.betaData = JSON.parse(localStorage.getItem('dsi_beta_data') || '[]');
-window.pendingBetaActions = JSON.parse(localStorage.getItem('dsi_beta_pending') || '{}');
+window.betaData = JSON.parse((typeof localStorage !== 'undefined' ? localStorage.getItem('dsi_beta_data') : null) || '[]');
+window.sessionContext = JSON.parse((typeof localStorage !== 'undefined' ? localStorage.getItem('dsi_session_context') : null) || '{}');
+window.pendingBetaActions = JSON.parse((typeof localStorage !== 'undefined' ? localStorage.getItem('dsi_beta_pending') : null) || '{}');
 window.FACTORS = FACTORS;
 
 let autoSaveTimer      = null;
@@ -856,7 +857,7 @@ window.applyResult = function(idx) {
             const isSnipe = window.departmentSnipe && window.departmentSnipe.active && window.departmentSnipe.lane === idx;
             const isSmart = config.smart === 'on' || (config.smart === 'auto' && laneState.smartActive);
             const source = isSnipe ? 'Snipe' : (isSmart ? 'SmartAdapt' : 'Manual');
-            window.pendingBetaActions[idx] = { timestamp: new Date().toLocaleString(), lane: idx, target: store.target, source: source, cuttersDown: downC, initialW: laneState.w, appliedD: val, resultingW: null, appliedK: (laneState.currentK || FACTORS[config.product]) };
+            window.pendingBetaActions[idx] = { timestamp: new Date().toLocaleString(), lane: idx, target: store.target, source: source, cuttersDown: downC, initialW: laneState.w, appliedD: val, resultingW: null, appliedK: (laneState.currentK || FACTORS[config.product]), ...window.sessionContext };
             localStorage.setItem('dsi_beta_pending', JSON.stringify(window.pendingBetaActions));
         }
 
@@ -1482,7 +1483,7 @@ window.applyCopilotAction = function(idx, suggestedDensity) {
         let downC = 0;
         const faults = typeof window.getCurrentActiveDowntimes === 'function' ? window.getCurrentActiveDowntimes() : {};
         for (const id in faults) { if (id.startsWith('c')) downC++; }
-        window.pendingBetaActions[idx] = { timestamp: new Date().toLocaleString(), lane: idx, target: store.target, source: 'Copilot', cuttersDown: downC, initialW: store.lanes[idx-1].w, appliedD: suggestedDensity, resultingW: null, appliedK: (store.lanes[idx-1].currentK || FACTORS[config.product]) };
+        window.pendingBetaActions[idx] = { timestamp: new Date().toLocaleString(), lane: idx, target: store.target, source: 'Copilot', cuttersDown: downC, initialW: store.lanes[idx-1].w, appliedD: suggestedDensity, resultingW: null, appliedK: (store.lanes[idx-1].currentK || FACTORS[config.product]), ...window.sessionContext };
         localStorage.setItem('dsi_beta_pending', JSON.stringify(window.pendingBetaActions));
     }
 
