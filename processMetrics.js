@@ -4,19 +4,24 @@ window.openProcessMetrics = function() {
     const modal = document.getElementById('processMetricsModal');
     if (!modal) return;
 
-    const config = window.getConfig ? window.getConfig() : (window.config || { lanes: 4 });
+    const config = window.getConfig ? window.getConfig() : (window.config || { lanes: 4, currentMachine: 1 });
     const lanes = config.lanes || 4;
+    const ctx = window.sessionContext['M' + (config.currentMachine || 1)] || {};
 
     let html = `
         <div class="modal-content" style="max-width: 500px; padding: 20px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
                 <h2 style="margin:0;">Process Control Metrics</h2>
-                <button aria-label="Close Modal" onclick="window.closeProcessMetrics()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">×</button>
+                <button aria-label="Close Modal" onclick="document.getElementById('processMetricsModal').style.display = 'none';" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">×</button>
             </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <div>
-                    <label for="pm-process-yield">Process Yield %</label>
-                    <input type="number" id="pm-process-yield" class="lane-input" value="${window.sessionContext.processYield ?? ''}">
+                    <label for="pm-gross-yield">Gross Yield %</label>
+                    <input type="number" id="pm-gross-yield" class="lane-input" value="${ctx.grossYield ?? ''}">
+                </div>
+                <div>
+                    <label for="pm-product-yield">Product Yield %</label>
+                    <input type="number" id="pm-product-yield" class="lane-input" value="${ctx.productYield ?? ''}">
                 </div>
     `;
 
@@ -24,38 +29,38 @@ window.openProcessMetrics = function() {
         html += `
                 <div>
                     <label for="pm-weight-s1s2">Weight S1/S2</label>
-                    <input type="number" id="pm-weight-s1s2" class="lane-input" value="${window.sessionContext.weightS1S2 ?? ''}">
+                    <input type="number" id="pm-weight-s1s2" class="lane-input" value="${ctx.weightS1S2 ?? ''}">
                 </div>
                 <div>
                     <label for="pm-weight-s3s4">Weight S3/S4</label>
-                    <input type="number" id="pm-weight-s3s4" class="lane-input" value="${window.sessionContext.weightS3S4 ?? ''}">
+                    <input type="number" id="pm-weight-s3s4" class="lane-input" value="${ctx.weightS3S4 ?? ''}">
                 </div>
                 <div>
                     <label for="pm-height-s1s2">Height S1/S2</label>
-                    <input type="number" id="pm-height-s1s2" class="lane-input" value="${window.sessionContext.heightS1S2 ?? ''}">
+                    <input type="number" id="pm-height-s1s2" class="lane-input" value="${ctx.heightS1S2 ?? ''}">
                 </div>
                 <div>
                     <label for="pm-height-s3s4">Height S3/S4</label>
-                    <input type="number" id="pm-height-s3s4" class="lane-input" value="${window.sessionContext.heightS3S4 ?? ''}">
+                    <input type="number" id="pm-height-s3s4" class="lane-input" value="${ctx.heightS3S4 ?? ''}">
                 </div>
         `;
     } else if (lanes === 2) {
         html += `
                 <div>
                     <label for="pm-weight-s1">Weight S1</label>
-                    <input type="number" id="pm-weight-s1" class="lane-input" value="${window.sessionContext.weightS1 ?? ''}">
+                    <input type="number" id="pm-weight-s1" class="lane-input" value="${ctx.weightS1 ?? ''}">
                 </div>
                 <div>
                     <label for="pm-weight-s2">Weight S2</label>
-                    <input type="number" id="pm-weight-s2" class="lane-input" value="${window.sessionContext.weightS2 ?? ''}">
+                    <input type="number" id="pm-weight-s2" class="lane-input" value="${ctx.weightS2 ?? ''}">
                 </div>
                 <div>
                     <label for="pm-height-s1">Height S1</label>
-                    <input type="number" id="pm-height-s1" class="lane-input" value="${window.sessionContext.heightS1 ?? ''}">
+                    <input type="number" id="pm-height-s1" class="lane-input" value="${ctx.heightS1 ?? ''}">
                 </div>
                 <div>
                     <label for="pm-height-s2">Height S2</label>
-                    <input type="number" id="pm-height-s2" class="lane-input" value="${window.sessionContext.heightS2 ?? ''}">
+                    <input type="number" id="pm-height-s2" class="lane-input" value="${ctx.heightS2 ?? ''}">
                 </div>
         `;
     }
@@ -63,7 +68,7 @@ window.openProcessMetrics = function() {
     html += `
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; gap: 10px;">
-                <button class="modal-btn" style="width:50%; background:var(--border); color:var(--text);" onclick="window.closeProcessMetrics()">CANCEL</button>
+                <button class="modal-btn" style="width:50%; background:var(--border); color:var(--text);" onclick="document.getElementById('processMetricsModal').style.display = 'none';">CANCEL</button>
                 <button class="modal-btn" style="width:50%; background:var(--perfect);" onclick="window.saveProcessMetrics()">SAVE METRICS</button>
             </div>
         </div>
@@ -79,13 +84,15 @@ window.closeProcessMetrics = function() {
 };
 
 window.saveProcessMetrics = function() {
-    const processYield = document.getElementById('pm-process-yield')?.value;
+    const grossYield = document.getElementById('pm-gross-yield')?.value;
+    const productYield = document.getElementById('pm-product-yield')?.value;
 
     const data = {
-        processYield: processYield ? parseFloat(processYield) : null,
+        grossYield: grossYield ? parseFloat(grossYield) : null,
+        productYield: productYield ? parseFloat(productYield) : null,
     };
 
-    const config = window.getConfig ? window.getConfig() : (window.config || { lanes: 4 });
+    const config = window.getConfig ? window.getConfig() : (window.config || { lanes: 4, currentMachine: 1 });
     const lanes = config.lanes || 4;
 
     if (lanes === 4) {
@@ -110,11 +117,12 @@ window.saveProcessMetrics = function() {
         data.heightS2 = hS2 ? parseFloat(hS2) : null;
     }
 
-    // Clean nulls
-    window.sessionContext = { ...window.sessionContext, ...data };
+    const machineId = 'M' + (config.currentMachine || 1);
+    if (!window.sessionContext[machineId]) {
+        window.sessionContext[machineId] = {};
+    }
+    window.sessionContext[machineId] = { ...window.sessionContext[machineId], ...data };
     localStorage.setItem('dsi_session_context', JSON.stringify(window.sessionContext));
-
-    const machineId = window.currentMachine || 'M1'; // Fallback if undefined
 
     if (window.dbRef_Store && window.db) {
         const ctxRef = ref(window.db, `stores/${machineId}/processContext`);

@@ -125,7 +125,7 @@ let pressTimer;
 window.weightDebounceTimers = {};
 window.localWriteLocks = {};
 window.betaData = JSON.parse((typeof localStorage !== 'undefined' ? localStorage.getItem('dsi_beta_data') : null) || '[]');
-window.sessionContext = JSON.parse(localStorage.getItem('dsi_session_context') || '{}');
+window.sessionContext = JSON.parse(localStorage.getItem('dsi_session_context') || '{"M1":{}, "M2":{}}');
 window.pendingBetaActions = JSON.parse((typeof localStorage !== 'undefined' ? localStorage.getItem('dsi_beta_pending') : null) || '{}');
 window.FACTORS = FACTORS;
 
@@ -155,7 +155,7 @@ window.initApp = function() {
     window.departmentSnipe = { active: false };
 
     const bsInput = document.getElementById('mainBeltSpeed');
-    if (bsInput && window.sessionContext.beltSpeed) { bsInput.value = window.sessionContext.beltSpeed; }
+    if (bsInput) bsInput.value = window.sessionContext[`M${config.currentMachine || 1}`]?.beltSpeed || '';
 
     const hasSetup = localStorage.getItem('dsi_setup_done');
     if (!hasSetup) document.getElementById('setupWizard').style.display = 'flex';
@@ -862,7 +862,7 @@ window.applyResult = function(idx) {
             const isSnipe = window.departmentSnipe && window.departmentSnipe.active && window.departmentSnipe.lane === idx;
             const isSmart = config.smart === 'on' || (config.smart === 'auto' && laneState.smartActive);
             const source = isSnipe ? 'Snipe' : (isSmart ? 'SmartAdapt' : 'Manual');
-            window.pendingBetaActions[idx] = { timestamp: new Date().toLocaleString(), lane: idx, target: store.target, source: source, cuttersDown: downC, initialW: laneState.w, appliedD: val, resultingW: null, appliedK: (laneState.currentK || FACTORS[config.product]), ...window.sessionContext };
+            window.pendingBetaActions[idx] = { timestamp: new Date().toLocaleString(), lane: idx, target: store.target, source: source, cuttersDown: downC, initialW: laneState.w, appliedD: val, resultingW: null, appliedK: (laneState.currentK || FACTORS[config.product]), ...(window.sessionContext['M' + config.currentMachine] || {}) };
             localStorage.setItem('dsi_beta_pending', JSON.stringify(window.pendingBetaActions));
         }
 
@@ -929,7 +929,9 @@ window.toggleLock = function(i) {
 };
 
 window.updateBeltSpeed = function(val) {
-    window.sessionContext.beltSpeed = val ? parseFloat(val) : null;
+    const m = `M${config.currentMachine}`;
+    if (!window.sessionContext[m]) window.sessionContext[m] = {};
+    window.sessionContext[m].beltSpeed = val ? parseFloat(val) : null;
     localStorage.setItem('dsi_session_context', JSON.stringify(window.sessionContext));
 };
 
@@ -1063,7 +1065,14 @@ window.completeSetup  = function() { config.machines = parseInt(document.getElem
 window.factoryReset   = function() { if (confirm("Erase LOCAL settings? Cloud data remains.")) { localStorage.clear(); location.reload(); } };
 window.openHelp  = function() { window.toggleSettings(); document.getElementById('helpModal').style.display = 'flex'; };
 window.closeHelp = function() { document.getElementById('helpModal').style.display = 'none'; };
-window.switchMachine = function(m) { config.currentMachine = m; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) { window.startCloudSync(); window.listenForGlobalReset(`M${m}`); } };
+window.switchMachine = function(m) {
+    config.currentMachine = m;
+    window.saveLocalSettings();
+    window.renderInterface();
+    const bsInput = document.getElementById('mainBeltSpeed');
+    if (bsInput) bsInput.value = window.sessionContext[`M${m}`]?.beltSpeed || '';
+    if (!window.isOfflineMode) { window.startCloudSync(); window.listenForGlobalReset(`M${m}`); }
+};
 window.switchProfile  = function() { window.departmentSnipe = { active: false }; config.lanes = parseInt(document.getElementById('setLanes').value); config.product = document.getElementById('setProd').value; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); };
 
 // =====================================================================
@@ -1493,7 +1502,7 @@ window.applyCopilotAction = function(idx, suggestedDensity) {
         let downC = 0;
         const faults = typeof window.getCurrentActiveDowntimes === 'function' ? window.getCurrentActiveDowntimes() : {};
         for (const id in faults) { if (id.startsWith('c')) downC++; }
-        window.pendingBetaActions[idx] = { timestamp: new Date().toLocaleString(), lane: idx, target: store.target, source: 'Copilot', cuttersDown: downC, initialW: store.lanes[idx-1].w, appliedD: suggestedDensity, resultingW: null, appliedK: (store.lanes[idx-1].currentK || FACTORS[config.product]), ...window.sessionContext };
+        window.pendingBetaActions[idx] = { timestamp: new Date().toLocaleString(), lane: idx, target: store.target, source: 'Copilot', cuttersDown: downC, initialW: store.lanes[idx-1].w, appliedD: suggestedDensity, resultingW: null, appliedK: (store.lanes[idx-1].currentK || FACTORS[config.product]), ...(window.sessionContext['M' + config.currentMachine] || {}) };
         localStorage.setItem('dsi_beta_pending', JSON.stringify(window.pendingBetaActions));
     }
 
