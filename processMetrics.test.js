@@ -48,8 +48,8 @@ describe('Process Metrics Tests', () => {
             if (id === 'processMetricsModal') return mockModal;
             return null;
         });
-        window.sessionContext = {};
-        window.config = { lanes: 4 };
+        window.sessionContext = { "M1": {}, "M2": {} };
+        window.config = { lanes: 4, currentMachine: 1 };
         window.getConfig = () => window.config;
     });
 
@@ -57,7 +57,8 @@ describe('Process Metrics Tests', () => {
         window.openProcessMetrics();
         expect(mockModal.style.display).toBe('flex');
         expect(mockModal.innerHTML).not.toContain('pm-belt-speed');
-        expect(mockModal.innerHTML).toContain('pm-process-yield');
+        expect(mockModal.innerHTML).toContain('pm-gross-yield');
+        expect(mockModal.innerHTML).toContain('pm-product-yield');
         expect(mockModal.innerHTML).not.toContain('pm-bird-weight');
         expect(mockModal.innerHTML).toContain('pm-weight-s1s2');
         expect(mockModal.innerHTML).toContain('pm-weight-s3s4');
@@ -71,7 +72,8 @@ describe('Process Metrics Tests', () => {
         window.openProcessMetrics();
         expect(mockModal.style.display).toBe('flex');
         expect(mockModal.innerHTML).not.toContain('pm-belt-speed');
-        expect(mockModal.innerHTML).toContain('pm-process-yield');
+        expect(mockModal.innerHTML).toContain('pm-gross-yield');
+        expect(mockModal.innerHTML).toContain('pm-product-yield');
         expect(mockModal.innerHTML).not.toContain('pm-bird-weight');
         expect(mockModal.innerHTML).toContain('pm-weight-s1"');
         expect(mockModal.innerHTML).toContain('pm-weight-s2"');
@@ -90,7 +92,8 @@ describe('Process Metrics Tests', () => {
         global.document.getElementById.mockImplementation((id) => {
             if (id === 'processMetricsModal') return mockModal;
             const values = {
-                'pm-process-yield': '85.2',
+                'pm-gross-yield': '85.2',
+                'pm-product-yield': '80.1',
                 'pm-weight-s1s2': '4.1',
                 'pm-weight-s3s4': '4.2',
                 'pm-height-s1s2': '10',
@@ -100,17 +103,19 @@ describe('Process Metrics Tests', () => {
         });
 
         window.config.lanes = 4;
+        window.config.currentMachine = 1;
 
         const { update, ref } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js");
         update.mockClear();
 
         window.saveProcessMetrics();
 
-        expect(window.sessionContext.processYield).toBe(85.2);
-        expect(window.sessionContext.weightS1S2).toBe(4.1);
-        expect(window.sessionContext.weightS3S4).toBe(4.2);
-        expect(window.sessionContext.heightS1S2).toBe(10);
-        expect(window.sessionContext.heightS3S4).toBe(11);
+        expect(window.sessionContext['M1'].grossYield).toBe(85.2);
+        expect(window.sessionContext['M1'].productYield).toBe(80.1);
+        expect(window.sessionContext['M1'].weightS1S2).toBe(4.1);
+        expect(window.sessionContext['M1'].weightS3S4).toBe(4.2);
+        expect(window.sessionContext['M1'].heightS1S2).toBe(10);
+        expect(window.sessionContext['M1'].heightS3S4).toBe(11);
 
         expect(localStorage.setItem).toHaveBeenCalledWith('dsi_session_context', JSON.stringify(window.sessionContext));
 
@@ -132,17 +137,19 @@ describe('Process Metrics Tests', () => {
         });
 
         window.config.lanes = 2;
+        window.config.currentMachine = 2;
 
         const { update } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js");
         update.mockClear();
 
         window.saveProcessMetrics();
 
-        expect(window.sessionContext.weightS1).toBe(4.3);
-        expect(window.sessionContext.weightS2).toBe(4.4);
-        expect(window.sessionContext.heightS1).toBe(15);
-        expect(window.sessionContext.heightS2).toBe(16);
-        expect(window.sessionContext.processYield).toBeNull(); // Was not set
+        expect(window.sessionContext['M2'].weightS1).toBe(4.3);
+        expect(window.sessionContext['M2'].weightS2).toBe(4.4);
+        expect(window.sessionContext['M2'].heightS1).toBe(15);
+        expect(window.sessionContext['M2'].heightS2).toBe(16);
+        expect(window.sessionContext['M2'].grossYield).toBeNull(); // Was not set
+        expect(window.sessionContext['M2'].productYield).toBeNull(); // Was not set
 
         expect(localStorage.setItem).toHaveBeenCalledWith('dsi_session_context', JSON.stringify(window.sessionContext));
         expect(update).toHaveBeenCalled();
