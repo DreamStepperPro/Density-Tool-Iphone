@@ -15,21 +15,21 @@ window.openProcessMetrics = function() {
             </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <div>
-                    <label for="pm-belt-speed">Belt Speed</label>
-                    <input type="number" id="pm-belt-speed" class="lane-input" value="${window.sessionContext.beltSpeed ?? ''}">
-                </div>
-                <div>
                     <label for="pm-process-yield">Process Yield %</label>
                     <input type="number" id="pm-process-yield" class="lane-input" value="${window.sessionContext.processYield ?? ''}">
-                </div>
-                <div>
-                    <label for="pm-bird-weight">Bird Avg Weight</label>
-                    <input type="number" id="pm-bird-weight" class="lane-input" value="${window.sessionContext.birdWeight ?? ''}">
                 </div>
     `;
 
     if (lanes === 4) {
         html += `
+                <div>
+                    <label for="pm-weight-s1s2">Weight S1/S2</label>
+                    <input type="number" id="pm-weight-s1s2" class="lane-input" value="${window.sessionContext.weightS1S2 ?? ''}">
+                </div>
+                <div>
+                    <label for="pm-weight-s3s4">Weight S3/S4</label>
+                    <input type="number" id="pm-weight-s3s4" class="lane-input" value="${window.sessionContext.weightS3S4 ?? ''}">
+                </div>
                 <div>
                     <label for="pm-height-s1s2">Height S1/S2</label>
                     <input type="number" id="pm-height-s1s2" class="lane-input" value="${window.sessionContext.heightS1S2 ?? ''}">
@@ -41,6 +41,14 @@ window.openProcessMetrics = function() {
         `;
     } else if (lanes === 2) {
         html += `
+                <div>
+                    <label for="pm-weight-s1">Weight S1</label>
+                    <input type="number" id="pm-weight-s1" class="lane-input" value="${window.sessionContext.weightS1 ?? ''}">
+                </div>
+                <div>
+                    <label for="pm-weight-s2">Weight S2</label>
+                    <input type="number" id="pm-weight-s2" class="lane-input" value="${window.sessionContext.weightS2 ?? ''}">
+                </div>
                 <div>
                     <label for="pm-height-s1">Height S1</label>
                     <input type="number" id="pm-height-s1" class="lane-input" value="${window.sessionContext.heightS1 ?? ''}">
@@ -54,7 +62,10 @@ window.openProcessMetrics = function() {
 
     html += `
             </div>
-            <button class="modal-btn" style="margin-top:20px; width:100%;" onclick="window.saveProcessMetrics()">SAVE</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; gap: 10px;">
+                <button class="modal-btn" style="width:50%; background:var(--border); color:var(--text);" onclick="window.closeProcessMetrics()">CANCEL</button>
+                <button class="modal-btn" style="width:50%; background:var(--perfect);" onclick="window.saveProcessMetrics()">SAVE METRICS</button>
+            </div>
         </div>
     `;
 
@@ -68,25 +79,31 @@ window.closeProcessMetrics = function() {
 };
 
 window.saveProcessMetrics = function() {
-    const beltSpeed = document.getElementById('pm-belt-speed')?.value;
     const processYield = document.getElementById('pm-process-yield')?.value;
-    const birdWeight = document.getElementById('pm-bird-weight')?.value;
 
     const data = {
-        beltSpeed: beltSpeed ? parseFloat(beltSpeed) : null,
         processYield: processYield ? parseFloat(processYield) : null,
-        birdWeight: birdWeight ? parseFloat(birdWeight) : null
     };
 
     const config = window.getConfig ? window.getConfig() : (window.config || { lanes: 4 });
     const lanes = config.lanes || 4;
 
     if (lanes === 4) {
+        const wS1S2 = document.getElementById('pm-weight-s1s2')?.value;
+        const wS3S4 = document.getElementById('pm-weight-s3s4')?.value;
+        data.weightS1S2 = wS1S2 ? parseFloat(wS1S2) : null;
+        data.weightS3S4 = wS3S4 ? parseFloat(wS3S4) : null;
+
         const hS1S2 = document.getElementById('pm-height-s1s2')?.value;
         const hS3S4 = document.getElementById('pm-height-s3s4')?.value;
         data.heightS1S2 = hS1S2 ? parseFloat(hS1S2) : null;
         data.heightS3S4 = hS3S4 ? parseFloat(hS3S4) : null;
     } else if (lanes === 2) {
+        const wS1 = document.getElementById('pm-weight-s1')?.value;
+        const wS2 = document.getElementById('pm-weight-s2')?.value;
+        data.weightS1 = wS1 ? parseFloat(wS1) : null;
+        data.weightS2 = wS2 ? parseFloat(wS2) : null;
+
         const hS1 = document.getElementById('pm-height-s1')?.value;
         const hS2 = document.getElementById('pm-height-s2')?.value;
         data.heightS1 = hS1 ? parseFloat(hS1) : null;
@@ -94,7 +111,7 @@ window.saveProcessMetrics = function() {
     }
 
     // Clean nulls
-        window.sessionContext = { ...window.sessionContext, ...data };
+    window.sessionContext = { ...window.sessionContext, ...data };
     localStorage.setItem('dsi_session_context', JSON.stringify(window.sessionContext));
 
     const machineId = window.currentMachine || 'M1'; // Fallback if undefined

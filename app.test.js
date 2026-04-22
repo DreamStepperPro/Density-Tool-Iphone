@@ -1,5 +1,10 @@
 import { mock, test, expect, spyOn } from "bun:test";
 
+global.localStorage = {
+    setItem: mock(),
+    getItem: mock()
+};
+
 mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js", () => ({
     initializeApp: mock(() => ({})),
     getApp: mock(() => ({})),
