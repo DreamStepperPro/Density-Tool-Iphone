@@ -169,7 +169,6 @@ window.routeUserByRole = function() {
         if (document.getElementById('btnYieldOp')) document.getElementById('btnYieldOp').classList.remove('btn-hidden');
         if (document.getElementById('btnYieldSup')) document.getElementById('btnYieldSup').classList.remove('btn-hidden');
         if (document.getElementById('btnMaintSup')) document.getElementById('btnMaintSup').classList.remove('btn-hidden');
-        if (document.getElementById('btnMetricsSup')) document.getElementById('btnMetricsSup').classList.remove('btn-hidden');
     }
     if (isAdmin) {
         document.getElementById('supervisorDashboard').style.display = 'block';
