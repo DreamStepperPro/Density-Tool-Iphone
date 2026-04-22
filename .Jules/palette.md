@@ -16,3 +16,7 @@
 ## 2024-05-19 - Accessible Modals and Previews
 **Learning:** Found a pattern of interactive images and modales with `onclick` handlers (e.g. `streamPhotoPreview`, `photoViewerModal`) without providing keyboard navigation or screen reader support.
 **Action:** Always apply `role="button"`, `tabindex="0"`, descriptive `aria-label`s, and `onkeydown` handlers to `<img>` and `<div>` elements acting as buttons or interactive previews.
+
+## 2024-05-20 - Missing Global Keyboard Focus Indicators
+**Learning:** Found that while custom UI components like the matrix grid had isolated `:focus-visible` styles, the vast majority of interactive elements (buttons, `[role="button"]` divs, `select`, checkboxes) across the app lacked visual focus states. This rendered keyboard navigation nearly impossible for users relying on Tab navigation.
+**Action:** Always apply a global CSS `:focus-visible` rule that broadly targets `button`, `[role="button"]`, and form inputs like `select` and `input[type="checkbox"]` to provide a consistent, app-wide outline (e.g., using `--info`) that adheres to the design system.
