@@ -493,6 +493,8 @@ window.calculateLocal = function() {
         let driftHtml = "";
         let runwayPct = 100;
         let runwayColor = 'transparent';
+        let rawVelocity = null;
+        let rawRunwayMins = null;
 
         if (history && history.length > 0) {
             let recentWts = [], recentTimes = [];
@@ -529,12 +531,14 @@ window.calculateLocal = function() {
                             velocity = (currW - oldestW) / timeDiffMin;
                         }
                     }
+                    rawVelocity = velocity;
                     if (Math.abs(velocity) > 0.015) {
                         let runway = 0;
                         if (velocity > 0 && currW <= (target + 2)) runway = (target + 2) - currW;
                         else if (velocity < 0 && currW >= (target - 2)) runway = currW - (target - 2);
                         if (runway > 0) {
                             const minsToDrift = Math.round(runway / Math.abs(velocity));
+                            rawRunwayMins = minsToDrift;
                             runwayPct = Math.max(0, Math.min(100, (minsToDrift / 60) * 100));
                             if (minsToDrift < 120) {
                                 if (minsToDrift <= 15) {
@@ -570,7 +574,7 @@ window.calculateLocal = function() {
                 }
             }
         }
-        return { driftHtml, runwayPct, runwayColor };
+        return { driftHtml, runwayPct, runwayColor, rawVelocity, rawRunwayMins };
     }
 
     for (let i = 1; i <= config.lanes; i++) {
@@ -602,7 +606,9 @@ window.calculateLocal = function() {
             resBox.classList.add('has-value');
 
             // Predictive Velocity Engine (3-point smoothed with Density Barrier)
-            const { driftHtml, runwayPct, runwayColor } = calculateVelocity(i, currD, currW, target);
+            const { driftHtml, runwayPct, runwayColor, rawVelocity, rawRunwayMins } = calculateVelocity(i, currD, currW, target);
+            lane.pveVelocity = rawVelocity;
+            lane.pveRunwayMins = rawRunwayMins;
 
             const runwayHtml = runwayColor !== 'transparent'
                 ? `<div class="runway-track"><div class="runway-fill" style="width:${runwayPct}%; background:${runwayColor};"></div></div>`
@@ -862,7 +868,7 @@ window.applyResult = function(idx) {
             const isSnipe = window.departmentSnipe && window.departmentSnipe.active && window.departmentSnipe.lane === idx;
             const isSmart = config.smart === 'on' || (config.smart === 'auto' && laneState.smartActive);
             const source = isSnipe ? 'Snipe' : (isSmart ? 'SmartAdapt' : 'Manual');
-            window.pendingBetaActions[idx] = { timestamp: new Date().toLocaleString(), lane: idx, target: store.target, source: source, cuttersDown: downC, initialW: laneState.w, appliedD: val, resultingW: null, appliedK: (laneState.currentK || FACTORS[config.product]), ...(window.sessionContext['M' + config.currentMachine] || {}) };
+            window.pendingBetaActions[idx] = { timestamp: new Date().toLocaleString(), lane: idx, target: store.target, source: source, cuttersDown: downC, initialW: laneState.w, appliedD: val, resultingW: null, appliedK: (laneState.currentK || FACTORS[config.product]), pveVelocity: laneState.pveVelocity ?? null, pveRunwayMins: laneState.pveRunwayMins ?? null, ...(window.sessionContext['M' + config.currentMachine] || {}) };
             localStorage.setItem('dsi_beta_pending', JSON.stringify(window.pendingBetaActions));
         }
 
@@ -1502,7 +1508,8 @@ window.applyCopilotAction = function(idx, suggestedDensity) {
         let downC = 0;
         const faults = typeof window.getCurrentActiveDowntimes === 'function' ? window.getCurrentActiveDowntimes() : {};
         for (const id in faults) { if (id.startsWith('c')) downC++; }
-        window.pendingBetaActions[idx] = { timestamp: new Date().toLocaleString(), lane: idx, target: store.target, source: 'Copilot', cuttersDown: downC, initialW: store.lanes[idx-1].w, appliedD: suggestedDensity, resultingW: null, appliedK: (store.lanes[idx-1].currentK || FACTORS[config.product]), ...(window.sessionContext['M' + config.currentMachine] || {}) };
+        const laneState = store.lanes[idx-1];
+        window.pendingBetaActions[idx] = { timestamp: new Date().toLocaleString(), lane: idx, target: store.target, source: 'Copilot', cuttersDown: downC, initialW: laneState.w, appliedD: suggestedDensity, resultingW: null, appliedK: (laneState.currentK || FACTORS[config.product]), pveVelocity: laneState.pveVelocity ?? null, pveRunwayMins: laneState.pveRunwayMins ?? null, ...(window.sessionContext['M' + config.currentMachine] || {}) };
         localStorage.setItem('dsi_beta_pending', JSON.stringify(window.pendingBetaActions));
     }
 
