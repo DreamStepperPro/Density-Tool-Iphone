@@ -28,7 +28,28 @@ window.startSupervisorSync = function() {
     if (!db) { setTimeout(window.startSupervisorSync, 500); return; }
     if (unsubSupHistories) unsubSupHistories();
     unsubSupHistories = onValue(ref(db, 'histories'), (snap) => {
-        window.renderSupervisorDashboard(snap.val() || {});
+        const histories = snap.val() || {};
+        window.renderSupervisorDashboard(histories);
+
+        if (window.myUid === window.ADMIN_UID) {
+            window.lastLoggedBetaTimestamps = window.lastLoggedBetaTimestamps || {};
+            window.betaData = window.betaData || JSON.parse((typeof localStorage !== 'undefined' ? localStorage.getItem('dsi_beta_data') : null) || '[]');
+
+            const cfg = window.getConfig();
+            for (let m = 1; m <= cfg.machines; m++) {
+                const machHistories = histories[`M${m}`];
+                const latest = window.getAbsoluteLatest(machHistories);
+                if (latest && latest.entry && latest.entry.timestamp > (window.lastLoggedBetaTimestamps[`M${m}`] || 0)) {
+                    const sessionContext = window.sessionContext && window.sessionContext[`M${m}`] ? window.sessionContext[`M${m}`] : {};
+                    const payload = { ...latest.entry, ...sessionContext, machineId: `M${m}` };
+                    window.betaData.push(payload);
+                    if (typeof localStorage !== 'undefined') {
+                        localStorage.setItem('dsi_beta_data', JSON.stringify(window.betaData));
+                    }
+                    window.lastLoggedBetaTimestamps[`M${m}`] = latest.entry.timestamp;
+                }
+            }
+        }
     });
     if (unsubSupLedger) { unsubSupLedger(); unsubSupLedger = null; }
     unsubSupLedger = onValue(ref(db, 'shiftLedger'), (snap) => {

@@ -473,6 +473,23 @@ window.calculateLocal = function() {
                 activeK = (observedK * 0.6) + (baseK * 0.4);
             }
         }
+
+        if (config.copilotEnabled && !lane.copilotSuspended) {
+            let downC = 0;
+            if (typeof window.getCurrentActiveDowntimes === 'function') {
+                const activeDowntimes = window.getCurrentActiveDowntimes();
+                for (const [id, fault] of Object.entries(activeDowntimes)) {
+                    if (id.startsWith('c') && parseInt(id.substring(1)) >= 1 && parseInt(id.substring(1)) <= 8) {
+                        downC++;
+                    }
+                }
+            }
+            if (downC > 0) {
+                const buffer = 1.0 - Math.min(downC * 0.1, 0.5);
+                activeK = activeK * buffer;
+            }
+        }
+
         let rawNewD;
         // Tolerance Deadband: within ±0.5g of snipe target, lock density — stop hunting
         if (isSnipeLane && Math.abs(diff) <= 0.5) {
@@ -658,10 +675,6 @@ window.calculateLocal = function() {
             document.getElementById('stdDev').innerText = Math.sqrt(v).toFixed(2);
         } else { document.getElementById('stdDev').innerText = "--"; }
     } else { document.getElementById('machAvg').innerText = "--"; document.getElementById('stdDev').innerText = "--"; }
-
-    if (typeof window.generateCopilotActions === 'function') {
-        window.generateCopilotActions();
-    }
 };
 
 // =====================================================================
@@ -729,20 +742,6 @@ window.saveToHistory = function() {
     prevAvg         = parseFloat(avg) || null;
     const opName    = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
     let row = { time, timestamp, avg, operator: opName, target: store.target, lanes: [] };
-    if (isAdmin && config.copilotEnabled) {
-        for (let i = 1; i <= config.lanes; i++) {
-            if (window.pendingBetaActions[i]) {
-                const wt = store.lanes[i-1] ? store.lanes[i-1].w : '';
-                if (wt && wt !== '--') {
-                    window.pendingBetaActions[i].resultingW = wt;
-                    window.betaData.push(window.pendingBetaActions[i]);
-                    window.pendingBetaActions[i] = null;
-                    localStorage.setItem('dsi_beta_data', JSON.stringify(window.betaData));
-                    localStorage.setItem('dsi_beta_pending', JSON.stringify(window.pendingBetaActions));
-                }
-            }
-        }
-    }
 
     for (let i = 1; i <= config.lanes; i++) {
         if (store.lanes[i-1] && store.lanes[i-1].disabled) {
@@ -860,16 +859,12 @@ window.applyResult = function(idx) {
     if (val && !isNaN(currD)) {
         window.saveToHistory();
 
-        if (isAdmin && config.copilotEnabled) {
-            let downC = 0;
-            const faults = typeof window.getCurrentActiveDowntimes === 'function' ? window.getCurrentActiveDowntimes() : {};
-            for (const id in faults) { if (id.startsWith('c')) downC++; }
-            const laneState = store.lanes[idx-1];
-            const isSnipe = window.departmentSnipe && window.departmentSnipe.active && window.departmentSnipe.lane === idx;
-            const isSmart = config.smart === 'on' || (config.smart === 'auto' && laneState.smartActive);
-            const source = isSnipe ? 'Snipe' : (isSmart ? 'SmartAdapt' : 'Manual');
-            window.pendingBetaActions[idx] = { timestamp: new Date().toLocaleString(), lane: idx, target: store.target, source: source, cuttersDown: downC, initialW: laneState.w, appliedD: val, resultingW: null, appliedK: (laneState.currentK || FACTORS[config.product]), pveVelocity: laneState.pveVelocity ?? null, pveRunwayMins: laneState.pveRunwayMins ?? null, ...(window.sessionContext['M' + config.currentMachine] || {}) };
-            localStorage.setItem('dsi_beta_pending', JSON.stringify(window.pendingBetaActions));
+        if (config.copilotEnabled && !lane.copilotSuspended) {
+            lane.copilotInterventions = (lane.copilotInterventions || 0) + 1;
+            if (lane.copilotInterventions >= 5) {
+                lane.copilotSuspended = true;
+                window.showAdminToast(`🚨 COPILOT SURRENDER: Machine M${config.currentMachine} Lane ${idx}. Mechanical scatter detected. Surrendered after 5 interventions.`);
+            }
         }
 
         lane.lastD = currD; lane.lastW = currW;
@@ -886,6 +881,7 @@ window.applyResult = function(idx) {
         } else {
             lane.attempts = 0;
             if (Math.abs(currW - target) <= 1.0) {
+                lane.copilotInterventions = 0;
                 lane.stableCount = (lane.stableCount || 0) + 1;
                 if (config.smart === 'auto' && lane.smartActive && lane.stableCount >= 2) {
                     lane.smartActive = false; lane.lastD = null; lane.lastW = null;
@@ -909,6 +905,7 @@ window.toggleLaneDisable = function(idx) {
     if (!store.lanes) return;
     const lane = store.lanes[idx-1];
     lane.disabled = !lane.disabled;
+    lane.copilotInterventions = 0; lane.copilotSuspended = false;
     if (lane.disabled) {
         lane.w = ''; lane.d = ''; lane.locked = true; lane.smartActive = false;
         document.getElementById(`avgWt-${idx}`).value = '';
@@ -944,6 +941,7 @@ window.updateBeltSpeed = function(val) {
 window.handleInput = function(i) {
     window.localWriteLocks[i] = Date.now();
     store.lanes[i-1].d = document.getElementById(`currDens-${i}`).value;
+    store.lanes[i-1].copilotInterventions = 0; store.lanes[i-1].copilotSuspended = false;
     window.calculateLocal();
 };
 
@@ -1416,122 +1414,4 @@ window.toggleSandboxMode = function() {
     }
 
     window.toggleSettings();
-};
-
-
-window.generateCopilotActions = function() {
-    const queue = document.getElementById('copilotQueue');
-    if (!queue) return;
-
-    if (!config.copilotEnabled || !isAdmin) {
-        queue.style.display = 'none';
-        queue.innerHTML = '';
-        return;
-    }
-
-    if (!store || !store.lanes || isNaN(store.target)) {
-        queue.style.display = 'none';
-        queue.innerHTML = '';
-        return;
-    }
-
-    let hasActions = false;
-    let html = '';
-    const target = parseFloat(store.target);
-    const baseK = FACTORS[config.product] || 0.01;
-
-    // Check downtime for current machine
-    let downComponents = 0;
-    if (typeof window.getCurrentActiveDowntimes === 'function') {
-        const activeDowntimes = window.getCurrentActiveDowntimes();
-        for (const [id, fault] of Object.entries(activeDowntimes)) {
-            if (id.startsWith('c') && parseInt(id.substring(1)) >= 1 && parseInt(id.substring(1)) <= 8) {
-                downComponents++;
-            }
-        }
-    }
-
-    store.lanes.forEach((lane, idx) => {
-        const i = idx + 1;
-        if (lane.disabled) return;
-
-        const currD = parseFloat(lane.d);
-        const currW = parseFloat(lane.w);
-
-        if (isNaN(currD) || isNaN(currW)) return;
-
-        const drift = currW - target;
-        if (Math.abs(drift) > 1.5) {
-            let activeK = lane.currentK || baseK;
-
-            // Buffer math if cutters are down (e.g. reduce change severity by 10% per down cutter)
-            if (downComponents > 0) {
-                const buffer = 1.0 - Math.min(downComponents * 0.1, 0.5);
-                activeK = activeK * buffer;
-            }
-
-            const rawNewD = currD + (drift * activeK);
-            let suggestedD = rawNewD.toFixed(3);
-            if (suggestedD === currD.toFixed(3)) {
-                suggestedD = (currD + (drift > 0 ? -0.001 : 0.001)).toFixed(3);
-            }
-
-            hasActions = true;
-            html += `
-                <div class="copilot-card" style="background:var(--card-bg); border:2px solid var(--accent); border-radius:8px; padding:12px; display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <div style="font-weight:bold; font-size:0.9rem; color:var(--accent);">AI COPILOT</div>
-                        <div style="font-size:1.1rem;">LANE ${i}: ADJUST DENSITY TO <strong>${suggestedD}</strong></div>
-                    </div>
-                    <button class="modal-btn" style="width:auto; padding:8px 16px; margin:0;" onclick="window.applyCopilotAction(${i}, '${suggestedD}')">APPLY</button>
-                </div>
-            `;
-        }
-    });
-
-    if (hasActions) {
-        queue.innerHTML = html;
-        queue.style.display = 'flex';
-    } else {
-        queue.innerHTML = '';
-        queue.style.display = 'none';
-    }
-};
-
-window.applyCopilotAction = function(idx, suggestedDensity) {
-    if (!store.lanes || !store.lanes[idx-1]) return;
-
-    // Save current to history before applying
-    window.saveToHistory();
-
-    if (isAdmin && config.copilotEnabled) {
-        let downC = 0;
-        const faults = typeof window.getCurrentActiveDowntimes === 'function' ? window.getCurrentActiveDowntimes() : {};
-        for (const id in faults) { if (id.startsWith('c')) downC++; }
-        const laneState = store.lanes[idx-1];
-        window.pendingBetaActions[idx] = { timestamp: new Date().toLocaleString(), lane: idx, target: store.target, source: 'Copilot', cuttersDown: downC, initialW: laneState.w, appliedD: suggestedDensity, resultingW: null, appliedK: (laneState.currentK || FACTORS[config.product]), pveVelocity: laneState.pveVelocity ?? null, pveRunwayMins: laneState.pveRunwayMins ?? null, ...(window.sessionContext['M' + config.currentMachine] || {}) };
-        localStorage.setItem('dsi_beta_pending', JSON.stringify(window.pendingBetaActions));
-    }
-
-    const lane = store.lanes[idx-1];
-    lane.lastD = parseFloat(lane.d);
-    lane.lastW = parseFloat(lane.w);
-
-    lane.d = suggestedDensity;
-    lane.w = ''; // Clear operator's weight
-    lane.locked = true;
-
-    document.getElementById(`avgWt-${idx}`).value = '';
-
-    // UI Flash
-    const card = document.getElementById(`card-${idx}`);
-    if (card) {
-        card.classList.add('apply-flash');
-        setTimeout(() => card.classList.remove('apply-flash'), 300);
-    }
-
-    if (navigator.vibrate) navigator.vibrate([60]);
-
-    window.calculateLocal();
-    window.pushLaneToCloud(idx);
 };
