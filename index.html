@@ -139,10 +139,6 @@
             <label data-i18n="theme" for="setTheme">Theme</label>
             <select id="setTheme" onchange="window.toggleTheme()"><option value="light">Light</option><option value="dark">Dark</option></select>
         </div>
-        <div class="modal-opt" id="copilotSettingContainer" style="display:none;">
-            <label for="setCopilot">Beta: AI Copilot</label>
-            <input type="checkbox" id="setCopilot" onchange="window.saveLocalSettings()" style="width:24px; height:24px;">
-        </div>
         <button id="btnExportBeta" class="modal-btn" style="background:var(--accent); color:black; margin-top:6px; display:none;" onclick="window.exportBetaData()">📥 EXPORT BETA DATA (JSON)</button>
         <button class="modal-btn" style="background:var(--perfect); color:black;" onclick="window.enableSystemNotifications()" data-i18n="enableAlerts">🔔 ENABLE SYSTEM ALERTS</button>
         <button class="modal-btn secondary" onclick="window.openAbout()" style="margin-top:6px; border-color:var(--accent); color:var(--accent);" data-i18n="ourStory">📖 OUR STORY</button>

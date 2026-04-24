@@ -114,7 +114,7 @@ signInAnonymously(auth).then((result) => {
 // =====================================================================
 let config = {
     machines: 2, lanes: 4, product: 'lunch', smart: 'auto', theme: 'light',
-    currentMachine: 1, lang: 'en', inputMode: 'button', displayName: '', copilotEnabled: false
+    currentMachine: 1, lang: 'en', inputMode: 'button', displayName: ''
 };
 
 let store   = {};
@@ -474,7 +474,7 @@ window.calculateLocal = function() {
             }
         }
 
-        if (config.copilotEnabled && !lane.copilotSuspended) {
+        if (!lane.copilotSuspended) {
             let downC = 0;
             if (typeof window.getCurrentActiveDowntimes === 'function') {
                 const activeDowntimes = window.getCurrentActiveDowntimes();
@@ -859,7 +859,7 @@ window.applyResult = function(idx) {
     if (val && !isNaN(currD)) {
         window.saveToHistory();
 
-        if (config.copilotEnabled && !lane.copilotSuspended) {
+        if (!lane.copilotSuspended) {
             lane.copilotInterventions = (lane.copilotInterventions || 0) + 1;
             if (lane.copilotInterventions >= 5) {
                 lane.copilotSuspended = true;
@@ -1010,11 +1010,8 @@ window.toggleSettings = function() {
         if (document.getElementById('setTheme'))    document.getElementById('setTheme').value = config.theme || 'light';
                 if (document.getElementById('setTarget') && store.target) document.getElementById('setTarget').value = store.target;
         if (isAdmin) {
-            document.getElementById('copilotSettingContainer').style.display = 'flex';
             if (document.getElementById('btnExportBeta')) document.getElementById('btnExportBeta').style.display = 'block';
-            if (document.getElementById('setCopilot')) document.getElementById('setCopilot').checked = config.copilotEnabled === true;
         } else {
-            document.getElementById('copilotSettingContainer').style.display = 'none';
             if (document.getElementById('btnExportBeta')) document.getElementById('btnExportBeta').style.display = 'none';
         }
         document.getElementById('targetConfirm').classList.remove('show');
@@ -1043,7 +1040,6 @@ window.saveLocalSettings = function() {
     if (document.getElementById('setSmart'))    config.smart      = document.getElementById('setSmart').value;
     if (document.getElementById('setInputMode'))config.inputMode  = document.getElementById('setInputMode').value;
         if (document.getElementById('setTheme'))    config.theme      = document.getElementById('setTheme').value;
-    if (document.getElementById('setCopilot') && isAdmin) config.copilotEnabled = document.getElementById('setCopilot').checked;
     localStorage.setItem('dsi_config_v11', JSON.stringify(config));
 };
 window.toggleTheme    = function() { config.theme = document.getElementById('setTheme').value; window.applyTheme(); window.saveLocalSettings(); };
