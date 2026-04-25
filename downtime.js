@@ -424,7 +424,7 @@ window.openSmartRoute = function() {
         <div style="background:var(--card-bg,#1e1e2e);border-radius:12px;width:100%;max-width:460px;padding:20px;box-shadow:0 8px 32px rgba(0,0,0,0.6);color:var(--text,#eee);font-family:inherit;max-height:90vh;overflow-y:auto;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
                 <h2 style="margin:0;font-size:1rem;">🧠 Smart Route Optimization</h2>
-                <button onclick="document.getElementById('smartRouteOverlay').remove()"
+                <button aria-label="Close" onclick="document.getElementById('smartRouteOverlay').remove()"
                     style="background:none;border:none;color:#aaa;font-size:1.4rem;cursor:pointer;line-height:1;">✕</button>
             </div>
             ${gridHtml}
