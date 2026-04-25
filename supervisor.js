@@ -190,7 +190,7 @@ window.renderSupervisorDashboard = function(allHistories) {
         if (!document.getElementById('stdCeilingInput')) {
             stdEl.insertAdjacentHTML('afterend', `
                 <div style="font-size:0.7rem; font-weight:normal; margin-top:4px; text-align:center;">
-                    Limit: <input type="number" id="stdCeilingInput" step="0.1" min="0.1"
+                    ${window.t('limit')} <input type="number" id="stdCeilingInput" step="0.1" min="0.1"
                         style="width:50px; padding:2px; font-size:0.7rem; text-align:center; border:1px solid var(--border); border-radius:4px; background:var(--input-bg); color:var(--text);"
                         onblur="window.updateTargetStdLimit(this.value)">
                 </div>`);
@@ -210,11 +210,11 @@ window.renderSupervisorDashboard = function(allHistories) {
             const diff = (stats.snipeTarget.weight - parseFloat(stats.grandMean)).toFixed(1);
             const sign = parseFloat(diff) > 0 ? '+' : '';
             const reasonText = isOverLimit
-                ? `Pulling dept STD with ${sign}${diff}g from mean (${stats.snipeTarget.weight}g)`
-                : `⚠️ CHRONIC OUTLIER: Consistently pulling mean by ${sign}${diff}g`;
+                ? `${window.t('pullingDeptStd')} ${sign}${diff}g ${window.t('fromMean')} (${stats.snipeTarget.weight}g)`
+                : `${window.t('chronicOutlier')} ${sign}${diff}g`;
             alertBox.innerHTML = `
                 <div style="background:rgba(255,77,77,0.1); border:1px solid var(--danger); color:var(--danger); padding:10px; border-radius:8px; margin-bottom:15px; font-weight:bold; text-align:center; box-shadow:var(--shadow);">
-                    🎯 SNIPE TARGET: DSI ${stats.snipeTarget.machine}, Lane ${stats.snipeTarget.lane}
+                    ${window.t('snipeTarget')} ${window.t('dsiPrefix')} ${stats.snipeTarget.machine}, ${window.t('lanePrefix')} ${stats.snipeTarget.lane}
                     <br><span style="font-size:0.85rem; font-weight:normal;">${reasonText}</span>
                 </div>`;
         } else {
@@ -493,11 +493,11 @@ window.renderMaintHistory = function() {
         summaryBox.innerHTML = `
             <div style="display:flex; justify-content:space-between; margin-bottom:10px; gap:8px;">
                 <div style="background:rgba(255,77,77,0.1); border:1px solid var(--danger); padding:10px; border-radius:8px; flex:1; text-align:center; box-shadow:var(--shadow);">
-                    <div style="font-size:0.65rem; color:var(--danger); font-weight:bold; text-transform:uppercase;">Total Hard Down (24h)</div>
+                    <div style="font-size:0.65rem; color:var(--danger); font-weight:bold; text-transform:uppercase;">${window.t('totalHardDown')}</div>
                     <div style="font-size:1.5rem; font-weight:900; color:var(--text); margin-top:2px;">${totalDown} <span style="font-size:0.75rem; font-weight:normal; opacity:0.7;">min</span></div>
                 </div>
                 <div style="background:rgba(255,193,7,0.15); border:1px solid var(--warning); padding:10px; border-radius:8px; flex:1; text-align:center; box-shadow:var(--shadow);">
-                    <div style="font-size:0.65rem; color:#c98f00; font-weight:bold; text-transform:uppercase;">Total Degraded (24h)</div>
+                    <div style="font-size:0.65rem; color:#c98f00; font-weight:bold; text-transform:uppercase;">${window.t('totalDegraded')}</div>
                     <div style="font-size:1.5rem; font-weight:900; color:var(--text); margin-top:2px;">${totalDegraded} <span style="font-size:0.75rem; font-weight:normal; opacity:0.7;">min</span></div>
                 </div>
             </div>
