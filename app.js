@@ -643,7 +643,7 @@ window.calculateLocal = function() {
             // SMART-S override — replaces trend text with fix target (runs after PVE so it wins)
             if (isSnipeLane) {
                 if (Math.abs(diff) <= 0.5) {
-                    trendEl.innerHTML = `<span style="color:var(--perfect); font-weight:900; font-size:0.75rem;">🎯 LOCKED ON TARGET</span>`;
+                    trendEl.innerHTML = `<span style="color:var(--perfect); font-weight:900; font-size:0.75rem;">${window.t('lockedOnTarget')}</span>`;
                     card.style.boxShadow = '0 0 12px var(--perfect)';
                 } else {
                     trendEl.innerHTML = `<span style="color:var(--danger); font-weight:900; font-size:0.75rem;">🎯 FIX TO ${effectiveTarget.toFixed(1)}g</span>`;
@@ -863,7 +863,7 @@ window.applyResult = function(idx) {
             lane.copilotInterventions = (lane.copilotInterventions || 0) + 1;
             if (lane.copilotInterventions >= 5) {
                 lane.copilotSuspended = true;
-                window.showAdminToast(`🚨 COPILOT SURRENDER: Machine M${config.currentMachine} Lane ${idx}. Mechanical scatter detected. Surrendered after 5 interventions.`);
+                window.showAdminToast(`${window.t('copilotSurrender')} ${window.t('machinePrefix')}${config.currentMachine} ${window.t('lanePrefix')} ${idx}. ${window.t('copilotSurrenderDesc')}`);
             }
         }
 
