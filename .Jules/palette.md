@@ -20,3 +20,6 @@
 ## 2024-05-20 - Missing Global Keyboard Focus Indicators
 **Learning:** Found that while custom UI components like the matrix grid had isolated `:focus-visible` styles, the vast majority of interactive elements (buttons, `[role="button"]` divs, `select`, checkboxes) across the app lacked visual focus states. This rendered keyboard navigation nearly impossible for users relying on Tab navigation.
 **Action:** Always apply a global CSS `:focus-visible` rule that broadly targets `button`, `[role="button"]`, and form inputs like `select` and `input[type="checkbox"]` to provide a consistent, app-wide outline (e.g., using `--info`) that adheres to the design system.
+## 2024-05-21 - Accessible Dynamic Buttons
+**Learning:** Found a pattern of missing ARIA labels on dynamically generated icon-only buttons via template literals.
+**Action:** Always verify dynamically generated HTML and `document.createElement("button")` patterns to ensure they receive accessible names just like static HTML elements.
