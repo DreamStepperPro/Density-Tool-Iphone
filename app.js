@@ -330,8 +330,8 @@ window.renderInterface = function() {
         if (config.inputMode === 'longpress' && !isAdmin) labelText += " (HOLD)";
         if ((config.inputMode === 'doubletap' && !isAdmin) || isAdmin) labelText += " (×2)";
         let btnHtml = config.inputMode === 'button' && !isAdmin
-            ? `<button class="btn-icon" id="lockDens-${i}" onmousedown="event.preventDefault()" onclick="window.toggleLock(${i})">🔒</button>`
-            : `<button class="btn-icon btn-hidden" id="lockDens-${i}">🔒</button>`;
+            ? `<button class="btn-icon" id="lockDens-${i}" aria-label="Toggle density lock for lane ${i}" onmousedown="event.preventDefault()" onclick="window.toggleLock(${i})">🔒</button>`
+            : `<button class="btn-icon btn-hidden" id="lockDens-${i}" aria-label="Toggle density lock for lane ${i}">🔒</button>`;
         let weightHtml = `<input type="number" id="avgWt-${i}" inputmode="decimal" oninput="window.handleWeightInput(${i})" onblur="clearTimeout(window.weightDebounceTimers[${i}]); window.pushLaneToCloud(${i}); window.checkAutoSave()">`;
         if (isAdmin) {
             weightHtml = `<input type="number" id="avgWt-${i}" class="density-input" inputmode="decimal" readonly oninput="window.handleWeightInput(${i})" onblur="window.checkAutoSave(); window.lockWeightOnBlur(${i})">`;
@@ -339,13 +339,13 @@ window.renderInterface = function() {
         container.innerHTML += `
             <div class="lane-card" id="card-${i}">
                 <div class="lane-header">
-                    <div class="lane-header-left"><span>${window.t('lane')} ${i}</span><span class="smart-tag" id="tag-${i}">SMART</span><button class="btn-icon" id="btnDisable-${i}" onclick="window.toggleLaneDisable(${i})" style="margin-left:8px; font-size:0.9rem; padding:0 5px;" title="Toggle Lane Power">⊘</button></div>
+                    <div class="lane-header-left"><span>${window.t('lane')} ${i}</span><span class="smart-tag" id="tag-${i}">SMART</span><button class="btn-icon" id="btnDisable-${i}" onclick="window.toggleLaneDisable(${i})" style="margin-left:8px; font-size:0.9rem; padding:0 5px;" aria-label="Toggle Lane Power" title="Toggle Lane Power">⊘</button></div>
                     <span class="lane-trend" id="trend-${i}"></span>
                 </div>
                 <div>
                     <label for="currDens-${i}">${labelText}</label>
                     <div class="input-group">
-                        <button class="btn-icon" tabindex="-1" onclick="window.toggleDensitySign(${i})" style="min-width:38px; padding:0; font-weight:bold; background:var(--input-bg);">±</button>
+                        <button class="btn-icon" tabindex="-1" aria-label="Toggle density sign for lane ${i}" onclick="window.toggleDensitySign(${i})" style="min-width:38px; padding:0; font-weight:bold; background:var(--input-bg);">±</button>
                         <input type="number" id="currDens-${i}" class="density-input" step="0.001" readonly inputmode="decimal" oninput="window.handleInput(${i})" onblur="window.lockOnBlur(${i})">
                         ${btnHtml}
                     </div>
@@ -354,7 +354,7 @@ window.renderInterface = function() {
                     <label for="avgWt-${i}">${window.t('avgWt')} ${isAdmin ? '(×2)' : ''}</label>
                     <div class="input-group">
                         ${weightHtml}
-                        <button class="btn-icon btn-recheck" onclick="window.recheckLane(${i})">↻</button>
+                        <button class="btn-icon btn-recheck" aria-label="Recheck lane ${i}" onclick="window.recheckLane(${i})">↻</button>
                     </div>
                 </div>
                 <div class="result-box" id="resBox-${i}" role="button" tabindex="0" aria-label="Apply new density for lane ${i}" onclick="window.applyResult(${i})" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.applyResult(${i}); }">
@@ -702,7 +702,7 @@ window.renderHistoryCards = function() {
                     ${r.operator ? `<span style="font-size:0.72rem; opacity:0.6; margin-left:8px;">by ${escapeHTML(r.operator)}</span>` : ''}
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
-                    <button class="btn-icon" style="color:var(--danger); font-size:1rem; padding:0 5px; margin-right:8px;" onclick="event.stopPropagation(); window.deleteHistoryEntry(${idx})" title="Delete Entry">🗑️</button>
+                    <button class="btn-icon" style="color:var(--danger); font-size:1rem; padding:0 5px; margin-right:8px;" onclick="event.stopPropagation(); window.deleteHistoryEntry(${idx})" aria-label="Delete history entry ${idx}" title="Delete Entry">🗑️</button>
                     <span class="hist-card-avg">Avg: <strong>${escapeHTML(r.avg)}g</strong></span>
                     <span class="hist-card-chevron">▼</span>
                 </div>
