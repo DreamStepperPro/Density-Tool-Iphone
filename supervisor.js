@@ -301,9 +301,16 @@ window.buildSupCard = function(title, dataObj, recentChecks, m) {
         let laneWeights = precomputedLaneWeights[idx] || [];
         let stabilityHtml = '';
         if (laneWeights.length > 1) {
-            const lMean = laneWeights.reduce((a, b) => a + b, 0) / laneWeights.length;
-            const lVar  = laneWeights.reduce((a, b) => a + Math.pow(b - lMean, 2), 0) / laneWeights.length;
-            const lSd   = Math.sqrt(lVar);
+            let sum = 0, sumSq = 0;
+            const len = laneWeights.length;
+            for (let i = 0; i < len; i++) {
+                const w = laneWeights[i];
+                sum += w;
+                sumSq += w * w;
+            }
+            const lMean = sum / len;
+            const lVar = (sumSq / len) - (lMean * lMean);
+            const lSd = Math.sqrt(Math.max(0, lVar));
             let score = Math.round(Math.max(0, 100 - (lSd * 15)));
             let sColor = 'var(--success)'; let sIcon = '🟢';
             if (score < 80 && score >= 60) { sColor = 'var(--warning)'; sIcon = '🟡'; }
