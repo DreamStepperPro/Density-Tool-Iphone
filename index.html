@@ -392,7 +392,7 @@
         <span id="displayConfig">Quad Lane • Lunch</span>
         <div style="display:flex; align-items:center; gap:6px; background:var(--input-bg); padding:2px 10px; border-radius:20px; border:1px solid var(--border);">
             <span style="font-size:0.75rem; font-weight:900; color:var(--text); opacity:0.6;">SPEED</span>
-            <input type="number" id="mainBeltSpeed" oninput="window.updateBeltSpeed(this.value)" style="width:45px; background:transparent; border:none; color:var(--info); font-weight:bold; font-size:0.95rem; text-align:center; padding:0; outline:none;" placeholder="--">
+            <input type="number" id="mainBeltSpeed" aria-label="Belt Speed" oninput="window.updateBeltSpeed(this.value)" style="width:45px; background:transparent; border:none; color:var(--info); font-weight:bold; font-size:0.95rem; text-align:center; padding:0; outline:none;" placeholder="--">
         </div>
         <span id="displayTarget">Target: --g</span>
     </div>
@@ -430,7 +430,7 @@
         <h2 style="color:var(--perfect); margin-top:0;" data-i18n="stVerify">💧 Stream Test Verification</h2>
         <p style="font-size:0.85rem; color:var(--text); margin-bottom:15px;" data-i18n="stPrompt">Inspect the cardboard cutout for all active lanes. Are the jet streams cutting cleanly?</p>
         <div style="background:rgba(128,128,128,0.05); border:1px solid var(--border); border-radius:10px; padding:15px; text-align:center; margin-bottom:15px;">
-            <input type="file" accept="image/*" capture="environment" id="streamCameraInput" style="display:none;" onchange="window.handleStreamPhoto(event)">
+            <input type="file" accept="image/*" capture="environment" id="streamCameraInput" aria-label="Stream Camera Input" style="display:none;" onchange="window.handleStreamPhoto(event)">
             <button class="modal-btn secondary" id="btnTakePhoto" onclick="document.getElementById('streamCameraInput').click()" style="margin-top:0; border:2px dashed var(--info); color:var(--info); background:transparent;" data-i18n="takePhoto">📸 Take Photo (Optional)</button>
             <img id="streamPhotoPreview" role="button" tabindex="0" aria-label="View Full Size Stream Photo" style="display:none; width:100%; max-height:200px; object-fit:contain; border-radius:8px; margin-top:10px; border:1px solid var(--border);" onclick="event.stopPropagation(); window.openFullSizePhoto(this.src)" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.openFullSizePhoto(this.src); }">
         </div>
