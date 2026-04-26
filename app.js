@@ -149,9 +149,14 @@ window.initApp = function() {
     if (!config.lang)      config.lang      = 'en';
     window.applyTheme();
     window.applyTranslations();
-    const fieldMap = { setMachines:'machines', setLanes:'lanes', setProd:'product', setSmart:'smart', setInputMode:'inputMode', setTheme:'theme' };
-    for (const [id, key] of Object.entries(fieldMap)) { const el = document.getElementById(id); if (el) el.value = config[key]; }
-    if (document.getElementById('setDispName')) document.getElementById('setDispName').value = config.displayName || '';
+    let el;
+    if ((el = document.getElementById('setMachines'))) el.value = config.machines;
+    if ((el = document.getElementById('setLanes'))) el.value = config.lanes;
+    if ((el = document.getElementById('setProd'))) el.value = config.product;
+    if ((el = document.getElementById('setSmart'))) el.value = config.smart;
+    if ((el = document.getElementById('setInputMode'))) el.value = config.inputMode;
+    if ((el = document.getElementById('setTheme'))) el.value = config.theme;
+    if ((el = document.getElementById('setDispName'))) el.value = config.displayName || '';
     window.departmentSnipe = { active: false };
 
     const bsInput = document.getElementById('mainBeltSpeed');
@@ -320,9 +325,14 @@ window.renderInterface = function() {
     }
     const prodName = config.product === 'lunch' ? window.t('lunch') : window.t('bfast');
     document.getElementById('displayConfig').innerText = `${config.lanes} ${window.t('lane')} • ${prodName}`;
-    const fieldMap = { setMachines:'machines', setLanes:'lanes', setProd:'product', setSmart:'smart', setInputMode:'inputMode', setTheme:'theme' };
-    for (const [id, key] of Object.entries(fieldMap)) { const el = document.getElementById(id); if (el) el.value = config[key]; }
-    if (document.getElementById('setDispName')) document.getElementById('setDispName').value = config.displayName || '';
+    let el;
+    if ((el = document.getElementById('setMachines'))) el.value = config.machines;
+    if ((el = document.getElementById('setLanes'))) el.value = config.lanes;
+    if ((el = document.getElementById('setProd'))) el.value = config.product;
+    if ((el = document.getElementById('setSmart'))) el.value = config.smart;
+    if ((el = document.getElementById('setInputMode'))) el.value = config.inputMode;
+    if ((el = document.getElementById('setTheme'))) el.value = config.theme;
+    if ((el = document.getElementById('setDispName'))) el.value = config.displayName || '';
     const container = document.getElementById('lanesContainer');
     container.innerHTML = '';
     for (let i = 1; i <= config.lanes; i++) {
