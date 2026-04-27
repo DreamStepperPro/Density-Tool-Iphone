@@ -144,7 +144,19 @@
         <button class="modal-btn secondary" onclick="window.openAbout()" style="margin-top:6px; border-color:var(--accent); color:var(--accent);" data-i18n="ourStory">📖 OUR STORY</button>
         <button class="modal-btn secondary" onclick="window.openHelp()" style="margin-top:6px; border-color:var(--info); color:var(--info);" data-i18n="systemGuideBtn">🧠 SYSTEM GUIDE</button>
         <button id="btnSandboxToggle" class="modal-btn btn-hidden" style="background:var(--warning); color:black; margin-top:6px;" onclick="window.toggleSandboxMode()">🧪 TOGGLE OFFLINE SANDBOX</button>
+        <button class="modal-btn" style="background:#444; color:white; margin-top:6px;" onclick="window.showDebugLogs()">🐞 DEVICE LOGS</button>
         <button class="modal-btn danger" onclick="window.factoryReset()" data-i18n="reset">FACTORY RESET (LOCAL)</button>
+    </div>
+</div>
+
+<!-- DEBUG BLACK BOX -->
+<div class="modal-overlay" id="debugModal" style="display:none; z-index:999;">
+    <div class="modal">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2 style="margin:0;">🐞 Black Box Logs</h2>
+            <button aria-label="Close" onclick="document.getElementById('debugModal').style.display='none'" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
+        </div>
+        <textarea id="debugLogOutput" readonly style="width:100%; height:300px; margin-top:10px; background:#111; color:#0f0; font-family:monospace; font-size:12px;"></textarea>
     </div>
 </div>
 
