@@ -24,6 +24,33 @@ let appInitialized = false;
 
 window.isOfflineMode = false;
 
+window.appLogs = [];
+const maxLogs = 50;
+
+const originalError = console.error;
+console.error = function(...args) {
+    window.appLogs.push(`[${new Date().toISOString()}] ERROR: ${args.join(' ')}`);
+    if (window.appLogs.length > maxLogs) window.appLogs.shift();
+    originalError.apply(console, args);
+};
+
+const originalWarn = console.warn;
+console.warn = function(...args) {
+    window.appLogs.push(`[${new Date().toISOString()}] WARN: ${args.join(' ')}`);
+    if (window.appLogs.length > maxLogs) window.appLogs.shift();
+    originalWarn.apply(console, args);
+};
+
+window.onerror = function(message, source, lineno, colno, error) {
+    window.appLogs.push(`[${new Date().toISOString()}] UNCAUGHT: ${message} at ${source}:${lineno}:${colno}`);
+    if (window.appLogs.length > maxLogs) window.appLogs.shift();
+};
+
+window.showDebugLogs = function() {
+    document.getElementById('debugLogOutput').value = window.appLogs.join('\n');
+    document.getElementById('debugModal').style.display = 'block';
+};
+
 // =====================================================================
 // SHARED STATE GETTERS — used by split modules (comms, supervisor, etc.)
 // These closures always return the CURRENT value of each variable.
@@ -542,20 +569,29 @@ window.calculateLocal = function() {
                 // Green Zone Activation
                 if (Math.abs(currW - target) <= 2.0) {
                     let velocity = 0;
-                    // Stabilization Override — compare against oldest point, not most recent
-                    // This preserves slow steady drift signals across the full time window
-                    if (recentWts.length > 1 && Math.abs(currW - recentWts[recentWts.length - 1]) <= 0.4) {
-                        velocity = 0;
+
+                    if (Math.abs(currW - target) <= 0.5) {
+                        velocity = 0; // The Bullseye Silencer
                     } else {
-                        const oldestW    = recentWts[recentWts.length - 1];
-                        const oldestTime = recentTimes[recentTimes.length - 1];
-                        // Intervention Gate — ignore massive jumps, assume manual intervention
-                        if (Math.abs(currW - oldestW) > 1.5) {
+                        // Stabilization Override — compare against oldest point, not most recent
+                        // This preserves slow steady drift signals across the full time window
+                        if (recentWts.length > 1 && Math.abs(currW - recentWts[recentWts.length - 1]) <= 0.4) {
                             velocity = 0;
-                        } else if (oldestTime) {
-                            // 0.25 min floor allows accurate velocity on quick rechecks
-                            const timeDiffMin = Math.max(0.25, (Date.now() - oldestTime) / 60000);
-                            velocity = (currW - oldestW) / timeDiffMin;
+                        } else {
+                            const oldestW    = recentWts[recentWts.length - 1];
+                            const oldestTime = recentTimes[recentTimes.length - 1];
+
+                            // The Deceleration Gate
+                            if (Math.abs(currW - target) < Math.abs(oldestW - target)) {
+                                velocity = 0;
+                            } else if (Math.abs(currW - oldestW) > 1.5) {
+                                // Intervention Gate — ignore massive jumps, assume manual intervention
+                                velocity = 0;
+                            } else if (oldestTime) {
+                                // 0.25 min floor allows accurate velocity on quick rechecks
+                                const timeDiffMin = Math.max(0.25, (Date.now() - oldestTime) / 60000);
+                                velocity = (currW - oldestW) / timeDiffMin;
+                            }
                         }
                     }
                     rawVelocity = velocity;
