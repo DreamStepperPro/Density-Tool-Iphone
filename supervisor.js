@@ -352,7 +352,7 @@ window.buildSupCard = function(title, dataObj, recentChecks, m) {
                 <h2 class="sup-title">${title} <span style="font-size:0.8rem; color:gray; font-weight:normal;">• ${window.t(dataObj.product)}</span></h2>
                 <div class="sup-meta" style="text-align:left;">${window.t('target')}: ${target}g<strong style="display:inline-block; margin-left:6px;">${entry.time}${isStale ? ' ⚠️' : ''}</strong></div>
             </div>
-            <button class="btn-icon" style="border:none; font-size:1.3rem; height:40px; width:40px; background:rgba(128,128,128,0.1); flex-shrink:0;" onclick="window.openSupHistory(${m})" title="View Detailed Logs">📋</button>
+            <button class="btn-icon" style="border:none; font-size:1.3rem; height:40px; width:40px; background:rgba(128,128,128,0.1); flex-shrink:0;" onclick="window.openSupHistory(${m})" aria-label="View Detailed Logs" title="View Detailed Logs">📋</button>
         </div>
         <div class="sup-operator">👤 ${escapeHTML(opName)}</div>
         <div class="sup-grid">${lanesHtml}</div>
