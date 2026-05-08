@@ -1310,6 +1310,21 @@ window.loginWithPin = function() {
     const pin = pinInput ? pinInput.value.trim() : '';
     if (pin.length < 4) { alert("Please enter your 4-digit PIN."); return; }
     
+    const loginBtn = document.querySelector('button[onclick="window.loginWithPin()"]');
+    let originalText = "LOGIN";
+    if (loginBtn) {
+        originalText = loginBtn.innerText;
+        loginBtn.disabled = true;
+        loginBtn.innerText = "VERIFYING...";
+    }
+
+    const restoreBtn = () => {
+        if (loginBtn) {
+            loginBtn.disabled = false;
+            loginBtn.innerText = originalText;
+        }
+    };
+
     const pinQuery = query(ref(db, 'users'), orderByChild('pin'), equalTo(pin));
     get(pinQuery).then((snap) => {
         let matchedProfile = null;
@@ -1344,13 +1359,18 @@ window.loginWithPin = function() {
                 if (pinInput) pinInput.value = '';
                 const name = matchedProfile.adminName || matchedProfile.displayName || 'Operator';
                 window.showAdminToast(`✅ Welcome back, ${name}!`);
+                restoreBtn();
                 // onValue listener in auth block detects approved:true and hides overlay automatically
-            });
+            }).catch(() => restoreBtn());
         } else {
             window.showAdminToast("❌ Invalid PIN or account not approved.");
             if (pinInput) pinInput.value = '';
+            restoreBtn();
         }
-    }).catch(() => window.showAdminToast("❌ Network error verifying PIN."));
+    }).catch(() => {
+        window.showAdminToast("❌ Network error verifying PIN.");
+        restoreBtn();
+    });
 };
 window.toggleUserApprove  = function(uid, isAppr) {
     update(ref(db, `users/${uid}`), { approved: isAppr, requestPending: false })
