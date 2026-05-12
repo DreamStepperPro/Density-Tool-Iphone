@@ -23,6 +23,9 @@
             --shadow-lg: 0 6px 24px rgba(0,0,0,0.6);
         }
 
+        /* SCREEN READER ONLY */
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
         * { box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; -webkit-tap-highlight-color: transparent; user-select: none; transition: background 0.3s, color 0.3s; }
 

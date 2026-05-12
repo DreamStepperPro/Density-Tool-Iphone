@@ -1310,6 +1310,22 @@ window.loginWithPin = function() {
     const pin = pinInput ? pinInput.value.trim() : '';
     if (pin.length < 4) { alert("Please enter your 4-digit PIN."); return; }
     
+    // UI Loading state
+    const btn = document.querySelector('button[onclick="window.loginWithPin()"]');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "VERIFYING...";
+    }
+    if (pinInput) pinInput.disabled = true;
+
+    const revertUI = () => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = "LOGIN";
+        }
+        if (pinInput) pinInput.disabled = false;
+    };
+
     const pinQuery = query(ref(db, 'users'), orderByChild('pin'), equalTo(pin));
     get(pinQuery).then((snap) => {
         let matchedProfile = null;
@@ -1342,15 +1358,23 @@ window.loginWithPin = function() {
                     set(ref(db, `users/${oldUid}`), null).catch(e => console.warn("Cleanup:", e));
                 }
                 if (pinInput) pinInput.value = '';
+                revertUI();
                 const name = matchedProfile.adminName || matchedProfile.displayName || 'Operator';
                 window.showAdminToast(`✅ Welcome back, ${name}!`);
                 // onValue listener in auth block detects approved:true and hides overlay automatically
+            }).catch(() => {
+                window.showAdminToast("❌ Error updating profile.");
+                revertUI();
             });
         } else {
             window.showAdminToast("❌ Invalid PIN or account not approved.");
             if (pinInput) pinInput.value = '';
+            revertUI();
         }
-    }).catch(() => window.showAdminToast("❌ Network error verifying PIN."));
+    }).catch(() => {
+        window.showAdminToast("❌ Network error verifying PIN.");
+        revertUI();
+    });
 };
 window.toggleUserApprove  = function(uid, isAppr) {
     update(ref(db, `users/${uid}`), { approved: isAppr, requestPending: false })
@@ -1359,11 +1383,29 @@ window.toggleUserApprove  = function(uid, isAppr) {
 };
 window.deleteUser = function(uid) { set(ref(db, `users/${uid}`), null).catch(e => window.showAdminToast("❌ Error: Could not delete user.")); };
 window.pingAdmin  = function() {
-    const nameInput = document.getElementById('reqName').value.trim();
+    const nameInputEl = document.getElementById('reqName');
+    const nameInput = nameInputEl.value.trim();
     if (!nameInput) { alert("Please enter your name."); return; }
+
+    // UI Loading state
+    const btn = document.querySelector('button[onclick="window.pingAdmin()"]');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "SENDING...";
+    }
+    if (nameInputEl) nameInputEl.disabled = true;
+
     update(ref(db, `users/${window.myUid}`), { displayName: nameInput, requestPending: true, requestTime: Date.now() })
         .then(() => { document.getElementById('requestForm').innerHTML = `<div style="color:var(--success); font-weight:bold; font-size:1.1rem; padding:10px;">✅ Flare Sent!<br><span style="font-size:0.8rem; color:var(--text); font-weight:normal;">Admin has been notified.</span></div>`; })
-        .catch(e => window.showAdminToast("❌ Network Error: Could not send request."));
+        .catch(e => {
+            window.showAdminToast("❌ Network Error: Could not send request.");
+            // Revert UI on error
+            if (btn) {
+                btn.disabled = false;
+                btn.innerText = "PING ADMIN FOR ACCESS";
+            }
+            if (nameInputEl) nameInputEl.disabled = false;
+        });
 };
 let notifiedSet = new Set(JSON.parse(sessionStorage.getItem('dsi_notified') || '[]'));
 function persistNotifiedSet() { sessionStorage.setItem('dsi_notified', JSON.stringify([...notifiedSet])); }

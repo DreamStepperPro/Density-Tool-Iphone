@@ -1,3 +1,6 @@
 ## 2025-04-26 - Add aria-labels to mainBeltSpeed and streamCameraInput
 **Learning:** Found inputs (like belt speed) with adjacent visual text labels (`<span>`) but no programmatic `<label for="...">` or `aria-label`, leaving them inaccessible to screen readers. Also found an input type file visually hidden (`display:none`) that relies on a button to trigger it. The hidden input still conceptually needs an `aria-label` even if skipped by some screen readers.
 **Action:** Always verify that input fields, especially those relying on surrounding visual context or hidden proxies, have explicit accessible names via `aria-label` or `aria-labelledby`.
+## 2025-05-15 - Add loading states to Login and Ping Admin
+**Learning:** Found instances where network actions were initiated without blocking the UI, potentially causing double submissions, and lacking visual feedback. Also, forms lacked explicit association via the `<label>` tag which reduces screen reader support.
+**Action:** Always verify that async buttons exhibit proper loading/disabled states (e.g. `disabled=true`, "VERIFYING...") and revert state in both success and error paths. Provide explicitly linked `<label>`s (even if visually hidden via `.sr-only`) to inputs to ensure they're accessible.
