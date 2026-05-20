@@ -820,13 +820,13 @@ window.deleteHistoryEntry = function(idx) {
 };
 
 window.clearHistory = function() {
-    if (confirm("Clear shift history?")) {
-        history = [];
-        if (!window.isOfflineMode && dbRef_History) {
-            set(dbRef_History, history).catch(e => window.showAdminToast("❌ Network Error: History not cleared."));
-        }
-        window.renderHistoryCards();
+    if (!confirm(window.t('clearTableConfirm') || "Clear shift history?")) return;
+
+    history = [];
+    if (!window.isOfflineMode && dbRef_History) {
+        set(dbRef_History, history).catch(e => window.showAdminToast("❌ Network Error: History not cleared."));
     }
+    window.renderHistoryCards();
 };
 
 // =====================================================================
@@ -870,7 +870,7 @@ window.listenForGlobalReset = function(machineKey) {
 };
 
 window.triggerGlobalShiftReset = function() {
-    if (confirm(window.t('endShiftConfirm'))) {
+    if (confirm(window.t('endShiftConfirm') || "🏁 END SHIFT?")) {
         if (window.isOfflineMode) {
             window.performLocalWipe(false);
         } else {
