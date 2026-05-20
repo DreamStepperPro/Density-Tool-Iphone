@@ -1,3 +1,7 @@
 ## 2026-05-13 - Replaced redundant visually hidden labels with proper structural elements
 **Learning:** Adding `.sr-only` elements that duplicate existing `aria-label` attributes on input elements is redundant and can cause noise for screen reader users. The application already handles screen reader accessibility for inputs using `aria-label`. A genuine micro-UX improvement involves converting visual, non-semantic labels (like `<span>SPEED</span>`) into actual programmatic `<label for="...">` elements that benefit all users, and adding missing `alt` text for images, rather than adding redundant visually hidden nodes.
 **Action:** Transformed the `<span>` element displaying 'SPEED' into a semantic `<label for="mainBeltSpeed">` element to programmatically link the visible text to the input. Added missing `alt` attributes to image elements to enhance accessibility without creating redundant DOM structures.
+
+## 2026-05-20 - Adding explicit loading states to asynchronous forms
+**Learning:** Missing loading states on critical form submission buttons like login and requests without any immediate response from the network create ambiguity. A user may press a button multiple times, or feel lost, reducing their confidence in the application's responsiveness.
+**Action:** Disabled async submission buttons immediately after a user taps them and changed the button text contextually to 'VERIFYING...' and 'SENDING...'. Restored button text and interactability if the network request resolved or encountered an error.
