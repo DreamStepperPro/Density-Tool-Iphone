@@ -17,5 +17,9 @@
   "bugs": {
     "url": "https://github.com/DreamStepperPro/Density-Tool-Iphone/issues"
   },
-  "homepage": "https://github.com/DreamStepperPro/Density-Tool-Iphone#readme"
+  "homepage": "https://github.com/DreamStepperPro/Density-Tool-Iphone#readme",
+  "dependencies": {
+    "happy-dom": "^20.9.0",
+    "jsdom": "^29.1.1"
+  }
 }

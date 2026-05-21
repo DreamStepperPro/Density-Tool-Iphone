@@ -1,14 +1,60 @@
+
+window.updateProfilerLanes = function() {
+    const mode = document.getElementById('profilerConfig')?.value;
+    const laneSelect = document.getElementById('profilerLaneSelect');
+    if (!laneSelect) return;
+
+    let html = '';
+    if (mode === 'quad') {
+        html += '<option value="1">Lane 1</option>';
+        html += '<option value="2">Lane 2</option>';
+        html += '<option value="3">Lane 3</option>';
+        html += '<option value="4">Lane 4</option>';
+    } else if (mode === 'dual') {
+        html += '<option value="1_2">Lanes 1+2</option>';
+        html += '<option value="3_4">Lanes 3+4</option>';
+    }
+    laneSelect.innerHTML = html;
+};
 import { escapeHTML } from './utils.js';
 
 window.openProfiler = function() {
     const modal = document.getElementById('profilerModal');
-    if (modal) modal.style.display = 'flex';
+    if (modal) modal.style.display = 'block';
+
+    const lContainer = document.getElementById('lanesContainer');
+    if (lContainer) lContainer.style.display = 'none';
+
+    const hSection = document.querySelector('.history-section');
+    if (hSection) hSection.style.display = 'none';
+
+    const btn = document.getElementById('btnProfilerTab');
+    if (btn) btn.classList.add('m-active');
+
+    // Also deselect DSI buttons visually
+    const mBtns = document.querySelectorAll('#machineNav .m-btn');
+    mBtns.forEach(b => b.classList.remove('m-active'));
+
+    window.updateProfilerLanes();
     window.renderProfilerGrid();
 };
 
 window.closeProfiler = function() {
     const modal = document.getElementById('profilerModal');
     if (modal) modal.style.display = 'none';
+
+    // We can just rely on switchMachine to restore things, but if called directly:
+    const lContainer = document.getElementById('lanesContainer');
+    if (lContainer) lContainer.style.display = 'block';
+
+    const hSection = document.querySelector('.history-section');
+    if (hSection) hSection.style.display = 'block';
+
+    const btn = document.getElementById('btnProfilerTab');
+    if (btn) btn.classList.remove('m-active');
+
+    // Restore active machine button
+    window.renderInterface();
 };
 
 window.renderProfilerGrid = function() {
@@ -85,18 +131,9 @@ window.runDiagnostics = function() {
         isChaos = true;
     }
 
-    let std1 = 0;
-    let std2 = 0;
-
-    if (config === 'paired') {
-        const lane1 = values.slice(0, 5);
-        const lane2 = values.slice(5, 10);
-        std1 = calculateStandardDeviation(lane1);
-        std2 = calculateStandardDeviation(lane2);
-
-        if (!isChaos && std1 < 4 && std2 < 4 && overallStd >= 5) {
-            isImbalance = true;
-        }
+    // Do NOT split the array into two chunks of 5 using .slice(). Calculate the Standard Deviation across all 10 inputs uniformly.
+    if (!isChaos && overallStd >= 5) {
+        isImbalance = true;
     }
 
     let message = '';
@@ -109,9 +146,6 @@ window.runDiagnostics = function() {
     }
 
     let html = `<div>Overall STD: ${escapeHTML(overallStd.toFixed(2))}</div>`;
-    if (config === 'paired') {
-        html += `<div>Lane 1 STD: ${escapeHTML(std1.toFixed(2))} | Lane 2 STD: ${escapeHTML(std2.toFixed(2))}</div>`;
-    }
     html += `<hr style="margin: 10px 0; border: 1px solid var(--border);" />`;
     html += `<div>${escapeHTML(message)}</div>`;
 
