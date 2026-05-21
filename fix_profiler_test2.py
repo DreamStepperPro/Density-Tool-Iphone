@@ -1,4 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach, mock } from 'bun:test';
+with open('profiler.test.js', 'r') as f:
+    content = f.read()
+
+# Completely rewrite profiler.test.js correctly
+new_test = """import { describe, it, expect, beforeEach, afterEach, mock } from 'bun:test';
 
 describe('Profiler Logic and Math Tests', () => {
     let originalWindow, originalDocument;
@@ -113,3 +117,7 @@ describe('Profiler Logic and Math Tests', () => {
         expect(document.getElementById('profilerModal').style.display).toBe('none');
     });
 });
+"""
+
+with open('profiler.test.js', 'w') as f:
+    f.write(new_test)

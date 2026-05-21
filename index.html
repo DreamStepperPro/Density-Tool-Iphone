@@ -573,26 +573,18 @@
 <div id="processMetricsModal" class="modal-overlay" style="display:none; align-items:center; justify-content:center;"></div>
 
 <!-- DEEP SCAN PROFILER MODAL -->
-<div class="modal-overlay" id="profilerModal" style="display:none; z-index:250;">
+<div class="modal-overlay" id="profilerModal" style="display:none; align-items:center; justify-content:center; z-index:250;">
     <div class="modal">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h2 style="color:var(--info); margin:0;">🔍 Deep Scan Profiler</h2>
             <button aria-label="Close" onclick="window.closeProfiler()" style="background:none; border:none; font-size:1.5rem; color:var(--text); cursor:pointer;">✕</button>
         </div>
 
-        <div class="modal-opt">
-            <label for="profilerMachine">Machine</label>
-            <select id="profilerMachine">
-                <option value="M1">M1</option>
-                <option value="M2">M2</option>
-            </select>
-        </div>
-        <div class="modal-opt">
-            <label for="profilerConfig">Configuration</label>
+        <div class="modal-opt" id="profilerToggleContainer" style="display:none;">
+            <label for="profilerConfig">Mode</label>
             <select id="profilerConfig">
-                <option value="dual">Dual 1-2</option>
-                <option value="quad">Quad 1-4</option>
-                <option value="paired">Paired Quad 1+2 / 3+4</option>
+                <option value="single">Single Lane Check</option>
+                <option value="dual">Dual Check (Combined Pair)</option>
             </select>
         </div>
 
