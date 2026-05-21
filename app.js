@@ -869,6 +869,23 @@ window.listenForGlobalReset = function(machineKey) {
     });
 };
 
+window.flushSmartLogic = function() {
+    history = [];
+    window.renderHistoryCards();
+    window.departmentSnipe = { active: false };
+
+    for (let i = 1; i <= config.lanes; i++) {
+        if (!store.lanes[i-1]) continue;
+        store.lanes[i-1].pveVelocity = null;
+        store.lanes[i-1].pveRunwayMins = null;
+
+        const trendEl = document.getElementById(`trend-${i}`);
+        if (trendEl) trendEl.innerHTML = '';
+    }
+
+    window.showAdminToast("🧹 Smart Logic Flushed: Ready for Fresh Shift.");
+};
+
 window.triggerGlobalShiftReset = function() {
     if (confirm(window.t('endShiftConfirm') || "🏁 END SHIFT?")) {
         if (window.isOfflineMode) {
