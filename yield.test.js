@@ -346,6 +346,7 @@ test("wipeYieldHistory works for authorized user", async () => {
 
     const confirmSpy = spyOn(global, "confirm").mockReturnValue(true);
 
+    global.window.t = mock(() => "Test translation");
     await import("./yield.js?isolated=15");
 
     const showAdminToastSpy = spyOn(window, "showAdminToast");
