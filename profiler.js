@@ -1,41 +1,35 @@
 
-window.updateProfilerLanes = function() {
-    const mode = document.getElementById('profilerConfig')?.value;
-    const laneSelect = document.getElementById('profilerLaneSelect');
-    if (!laneSelect) return;
-
-    let html = '';
-    if (mode === 'quad') {
-        html += '<option value="1">Lane 1</option>';
-        html += '<option value="2">Lane 2</option>';
-        html += '<option value="3">Lane 3</option>';
-        html += '<option value="4">Lane 4</option>';
-    } else if (mode === 'dual') {
-        html += '<option value="1_2">Lanes 1+2</option>';
-        html += '<option value="3_4">Lanes 3+4</option>';
-    }
-    laneSelect.innerHTML = html;
-};
 import { escapeHTML } from './utils.js';
 
-window.openProfiler = function() {
+window.activeProfilerLane = 1;
+
+window.openLaneProfiler = function(laneIndex) {
+    window.activeProfilerLane = laneIndex;
     const modal = document.getElementById('profilerModal');
-    if (modal) modal.style.display = 'block';
+    if (!modal) return;
 
-    const lContainer = document.getElementById('lanesContainer');
-    if (lContainer) lContainer.style.display = 'none';
+    // Wipe 10 inputs clean
+    for (let i = 0; i < 10; i++) {
+        const el = document.getElementById('profilerInput' + i);
+        if (el) el.value = '';
+    }
 
-    const hSection = document.querySelector('.history-section');
-    if (hSection) hSection.style.display = 'none';
+    const outputDiv = document.getElementById('profilerOutput');
+    if (outputDiv) outputDiv.innerHTML = '';
 
-    const btn = document.getElementById('btnProfilerTab');
-    if (btn) btn.classList.add('m-active');
+    // Configure dropdown based on lane count
+    const toggleContainer = document.getElementById('profilerToggleContainer');
+    const configSelect = document.getElementById('profilerConfig');
 
-    // Also deselect DSI buttons visually
-    const mBtns = document.querySelectorAll('#machineNav .m-btn');
-    mBtns.forEach(b => b.classList.remove('m-active'));
+    if (window.getConfig && window.getConfig().lanes === 4) {
+        if (toggleContainer) toggleContainer.style.display = 'flex';
+        if (configSelect) configSelect.value = 'single';
+    } else {
+        if (toggleContainer) toggleContainer.style.display = 'none';
+        if (configSelect) configSelect.value = 'single';
+    }
 
-    window.updateProfilerLanes();
+    modal.style.display = 'flex';
     window.renderProfilerGrid();
 };
 
@@ -43,18 +37,10 @@ window.closeProfiler = function() {
     const modal = document.getElementById('profilerModal');
     if (modal) modal.style.display = 'none';
 
-    // We can just rely on switchMachine to restore things, but if called directly:
-    const lContainer = document.getElementById('lanesContainer');
-    if (lContainer) lContainer.style.display = 'block';
-
-    const hSection = document.querySelector('.history-section');
-    if (hSection) hSection.style.display = 'block';
-
-    const btn = document.getElementById('btnProfilerTab');
-    if (btn) btn.classList.remove('m-active');
-
-    // Restore active machine button
-    window.renderInterface();
+    for (let i = 0; i < 10; i++) {
+        const el = document.getElementById('profilerInput' + i);
+        if (el) el.value = '';
+    }
 };
 
 window.renderProfilerGrid = function() {
@@ -137,10 +123,12 @@ window.runDiagnostics = function() {
     }
 
     let message = '';
+    let btnHtml = '';
     if (isChaos) {
         message = "🚨 Severe outlier detected. Note: Possible calibration issue or high variance in incoming product.";
     } else if (isImbalance) {
         message = "⚠️ Geometric Imbalance. Suggested Action: Swap waterjet routing path (e.g., 2,1 to 1,2) to re-center the spread.";
+        btnHtml = `<button class="modal-btn secondary" style="margin-top:10px;" onclick="if(window.acceptPathSwap) { window.acceptPathSwap(window.activeProfilerLane); } window.closeProfiler();">ACCEPT PATH SWAP</button>`;
     } else {
         message = "✅ Geometric alignment stable. Continue adjusting density.";
     }
@@ -148,6 +136,7 @@ window.runDiagnostics = function() {
     let html = `<div>Overall STD: ${escapeHTML(overallStd.toFixed(2))}</div>`;
     html += `<hr style="margin: 10px 0; border: 1px solid var(--border);" />`;
     html += `<div>${escapeHTML(message)}</div>`;
+    html += btnHtml;
 
     outputDiv.innerHTML = html;
 };

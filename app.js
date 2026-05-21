@@ -376,7 +376,7 @@ window.renderInterface = function() {
         container.innerHTML += `
             <div class="lane-card" id="card-${i}">
                 <div class="lane-header">
-                    <div class="lane-header-left"><span>${window.t('lane')} ${i}</span><span class="smart-tag" id="tag-${i}">SMART</span><button class="btn-icon" id="btnDisable-${i}" onclick="window.toggleLaneDisable(${i})" style="margin-left:8px; font-size:0.9rem; padding:0 5px;" aria-label="Toggle Lane Power" title="Toggle Lane Power">⊘</button></div>
+                    <div class="lane-header-left"><span>${window.t('lane')} ${i}</span><span class="smart-tag" id="tag-${i}">SMART</span><button class="btn-icon" id="btnDisable-${i}" onclick="window.toggleLaneDisable(${i})" style="margin-left:8px; font-size:0.9rem; padding:0 5px;" aria-label="Toggle Lane Power" title="Toggle Lane Power">⊘</button>${isAdmin ? `<button class="btn-icon" onclick="window.openLaneProfiler(${i})" style="margin-left:8px; font-size:0.9rem; padding:0 5px;" aria-label="Lane ${i} Diagnostics" title="Lane Diagnostics">🔍</button>` : ""}</div>
                     <span class="lane-trend" id="trend-${i}"></span>
                 </div>
                 <div>
@@ -440,7 +440,10 @@ window.updateUIFromCloud = function() {
         }
 
         const dEl = document.getElementById(`currDens-${i}`);
-        if (dEl && document.activeElement !== dEl) {
+        if (dEl && document.activeElement === dEl) {
+            continue;
+        }
+        if (dEl) {
             dEl.value = lane.d;
             if (lane.locked) {
                 dEl.readOnly = true; dEl.style.borderColor = 'var(--border)';
@@ -453,7 +456,10 @@ window.updateUIFromCloud = function() {
             }
         }
         const wEl = document.getElementById(`avgWt-${i}`);
-        if (wEl && document.activeElement !== wEl) {
+        if (wEl && document.activeElement === wEl) {
+            continue;
+        }
+        if (wEl) {
             wEl.value = lane.w || '';
             if (isAdmin) { wEl.readOnly = true; wEl.style.borderColor = 'var(--border)'; }
         }
