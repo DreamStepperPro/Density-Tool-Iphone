@@ -28,14 +28,14 @@
             <input type="password" id="loginPin" aria-label="Enter your 4-digit PIN" pattern="[0-9]*" inputmode="numeric" maxlength="4" placeholder="••••"
                 style="font-size:2rem; text-align:center; letter-spacing:10px; width:100%; padding:10px; border-radius:10px; border:2px solid var(--border); background:var(--input-bg); color:var(--text); font-weight:bold; margin-bottom:10px;"
                 onkeydown="if(event.key==='Enter') window.loginWithPin()">
-            <button class="modal-btn" onclick="window.loginWithPin()" style="background:var(--success);">LOGIN</button>
+            <button id="loginBtn" class="modal-btn" onclick="window.loginWithPin()" style="background:var(--success);">LOGIN</button>
         </div>
         <hr style="border:0; border-top:1px solid var(--border); margin:20px 0;">
         <details style="text-align:left; background:rgba(128,128,128,0.05); padding:10px; border-radius:8px; border:1px solid var(--border);">
             <summary style="font-size:0.8rem; font-weight:bold; cursor:pointer; opacity:0.8;">New Device? Request Access</summary>
             <div id="requestForm" style="margin-top:10px;">
                 <input type="text" id="reqName" aria-label="Enter your name or role" placeholder="Enter your name / role..." style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); margin-bottom:10px;" data-i18n-ph="enterName">
-                <button class="modal-btn" onclick="window.pingAdmin()" style="margin-top:0; background:var(--accent); font-size:0.85rem;" data-i18n="pingAdmin">PING ADMIN FOR ACCESS</button>
+                <button id="pingBtn" class="modal-btn" onclick="window.pingAdmin()" style="margin-top:0; background:var(--accent); font-size:0.85rem;" data-i18n="pingAdmin">PING ADMIN FOR ACCESS</button>
                 <div style="font-size:0.65rem; opacity:0.6; margin-top:10px; text-align:center; word-break:break-all;">Device: <span id="userIdDisplay">Loading...</span></div>
             </div>
         </details>
