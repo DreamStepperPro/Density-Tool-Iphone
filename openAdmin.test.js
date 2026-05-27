@@ -32,7 +32,7 @@ mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js", ()
 mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js", () => ({
     getAuth: mock(() => ({})),
     // Use the hardcoded ADMIN_UID so isAdmin becomes true
-    signInAnonymously: mock(() => Promise.resolve({ user: { uid: "aq1MtAQ5FdXPH9D0l8gTyKCEUWg1" } })),
+    signInAnonymously: mock(() => Promise.resolve({ user: { uid: "eriJYRBALpX4IKz3K370DEqptwa2" } })),
 }));
 
 test("openAdmin handles Firebase permission denied gracefully (Operator Rejection)", async () => {
