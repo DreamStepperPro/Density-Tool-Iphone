@@ -735,7 +735,11 @@ window.calculateLocal = function() {
 window.renderHistoryCards = function() {
     const container = document.getElementById('historyCards');
     if (!history || history.length === 0) {
-        container.innerHTML = '<div style="text-align:center; opacity:0.5; padding:20px; font-size:0.85rem;">--</div>';
+        container.innerHTML = `<div style="text-align:center; padding:20px; background:rgba(128,128,128,0.05); border:1px dashed var(--border); border-radius:10px;">
+            <div style="font-size:1.5rem; margin-bottom:8px;">📝</div>
+            <div style="font-weight:bold; font-size:0.95rem; color:var(--text);">${window.t('noHistory') || 'No checks logged yet.'}</div>
+            <div style="font-size:0.8rem; opacity:0.6; margin-top:4px;">${window.t('saveCheckPrompt') || "Tap 'SAVE CHECK' to record lane weights."}</div>
+        </div>`;
         return;
     }
     const arr = Array.isArray(history) ? history : Object.values(history);
