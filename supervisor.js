@@ -409,7 +409,7 @@ window.openSupHistory = function(machineNum) {
                 if (r.isFail) { color = 'var(--danger)'; bg = 'rgba(255,77,77,0.1)'; }
                 if (r.text.includes('SHIFT ENDED')) { color = 'var(--text)'; bg = 'rgba(128,128,128,0.1)'; }
                 const photoHtml = r.photoRef
-                    ? `<img data-photoref="${r.photoRef}" style="width:100%; max-height:200px; object-fit:cover; border-radius:6px; margin-top:10px; border:1px solid rgba(0,0,0,0.2); cursor:pointer;" onclick="window.loadAndViewPhoto(this)">`
+                    ? `<img data-photoref="${r.photoRef}" alt="Shift Event Photo" style="width:100%; max-height:200px; object-fit:cover; border-radius:6px; margin-top:10px; border:1px solid rgba(0,0,0,0.2); cursor:pointer;" onclick="window.loadAndViewPhoto(this)">`
                     : '';
                 return `<div style="background:${bg}; border:1px solid ${color}; border-radius:8px; padding:12px; text-align:center; font-weight:bold; font-size:0.85rem; margin-bottom:8px; color:${color}; flex-shrink:0; box-shadow:var(--shadow);">${escapeHTML(r.text)} • ${escapeHTML(r.time)}${photoHtml}</div>`;
             }
