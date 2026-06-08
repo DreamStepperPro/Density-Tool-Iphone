@@ -1,3 +1,7 @@
 ## 2026-05-13 - Replaced redundant visually hidden labels with proper structural elements
 **Learning:** Adding `.sr-only` elements that duplicate existing `aria-label` attributes on input elements is redundant and can cause noise for screen reader users. The application already handles screen reader accessibility for inputs using `aria-label`. A genuine micro-UX improvement involves converting visual, non-semantic labels (like `<span>SPEED</span>`) into actual programmatic `<label for="...">` elements that benefit all users, and adding missing `alt` text for images, rather than adding redundant visually hidden nodes.
 **Action:** Transformed the `<span>` element displaying 'SPEED' into a semantic `<label for="mainBeltSpeed">` element to programmatically link the visible text to the input. Added missing `alt` attributes to image elements to enhance accessibility without creating redundant DOM structures.
+
+## 2026-05-14 - Loading state for async buttons
+**Learning:** For async operations like logging in via PIN to Firebase, standard buttons lack immediate feedback causing users to repeatedly click or think the app is frozen.
+**Action:** Always add a loading/verifying state to the login/submission button by disabling it and updating the text to 'VERIFYING...' while the request is in flight. Make sure to reset the button in all success, fail, and catch paths to avoid permanently locking the user out.
