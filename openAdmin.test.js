@@ -23,8 +23,23 @@ mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js", ()
     equalTo: mock(() => ({})),
     limitToLast: mock(() => ({})),
     onValue: mock((ref, cb, errCb) => {
-        onValueCallback = cb;
-        onValueErrorCallback = errCb;
+        // Because `ref` is mocked as `(db, path) => ({ db, path })`
+        // we can check if `ref.path` is `'users'`. Wait, in `app.js`,
+        // `usersDbRef = ref(db, 'users');`, so `ref.path` should be `'users'`.
+        if (ref && typeof ref === "object" && ref.path === "users") {
+            onValueCallback = cb;
+            onValueErrorCallback = errCb;
+        } else if (typeof ref === "string" && ref === "users") {
+            onValueCallback = cb;
+            onValueErrorCallback = errCb;
+        } else if (errCb) {
+            onValueCallback = cb;
+            onValueErrorCallback = errCb;
+        } else if (cb) {
+            cb({
+              val: () => ({ role: 'admin' })
+            });
+        }
         return mock(() => {}); // Unsubscribe
     })
 }));
@@ -32,8 +47,18 @@ mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js", ()
 mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js", () => ({
     getAuth: mock(() => ({})),
     // Use the hardcoded ADMIN_UID so isAdmin becomes true
-    signInAnonymously: mock(() => Promise.resolve({ user: { uid: "eriJYRBALpX4IKz3K370DEqptwa2" } })),
+    signInAnonymously: mock(() => Promise.resolve({ user: { uid: "hkjjqbltS4f9Pr2ErqCSEeqwo3D2" } })),
 }));
+
+beforeEach(() => {
+    // Ensure mocks are fully set up before importing
+    global.localStorage = { getItem: mock(() => null), setItem: mock(), removeItem: mock(), clear: mock() };
+    global.sessionStorage = { getItem: mock(() => null), setItem: mock() };
+    global.navigator = { vibrate: mock() };
+    if (!global.window) global.window = {};
+    global.window.isAdmin = true;
+    global.window.myUid = 'hkjjqbltS4f9Pr2ErqCSEeqwo3D2';
+});
 
 test("openAdmin handles Firebase permission denied gracefully (Operator Rejection)", async () => {
     // Setup globals
@@ -53,16 +78,21 @@ test("openAdmin handles Firebase permission denied gracefully (Operator Rejectio
         }),
         createElement: mock(() => ({ className: "", style: {}, appendChild: mock(), textContent: "", addEventListener: mock() })),
         createTextNode: mock(() => ({})),
-        addEventListener: mock()
+        addEventListener: mock(),
+        body: { classList: { add: mock(), remove: mock() }, appendChild: mock() }
     };
     
     global.window = {
+        isAdmin: true,
+        myUid: 'hkjjqbltS4f9Pr2ErqCSEeqwo3D2',
         isOfflineMode: false,
         currentUserData: {},
         addEventListener: mock(),
         showAdminToast: mock(),
+        applyTranslations: mock(),
+        applyTheme: mock(),
+        t: mock((key) => key)
     };
-    global.sessionStorage = { getItem: mock(() => null), setItem: mock() };
     
     const consoleErrorSpy = spyOn(console, "error").mockImplementation(() => {});
 

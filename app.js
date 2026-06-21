@@ -17,7 +17,7 @@ const app  = initializeApp(firebaseConfig);
 const db   = getDatabase(app);
 const auth = getAuth(app);
 
-const ADMIN_UID    = 'eriJYRBALpX4IKz3K370DEqptwa2';
+const ADMIN_UID    = 'hkjjqbltS4f9Pr2ErqCSEeqwo3D2';
 let currentUserUid = null;
 let isAdmin        = false;
 let appInitialized = false;
@@ -85,28 +85,31 @@ window.forceOfflineMode = function() {
 
 signInAnonymously(auth).then((result) => {
     currentUserUid = result.user.uid;
-    window.myUid   = currentUserUid;
-    isAdmin        = (currentUserUid === ADMIN_UID);
-
-    if (isAdmin) {
-        document.getElementById('btnAdmin').classList.remove('btn-hidden');
-        document.getElementById('btnAdminSup').classList.remove('btn-hidden');
-        if (document.getElementById('btnYieldOp')) document.getElementById('btnYieldOp').classList.remove('btn-hidden');
-        if (document.getElementById('btnYieldSup')) document.getElementById('btnYieldSup').classList.remove('btn-hidden');
-        window.startAdminRadar();
-    } else {
-        // SECURITY: Physically destroy admin buttons from the DOM — prevents iOS ghost-click tap bleed
-        const btnA    = document.getElementById('btnAdmin');
-        const btnASup = document.getElementById('btnAdminSup');
-        if (btnA)    btnA.remove();
-        if (btnASup) btnASup.remove();
-    }
 
     const userRef = ref(db, `users/${currentUserUid}`);
     update(userRef, { lastLogin: new Date().toLocaleString() }).catch(e => console.warn(e));
 
     onValue(userRef, (snap) => {
-        window.currentUserData = snap.val() || {};
+        const userData = snap.val() || {};
+        window.currentUserData = userData;
+        const userRole = userData.role || 'operator';
+
+        isAdmin = (userRole === 'admin' || currentUserUid === ADMIN_UID);
+        window.myUid = currentUserUid;
+
+        if (isAdmin) {
+            document.getElementById('btnAdmin')?.classList.remove('btn-hidden');
+            document.getElementById('btnAdminSup')?.classList.remove('btn-hidden');
+            if (document.getElementById('btnYieldOp')) document.getElementById('btnYieldOp').classList.remove('btn-hidden');
+            if (document.getElementById('btnYieldSup')) document.getElementById('btnYieldSup').classList.remove('btn-hidden');
+            window.startAdminRadar();
+        } else {
+            document.getElementById('btnAdmin')?.classList.add('btn-hidden');
+            document.getElementById('btnAdminSup')?.classList.add('btn-hidden');
+            if (document.getElementById('btnYieldOp')) document.getElementById('btnYieldOp').classList.add('btn-hidden');
+            if (document.getElementById('btnYieldSup')) document.getElementById('btnYieldSup').classList.add('btn-hidden');
+        }
+
         const isApproved = window.currentUserData.approved === true;
         if (isAdmin || isApproved) {
             document.getElementById('accessDeniedOverlay').style.display = 'none';
