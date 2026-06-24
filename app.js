@@ -1332,10 +1332,19 @@ window.updateUserRole     = function(uid, role) { update(ref(db, `users/${uid}`)
 window.updateUserPin      = function(uid, pinStr) { update(ref(db, `users/${uid}`), { pin: pinStr.trim() }).catch(e => window.showAdminToast("❌ Error: Could not update PIN.")); };
 
 window.loginWithPin = function() {
+    const btn = document.getElementById('btnLoginBtn');
+    if (btn && btn.disabled) return;
+
     const pinInput = document.getElementById('loginPin');
     const pin = pinInput ? pinInput.value.trim() : '';
     if (pin.length < 4) { alert("Please enter your 4-digit PIN."); return; }
     
+    const originalText = btn ? btn.innerText : 'LOGIN';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = window.t('verifying') || 'VERIFYING...';
+    }
+
     const pinQuery = query(ref(db, 'users'), orderByChild('pin'), equalTo(pin));
     get(pinQuery).then((snap) => {
         let matchedProfile = null;
@@ -1368,15 +1377,23 @@ window.loginWithPin = function() {
                     set(ref(db, `users/${oldUid}`), null).catch(e => console.warn("Cleanup:", e));
                 }
                 if (pinInput) pinInput.value = '';
+                if (btn) { btn.disabled = false; btn.innerText = originalText; }
                 const name = matchedProfile.adminName || matchedProfile.displayName || 'Operator';
                 window.showAdminToast(`✅ Welcome back, ${name}!`);
                 // onValue listener in auth block detects approved:true and hides overlay automatically
+            }).catch(() => {
+                if (btn) { btn.disabled = false; btn.innerText = originalText; }
+                window.showAdminToast("❌ Network error verifying PIN.");
             });
         } else {
+            if (btn) { btn.disabled = false; btn.innerText = originalText; }
             window.showAdminToast("❌ Invalid PIN or account not approved.");
             if (pinInput) pinInput.value = '';
         }
-    }).catch(() => window.showAdminToast("❌ Network error verifying PIN."));
+    }).catch(() => {
+        if (btn) { btn.disabled = false; btn.innerText = originalText; }
+        window.showAdminToast("❌ Network error verifying PIN.");
+    });
 };
 window.toggleUserApprove  = function(uid, isAppr) {
     update(ref(db, `users/${uid}`), { approved: isAppr, requestPending: false })
