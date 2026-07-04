@@ -1332,10 +1332,16 @@ window.updateUserRole     = function(uid, role) { update(ref(db, `users/${uid}`)
 window.updateUserPin      = function(uid, pinStr) { update(ref(db, `users/${uid}`), { pin: pinStr.trim() }).catch(e => window.showAdminToast("❌ Error: Could not update PIN.")); };
 
 window.loginWithPin = function() {
+    const btn = document.querySelector('button[onclick="window.loginWithPin()"]');
+    if (btn && btn.disabled) return;
     const pinInput = document.getElementById('loginPin');
     const pin = pinInput ? pinInput.value.trim() : '';
     if (pin.length < 4) { alert("Please enter your 4-digit PIN."); return; }
     
+    if (btn) { btn.disabled = true; btn.innerText = "VERIFYING..."; }
+
+    const restoreBtn = () => { if (btn) { btn.disabled = false; btn.innerText = "LOGIN"; } };
+
     const pinQuery = query(ref(db, 'users'), orderByChild('pin'), equalTo(pin));
     get(pinQuery).then((snap) => {
         let matchedProfile = null;
@@ -1370,13 +1376,23 @@ window.loginWithPin = function() {
                 if (pinInput) pinInput.value = '';
                 const name = matchedProfile.adminName || matchedProfile.displayName || 'Operator';
                 window.showAdminToast(`✅ Welcome back, ${name}!`);
+                restoreBtn();
                 // onValue listener in auth block detects approved:true and hides overlay automatically
+            }).catch((e) => {
+                restoreBtn();
+                console.warn(e);
+                window.showAdminToast("❌ Network error logging in.");
             });
         } else {
+            restoreBtn();
             window.showAdminToast("❌ Invalid PIN or account not approved.");
             if (pinInput) pinInput.value = '';
         }
-    }).catch(() => window.showAdminToast("❌ Network error verifying PIN."));
+    }).catch((e) => {
+        restoreBtn();
+        console.warn(e);
+        window.showAdminToast("❌ Network error verifying PIN.");
+    });
 };
 window.toggleUserApprove  = function(uid, isAppr) {
     update(ref(db, `users/${uid}`), { approved: isAppr, requestPending: false })
