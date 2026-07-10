@@ -96,6 +96,13 @@
         </div>
         <br>
         <div class="modal-opt">
+            <label for="uiScaleSlider">⚙️ UI Layout Scale:</label>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="range" id="uiScaleSlider" min="0.75" max="1.25" step="0.05" value="1.0" style="flex: 1;" oninput="window.applyUIScale(this.value)">
+                <span id="uiScaleValue" style="font-weight: bold; width: 45px; text-align: right;">100%</span>
+            </div>
+        </div>
+        <div class="modal-opt">
             <label data-i18n="dispName" for="setDispName">Your Display Name</label>
             <input type="text" id="setDispName" onblur="window.saveDisplayName()" placeholder="e.g., Big Mike" style="font-weight:normal;">
         </div>
