@@ -24,6 +24,18 @@ let appInitialized = false;
 
 window.isOfflineMode = false;
 
+window.applyUIScale = function(scaleValue) {
+    document.documentElement.style.setProperty('--app-scale', scaleValue);
+    document.documentElement.style.fontSize = (scaleValue * 16) + 'px';
+    const scalePercent = Math.round(scaleValue * 100) + '%';
+    const scaleValueEl = document.getElementById('uiScaleValue');
+    if (scaleValueEl) scaleValueEl.textContent = scalePercent;
+    const scaleSlider = document.getElementById('uiScaleSlider');
+    if (scaleSlider && scaleSlider.value !== scaleValue) scaleSlider.value = scaleValue;
+
+    localStorage.setItem('densityAppScale', scaleValue);
+};
+
 window.appLogs = [];
 const maxLogs = 50;
 
@@ -179,6 +191,14 @@ window.initApp = function() {
     if (!config.lang)      config.lang      = 'en';
     window.applyTheme();
     window.applyTranslations();
+
+    const savedScale = localStorage.getItem('densityAppScale');
+    if (savedScale) {
+        window.applyUIScale(parseFloat(savedScale));
+    } else {
+        window.applyUIScale(1.0);
+    }
+
     let el;
     if ((el = document.getElementById('setMachines'))) el.value = config.machines;
     if ((el = document.getElementById('setLanes'))) el.value = config.lanes;
