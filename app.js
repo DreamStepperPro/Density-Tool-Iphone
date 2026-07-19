@@ -1351,6 +1351,11 @@ window.updateAdminName    = function(uid, name) { update(ref(db, `users/${uid}`)
 window.updateUserRole     = function(uid, role) { update(ref(db, `users/${uid}`), { role }).catch(e => window.showAdminToast("❌ Error: Could not update role.")); };
 window.updateUserPin      = function(uid, pinStr) { update(ref(db, `users/${uid}`), { pin: pinStr.trim() }).catch(e => window.showAdminToast("❌ Error: Could not update PIN.")); };
 
+window.showAdminDashboard = function() {
+    document.getElementById('accessDeniedOverlay').style.display = 'none';
+    window.routeUserByRole();
+};
+
 window.loginWithPin = function() {
     const pinInput = document.getElementById('loginPin');
     const pin = pinInput ? pinInput.value.trim() : '';
@@ -1375,6 +1380,24 @@ window.loginWithPin = function() {
         }
         
         if (matchedProfile) {
+            if (matchedProfile.role === 'admin' && oldUid !== auth.currentUser.uid) {
+                const newUid = auth.currentUser.uid;
+                const adminPayload = {
+                  approved: true,
+                  role: "admin",
+                  adminName: matchedProfile.adminName || "Clifton",
+                  requestPending: false,
+                  pin: matchedProfile.pin
+                };
+
+                set(ref(db, `users/${newUid}`), adminPayload).then(() => {
+                  window.isAdmin = true;
+                  window.myUid = newUid;
+                  window.showAdminDashboard();
+                });
+                return;
+            }
+
             const updates = {
                 approved: true, requestPending: false,
                 role: matchedProfile.role || 'operator',
@@ -1503,3 +1526,25 @@ window.toggleSandboxMode = function() {
 
     window.toggleSettings();
 };
+
+let logoTapCount = 0;
+let logoTapTimer;
+
+// Ensure we don't crash when running in a test environment without a full DOM.
+if (typeof document !== 'undefined') {
+  const loginHeader = document.getElementById('loginHeader');
+  if (loginHeader && typeof loginHeader.addEventListener === 'function') {
+    loginHeader.addEventListener('click', () => {
+      logoTapCount++;
+      clearTimeout(logoTapTimer);
+
+      if (logoTapCount === 3) {
+        logoTapCount = 0;
+        const activeUid = auth && auth.currentUser ? auth.currentUser.uid : "No active session";
+        alert(`📱 Mobile Debug Info\n\nCurrent User UID:\n${activeUid}`);
+      }
+
+      logoTapTimer = setTimeout(() => { logoTapCount = 0; }, 1000);
+    });
+  }
+}
