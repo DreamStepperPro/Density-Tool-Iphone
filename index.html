@@ -368,7 +368,7 @@
     <div class="header">
         <div style="display:flex; align-items:center;">
             <div id="supStatusDot" class="status-dot status-online"></div>
-            <h1 style="margin:0; font-size:1.35rem; font-weight:800; letter-spacing:-0.5px;">DSI Line <span style="font-size:0.78rem; color:var(--accent); vertical-align:middle;">(OEE VIEW)</span></h1>
+            <h1 id="dsiLineTitle" style="margin:0; font-size:1.35rem; font-weight:800; letter-spacing:-0.5px;">DSI Line <span style="font-size:0.78rem; color:var(--accent); vertical-align:middle;">(OEE VIEW)</span></h1>
         </div>
         <div class="header-btns">
             <button class="lang-btn" id="langToggleBtnSup" aria-label="Toggle Language" onclick="window.toggleLanguage()">EN</button>
@@ -387,7 +387,7 @@
     <div class="header">
         <div style="display:flex; align-items:center;">
             <div id="statusDot" class="status-dot" role="button" tabindex="0" aria-label="Reset Connection" onclick="window.jumpstartNetwork()" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.jumpstartNetwork(); }" title="Tap to reset connection"></div>
-            <h1 class="brand-title" data-i18n="title">The Advantage</h1><span class="moon-icon">🌙</span>
+            <h1 id="dsiLineTitleOp" class="brand-title" data-i18n="title">The Advantage</h1><span class="moon-icon">🌙</span>
         </div>
         <div class="header-btns">
             <button class="lang-btn" id="langToggleBtnOp" aria-label="Toggle Language" onclick="window.toggleLanguage()">EN</button>

@@ -231,15 +231,12 @@ window.routeUserByRole = function() {
         if (document.getElementById('btnMetricsSup')) document.getElementById('btnMetricsSup').classList.remove('btn-hidden');
     }
     if (isAdmin) {
-        document.getElementById('supervisorDashboard').style.display = 'block';
-        document.getElementById('supervisorDashboard').style.paddingBottom = '0px';
-        document.getElementById('appContent').style.display = 'block';
-        document.getElementById('appContent').style.filter = 'none';
-        const opHeader = document.querySelector('#appContent .header');
-        if (opHeader) opHeader.style.display = 'none';
+        document.getElementById('supervisorDashboard').style.display = 'none';
+        document.getElementById('appContent').style.display = 'none';
         const sandboxBtn = document.getElementById('btnSandboxToggle');
         if (sandboxBtn) sandboxBtn.classList.remove('btn-hidden');
         if (!window.isOfflineMode) { window.startSupervisorSync(); window.startCloudSync(); window.listenForGlobalReset(`M${config.currentMachine}`); }
+        window.openAdmin();
         window.renderInterface();
     } else if (role === 'supervisor') {
         document.getElementById('appContent').style.display = 'none';
@@ -1532,19 +1529,25 @@ let logoTapTimer;
 
 // Ensure we don't crash when running in a test environment without a full DOM.
 if (typeof document !== 'undefined') {
-  const loginHeader = document.getElementById('loginHeader');
-  if (loginHeader && typeof loginHeader.addEventListener === 'function') {
-    loginHeader.addEventListener('click', () => {
-      logoTapCount++;
-      clearTimeout(logoTapTimer);
+  const attachTripleTap = (elId) => {
+    const el = document.getElementById(elId);
+    if (el && typeof el.addEventListener === 'function') {
+      el.addEventListener('click', () => {
+        logoTapCount++;
+        clearTimeout(logoTapTimer);
 
-      if (logoTapCount === 3) {
-        logoTapCount = 0;
-        const activeUid = auth && auth.currentUser ? auth.currentUser.uid : "No active session";
-        alert(`📱 Mobile Debug Info\n\nCurrent User UID:\n${activeUid}`);
-      }
+        if (logoTapCount === 3) {
+          logoTapCount = 0;
+          const activeUid = auth && auth.currentUser ? auth.currentUser.uid : "No active session";
+          alert(`📱 Mobile Debug Info\n\nCurrent User UID:\n${activeUid}`);
+        }
 
-      logoTapTimer = setTimeout(() => { logoTapCount = 0; }, 1000);
-    });
-  }
+        logoTapTimer = setTimeout(() => { logoTapCount = 0; }, 1000);
+      });
+    }
+  };
+
+  attachTripleTap('loginHeader');
+  attachTripleTap('dsiLineTitle');
+  attachTripleTap('dsiLineTitleOp');
 }
