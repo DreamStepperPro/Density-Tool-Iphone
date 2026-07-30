@@ -223,6 +223,15 @@ window.initApp = function() {
 
 window.routeUserByRole = function() {
     const role = window.currentUserData.role || 'operator';
+
+    // Auto-landing on Default Machine
+    const defaultMach = window.currentUserData.defaultMachine;
+    if (defaultMach === '4635') {
+        config.currentMachine = 1;
+    } else if (defaultMach === '4636') {
+        config.currentMachine = 2;
+    }
+
     document.getElementById('globalStatsBar').style.display = 'flex';
     if (isAdmin || role === 'supervisor') {
         if (document.getElementById('btnYieldOp')) document.getElementById('btnYieldOp').classList.remove('btn-hidden');
@@ -1155,6 +1164,43 @@ window.factoryReset   = function() { if (confirm("Erase LOCAL settings? Cloud da
 window.openHelp  = function() { window.toggleSettings(); document.getElementById('helpModal').style.display = 'flex'; };
 window.closeHelp = function() { document.getElementById('helpModal').style.display = 'none'; };
 window.switchMachine = function(m) {
+    if (window.currentUserData && window.currentUserData.role === 'operator' && window.currentUserData.defaultMachine) {
+        if (config.currentMachine !== m) {
+            const requiredPin = m === 1 ? '4635' : '4636';
+            const enteredPin = prompt(`Enter PIN for DSI ${m} to switch:`);
+            if (enteredPin !== requiredPin) {
+                window.showAdminToast("❌ Incorrect PIN. Switch cancelled.");
+                return;
+            }
+
+            const targetMachine = `DSI ${m}`;
+            const sourceMachine = `DSI ${config.currentMachine}`;
+            const opName = window.currentUserData.adminName || window.currentUserData.displayName || "Operator";
+            const time = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+
+            const switchLog = {
+                timestamp: Date.now(),
+                operatorName: opName,
+                operatorUid: window.myUid || '',
+                action: `Machine Switch: ${sourceMachine} -> ${targetMachine}`,
+                machine: targetMachine,
+                isMarker: true,
+                text: `Machine Switch: ${sourceMachine} -> ${targetMachine}`,
+                time: time
+            };
+
+            if (!window.isOfflineMode && db) {
+                push(ref(db, `shiftLedger/M${m}`), switchLog).catch(e => console.warn('Switch log write:', e));
+            }
+
+            // Also push to local history so it renders immediately
+            if (!Array.isArray(history)) history = [];
+            history.unshift(switchLog);
+            if (history.length > 50) history.pop();
+            window.renderHistoryCards();
+        }
+    }
+
     config.currentMachine = m;
     window.saveLocalSettings();
     window.renderInterface();
@@ -1292,11 +1338,30 @@ window.buildAdminUserCard = function(key, data, highlight) {
     roleSelect.style.cssText = 'padding:6px; font-size:0.8rem; width:40%; border-radius:6px; border:1px solid var(--border); background:var(--input-bg); color:var(--text);';
     const role = data.role || 'operator';
 
+    // Determine standard/virtual role for dropdown selection
+    let virtualRole = role;
+    if (role === 'operator') {
+        if (data.defaultMachine === '4635') virtualRole = 'operator_1';
+        else if (data.defaultMachine === '4636') virtualRole = 'operator_2';
+    }
+
     const optOp = document.createElement('option');
     optOp.value = 'operator';
-    optOp.textContent = 'Operator';
-    if (role === 'operator') optOp.selected = true;
+    optOp.textContent = 'Operator (Any)';
+    if (virtualRole === 'operator') optOp.selected = true;
     roleSelect.appendChild(optOp);
+
+    const optOp1 = document.createElement('option');
+    optOp1.value = 'operator_1';
+    optOp1.textContent = 'DSI 1 Operator';
+    if (virtualRole === 'operator_1') optOp1.selected = true;
+    roleSelect.appendChild(optOp1);
+
+    const optOp2 = document.createElement('option');
+    optOp2.value = 'operator_2';
+    optOp2.textContent = 'DSI 2 Operator';
+    if (virtualRole === 'operator_2') optOp2.selected = true;
+    roleSelect.appendChild(optOp2);
 
     const optSup = document.createElement('option');
     optSup.value = 'supervisor';
@@ -1345,7 +1410,17 @@ window.buildAdminUserCard = function(key, data, highlight) {
 };
 window.closeAdmin         = function() { document.getElementById('adminModal').style.display = 'none'; };
 window.updateAdminName    = function(uid, name) { update(ref(db, `users/${uid}`), { adminName: name }).catch(e => window.showAdminToast("❌ Error: Could not update name.")); };
-window.updateUserRole     = function(uid, role) { update(ref(db, `users/${uid}`), { role }).catch(e => window.showAdminToast("❌ Error: Could not update role.")); };
+window.updateUserRole     = function(uid, virtualRole) {
+    let payload = { role: virtualRole, defaultMachine: null };
+    if (virtualRole === 'operator_1') {
+        payload = { role: 'operator', defaultMachine: '4635' };
+    } else if (virtualRole === 'operator_2') {
+        payload = { role: 'operator', defaultMachine: '4636' };
+    } else if (virtualRole === 'operator') {
+        payload = { role: 'operator', defaultMachine: null };
+    }
+    update(ref(db, `users/${uid}`), payload).catch(e => window.showAdminToast("❌ Error: Could not update role."));
+};
 window.updateUserPin      = function(uid, pinStr) { update(ref(db, `users/${uid}`), { pin: pinStr.trim() }).catch(e => window.showAdminToast("❌ Error: Could not update PIN.")); };
 
 window.showAdminDashboard = function() {
