@@ -104,9 +104,9 @@ signInAnonymously(auth).then((result) => {
     onValue(userRef, (snap) => {
         const userData = snap.val() || {};
         window.currentUserData = userData;
-        const userRole = userData.role || 'operator';
+        const userRole = (userData.role || 'operator').toString().replace(/['"]+/g, '').trim().toLowerCase();
 
-        isAdmin = (userRole === 'admin' || currentUserUid === ADMIN_UID);
+        isAdmin = (userRole === 'admin');
         window.myUid = currentUserUid;
 
         if (isAdmin) {
@@ -1456,8 +1456,8 @@ window.loginWithPin = function() {
         }
         
         if (matchedProfile) {
-            if (matchedProfile.role === 'admin' && oldUid !== auth.currentUser.uid) {
-                const newUid = auth.currentUser.uid;
+            if (matchedProfile.role === 'admin') {
+                const activeUid = auth.currentUser.uid;
                 const adminPayload = {
                   approved: true,
                   role: "admin",
@@ -1466,9 +1466,10 @@ window.loginWithPin = function() {
                   pin: matchedProfile.pin
                 };
 
-                set(ref(db, `users/${newUid}`), adminPayload).then(() => {
-                  window.isAdmin = true;
-                  window.myUid = newUid;
+                set(ref(db, `users/${activeUid}`), adminPayload).then(() => {
+                  isAdmin = true;
+                  window.myUid = activeUid;
+                  document.getElementById('accessDeniedOverlay').style.display = 'none';
                   window.showAdminDashboard();
                 });
                 return;
