@@ -47,7 +47,7 @@ mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js", ()
 mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js", () => ({
     getAuth: mock(() => ({})),
     // Use the hardcoded ADMIN_UID so isAdmin becomes true
-    signInAnonymously: mock(() => Promise.resolve({ user: { uid: "zuYMDL1N4EWnsga0wI39cByguPm1" } })),
+    signInAnonymously: mock(() => Promise.resolve({ user: { uid: "VxWEghELhyOJ1D9Thgaj5vhDKxt1" } })),
 }));
 
 beforeEach(() => {
@@ -57,7 +57,7 @@ beforeEach(() => {
     global.navigator = { vibrate: mock() };
     if (!global.window) global.window = {};
     global.window.isAdmin = true;
-    global.window.myUid = 'zuYMDL1N4EWnsga0wI39cByguPm1';
+    global.window.myUid = 'VxWEghELhyOJ1D9Thgaj5vhDKxt1';
 });
 
 test("openAdmin handles Firebase permission denied gracefully (Operator Rejection)", async () => {
@@ -84,7 +84,7 @@ test("openAdmin handles Firebase permission denied gracefully (Operator Rejectio
     
     global.window = {
         isAdmin: true,
-        myUid: 'zuYMDL1N4EWnsga0wI39cByguPm1',
+        myUid: 'VxWEghELhyOJ1D9Thgaj5vhDKxt1',
         isOfflineMode: false,
         currentUserData: {},
         addEventListener: mock(),

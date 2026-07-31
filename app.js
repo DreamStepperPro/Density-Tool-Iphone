@@ -17,7 +17,7 @@ const app  = initializeApp(firebaseConfig);
 const db   = getDatabase(app);
 const auth = getAuth(app);
 
-const ADMIN_UID    = 'zuYMDL1N4EWnsga0wI39cByguPm1';
+const ADMIN_UID    = 'VxWEghELhyOJ1D9Thgaj5vhDKxt1';
 let currentUserUid = null;
 let isAdmin        = false;
 let appInitialized = false;
