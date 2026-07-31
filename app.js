@@ -1429,6 +1429,11 @@ window.updateUserPin      = function(uid, pinStr) { update(ref(db, `users/${uid}
 
 window.showAdminDashboard = function() {
     document.getElementById('accessDeniedOverlay').style.display = 'none';
+    document.getElementById('appContent').style.display = 'block';
+    const btnAdmin = document.getElementById('btnAdmin');
+    if (btnAdmin) btnAdmin.classList.remove('btn-hidden');
+    const btnAdminSup = document.getElementById('btnAdminSup');
+    if (btnAdminSup) btnAdminSup.classList.remove('btn-hidden');
     window.routeUserByRole();
 };
 
