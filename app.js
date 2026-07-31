@@ -17,7 +17,7 @@ const app  = initializeApp(firebaseConfig);
 const db   = getDatabase(app);
 const auth = getAuth(app);
 
-const ADMIN_UID    = 'hkjjqbltS4f9Pr2ErqCSEeqwo3D2';
+const ADMIN_UID    = 'zuYMDL1N4EWnsga0wI39cByguPm1';
 let currentUserUid = null;
 let isAdmin        = false;
 let appInitialized = false;
@@ -104,9 +104,9 @@ signInAnonymously(auth).then((result) => {
     onValue(userRef, (snap) => {
         const userData = snap.val() || {};
         window.currentUserData = userData;
-        const userRole = userData.role || 'operator';
+        const userRole = (userData.role || 'operator').toString().replace(/['"]+/g, '').trim().toLowerCase();
 
-        isAdmin = (userRole === 'admin' || currentUserUid === ADMIN_UID);
+        isAdmin = (userRole === 'admin');
         window.myUid = currentUserUid;
 
         if (isAdmin) {
@@ -190,7 +190,7 @@ window.initApp = function() {
     if (!config.inputMode) config.inputMode = 'button';
     if (!config.lang)      config.lang      = 'en';
     window.applyTheme();
-    window.applyTranslations();
+    typeof window.applyTranslations === 'function' && window.applyTranslations();
 
     const savedScale = localStorage.getItem('densityAppScale');
     if (savedScale) {
@@ -241,11 +241,15 @@ window.routeUserByRole = function() {
     }
     if (isAdmin) {
         document.getElementById('supervisorDashboard').style.display = 'none';
-        document.getElementById('appContent').style.display = 'none';
+        document.getElementById('appContent').style.display = 'block';
+        document.getElementById('appContent').style.filter = 'none';
         const sandboxBtn = document.getElementById('btnSandboxToggle');
         if (sandboxBtn) sandboxBtn.classList.remove('btn-hidden');
-        if (!window.isOfflineMode) { window.startSupervisorSync(); window.startCloudSync(); window.listenForGlobalReset(`M${config.currentMachine}`); }
-        window.openAdmin();
+        if (!window.isOfflineMode) {
+            window.startSupervisorSync();
+            window.startCloudSync();
+            window.listenForGlobalReset(`M${config.currentMachine}`);
+        }
         window.renderInterface();
     } else if (role === 'supervisor') {
         document.getElementById('appContent').style.display = 'none';
@@ -1425,6 +1429,11 @@ window.updateUserPin      = function(uid, pinStr) { update(ref(db, `users/${uid}
 
 window.showAdminDashboard = function() {
     document.getElementById('accessDeniedOverlay').style.display = 'none';
+    document.getElementById('appContent').style.display = 'block';
+    const btnAdmin = document.getElementById('btnAdmin');
+    if (btnAdmin) btnAdmin.classList.remove('btn-hidden');
+    const btnAdminSup = document.getElementById('btnAdminSup');
+    if (btnAdminSup) btnAdminSup.classList.remove('btn-hidden');
     window.routeUserByRole();
 };
 
@@ -1452,8 +1461,8 @@ window.loginWithPin = function() {
         }
         
         if (matchedProfile) {
-            if (matchedProfile.role === 'admin' && oldUid !== auth.currentUser.uid) {
-                const newUid = auth.currentUser.uid;
+            if (matchedProfile.role === 'admin') {
+                const activeUid = auth.currentUser.uid;
                 const adminPayload = {
                   approved: true,
                   role: "admin",
@@ -1462,9 +1471,10 @@ window.loginWithPin = function() {
                   pin: matchedProfile.pin
                 };
 
-                set(ref(db, `users/${newUid}`), adminPayload).then(() => {
-                  window.isAdmin = true;
-                  window.myUid = newUid;
+                set(ref(db, `users/${activeUid}`), adminPayload).then(() => {
+                  isAdmin = true;
+                  window.myUid = activeUid;
+                  document.getElementById('accessDeniedOverlay').style.display = 'none';
                   window.showAdminDashboard();
                 });
                 return;
