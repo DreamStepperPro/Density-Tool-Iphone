@@ -1442,6 +1442,9 @@ window.loginWithPin = function() {
     const pin = pinInput ? pinInput.value.trim() : '';
     if (pin.length < 4) { alert("Please enter your 4-digit PIN."); return; }
     
+    const btn = document.getElementById('btnLogin');
+    if (btn) { btn.disabled = true; btn.innerText = 'VERIFYING...'; }
+
     const pinQuery = query(ref(db, 'users'), orderByChild('pin'), equalTo(pin));
     get(pinQuery).then((snap) => {
         let matchedProfile = null;
@@ -1495,13 +1498,18 @@ window.loginWithPin = function() {
                 if (pinInput) pinInput.value = '';
                 const name = matchedProfile.adminName || matchedProfile.displayName || 'Operator';
                 window.showAdminToast(`✅ Welcome back, ${name}!`);
+                if (btn) { btn.disabled = false; btn.innerText = 'LOGIN'; }
                 // onValue listener in auth block detects approved:true and hides overlay automatically
             });
         } else {
             window.showAdminToast("❌ Invalid PIN or account not approved.");
             if (pinInput) pinInput.value = '';
+            if (btn) { btn.disabled = false; btn.innerText = 'LOGIN'; }
         }
-    }).catch(() => window.showAdminToast("❌ Network error verifying PIN."));
+    }).catch(() => {
+        window.showAdminToast("❌ Network error verifying PIN.");
+        if (btn) { btn.disabled = false; btn.innerText = 'LOGIN'; }
+    });
 };
 window.toggleUserApprove  = function(uid, isAppr) {
     update(ref(db, `users/${uid}`), { approved: isAppr, requestPending: false })
@@ -1512,9 +1520,17 @@ window.deleteUser = function(uid) { set(ref(db, `users/${uid}`), null).catch(e =
 window.pingAdmin  = function() {
     const nameInput = document.getElementById('reqName').value.trim();
     if (!nameInput) { alert("Please enter your name."); return; }
+
+    const btn = document.getElementById('btnPingAdmin');
+    const originalText = btn ? btn.innerText : 'PING ADMIN FOR ACCESS';
+    if (btn) { btn.disabled = true; btn.innerText = 'SENDING...'; }
+
     update(ref(db, `users/${window.myUid}`), { displayName: nameInput, requestPending: true, requestTime: Date.now() })
         .then(() => { document.getElementById('requestForm').innerHTML = `<div style="color:var(--success); font-weight:bold; font-size:1.1rem; padding:10px;">✅ Flare Sent!<br><span style="font-size:0.8rem; color:var(--text); font-weight:normal;">Admin has been notified.</span></div>`; })
-        .catch(e => window.showAdminToast("❌ Network Error: Could not send request."));
+        .catch(e => {
+            window.showAdminToast("❌ Network Error: Could not send request.");
+            if (btn) { btn.disabled = false; btn.innerText = originalText; }
+        });
 };
 let notifiedSet = new Set(JSON.parse(sessionStorage.getItem('dsi_notified') || '[]'));
 function persistNotifiedSet() { sessionStorage.setItem('dsi_notified', JSON.stringify([...notifiedSet])); }
