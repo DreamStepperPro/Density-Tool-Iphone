@@ -7,7 +7,7 @@
 const i18n = {
     en: {
         title: "The Advantage", target: "Target", lane: "LANE", density: "DENSITY", avgWt: "AVG WEIGHT",
-        newDens: "New Density:", tapApply: "TAP TO APPLY", history: "Shift History", saveCheck: "SAVE CHECK",
+        newDens: "New Density:", tapApply: "TAP TO APPLY", history: "Shift History", historyEmpty: "No checks recorded yet.", saveCheck: "SAVE CHECK",
         clearTable: "CLEAR TABLE", clearTableConfirm: "Clear shift history?", deleteEntryConfirm: "Delete this history entry?", lineAvg: "LINE AVG", lineSd: "LINE SD", options: "⚙️ Options",
         dispName: "Your Display Name", targetWt: "Target Weight (g)", unlockMethod: "Unlock Method",
         machines: "Machines", config: "Configuration", prodMode: "Product Mode", smartMode: "Smart Mode",
@@ -86,7 +86,7 @@ const i18n = {
     },
     es: {
         title: "La Ventaja", target: "Objetivo", lane: "CARRIL", density: "DENSIDAD", avgWt: "PESO PROM",
-        newDens: "Nueva Densidad:", tapApply: "TOCA PARA APLICAR", history: "Historial de Turno", saveCheck: "GUARDAR",
+        newDens: "Nueva Densidad:", tapApply: "TOCA PARA APLICAR", history: "Historial de Turno", historyEmpty: "Aún no hay registros.", saveCheck: "GUARDAR",
         clearTable: "BORRAR TABLA", clearTableConfirm: "¿Borrar historial del turno?", deleteEntryConfirm: "¿Eliminar este registro?", lineAvg: "PROM LÍNEA", lineSd: "SD LÍNEA", options: "⚙️ Opciones",
         dispName: "Tu Nombre", targetWt: "Peso Objetivo (g)", unlockMethod: "Método Desbloqueo",
         machines: "Máquinas", config: "Configuración", prodMode: "Modo Producto", smartMode: "Modo Inteligente",
