@@ -1438,10 +1438,18 @@ window.showAdminDashboard = function() {
 };
 
 window.loginWithPin = function() {
+    const loginBtn = document.getElementById('btnLogin');
+    if (loginBtn && loginBtn.disabled) return;
+
     const pinInput = document.getElementById('loginPin');
     const pin = pinInput ? pinInput.value.trim() : '';
     if (pin.length < 4) { alert("Please enter your 4-digit PIN."); return; }
-    
+    const originalBtnText = loginBtn ? loginBtn.innerText : 'LOGIN';
+    if (loginBtn) {
+        loginBtn.disabled = true;
+        loginBtn.innerText = window.t('verifying') || 'VERIFYING...';
+    }
+
     const pinQuery = query(ref(db, 'users'), orderByChild('pin'), equalTo(pin));
     get(pinQuery).then((snap) => {
         let matchedProfile = null;
@@ -1495,13 +1503,32 @@ window.loginWithPin = function() {
                 if (pinInput) pinInput.value = '';
                 const name = matchedProfile.adminName || matchedProfile.displayName || 'Operator';
                 window.showAdminToast(`✅ Welcome back, ${name}!`);
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.innerText = originalBtnText;
+                }
                 // onValue listener in auth block detects approved:true and hides overlay automatically
+            }).catch(() => {
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.innerText = originalBtnText;
+                }
             });
         } else {
             window.showAdminToast("❌ Invalid PIN or account not approved.");
             if (pinInput) pinInput.value = '';
+            if (loginBtn) {
+                loginBtn.disabled = false;
+                loginBtn.innerText = originalBtnText;
+            }
         }
-    }).catch(() => window.showAdminToast("❌ Network error verifying PIN."));
+    }).catch(() => {
+        window.showAdminToast("❌ Network error verifying PIN.");
+        if (loginBtn) {
+            loginBtn.disabled = false;
+            loginBtn.innerText = originalBtnText;
+        }
+    });
 };
 window.toggleUserApprove  = function(uid, isAppr) {
     update(ref(db, `users/${uid}`), { approved: isAppr, requestPending: false })
