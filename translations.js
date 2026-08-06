@@ -9,6 +9,7 @@ const i18n = {
         title: "The Advantage", target: "Target", lane: "LANE", density: "DENSITY", avgWt: "AVG WEIGHT",
         newDens: "New Density:", tapApply: "TAP TO APPLY", history: "Shift History", saveCheck: "SAVE CHECK",
         clearTable: "CLEAR TABLE", clearTableConfirm: "Clear shift history?", deleteEntryConfirm: "Delete this history entry?", lineAvg: "LINE AVG", lineSd: "LINE SD", options: "⚙️ Options",
+        noHistory: "No shift history yet.",
         dispName: "Your Display Name", targetWt: "Target Weight (g)", unlockMethod: "Unlock Method",
         machines: "Machines", config: "Configuration", prodMode: "Product Mode", smartMode: "Smart Mode",
         theme: "Theme", enableAlerts: "🔔 ENABLE SYSTEM ALERTS", reset: "FACTORY RESET (LOCAL)",
