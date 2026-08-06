@@ -1,3 +1,7 @@
+## 2026-05-14 - Improved empty state UX by replacing ambiguous indicators with descriptive messages
+**Learning:** Empty states in the UI should avoid ambiguous indicators like double dashes (`--`). Instead, they should use properly translated, descriptive messages combined with distinct styling to clarify the widget's purpose and guide the user's next action.
+**Action:** Replaced the `--` placeholder in `window.renderHistoryCards` with a stylized container featuring translated strings that explain why the history is empty and what the user needs to do (e.g., tap 'SAVE CHECK').
+
 ## 2026-05-13 - Replaced redundant visually hidden labels with proper structural elements
 **Learning:** Adding `.sr-only` elements that duplicate existing `aria-label` attributes on input elements is redundant and can cause noise for screen reader users. The application already handles screen reader accessibility for inputs using `aria-label`. A genuine micro-UX improvement involves converting visual, non-semantic labels (like `<span>SPEED</span>`) into actual programmatic `<label for="...">` elements that benefit all users, and adding missing `alt` text for images, rather than adding redundant visually hidden nodes.
 **Action:** Transformed the `<span>` element displaying 'SPEED' into a semantic `<label for="mainBeltSpeed">` element to programmatically link the visible text to the input. Added missing `alt` attributes to image elements to enhance accessibility without creating redundant DOM structures.
