@@ -1438,10 +1438,18 @@ window.showAdminDashboard = function() {
 };
 
 window.loginWithPin = function() {
+    const loginBtn = document.getElementById('loginBtn');
+    if (loginBtn && loginBtn.disabled) return;
+
     const pinInput = document.getElementById('loginPin');
     const pin = pinInput ? pinInput.value.trim() : '';
     if (pin.length < 4) { alert("Please enter your 4-digit PIN."); return; }
     
+    if (loginBtn) {
+        loginBtn.disabled = true;
+        loginBtn.textContent = 'VERIFYING...';
+    }
+
     const pinQuery = query(ref(db, 'users'), orderByChild('pin'), equalTo(pin));
     get(pinQuery).then((snap) => {
         let matchedProfile = null;
@@ -1496,12 +1504,31 @@ window.loginWithPin = function() {
                 const name = matchedProfile.adminName || matchedProfile.displayName || 'Operator';
                 window.showAdminToast(`✅ Welcome back, ${name}!`);
                 // onValue listener in auth block detects approved:true and hides overlay automatically
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'LOGIN';
+                }
+            }).catch(() => {
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'LOGIN';
+                }
             });
         } else {
             window.showAdminToast("❌ Invalid PIN or account not approved.");
             if (pinInput) pinInput.value = '';
+            if (loginBtn) {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'LOGIN';
+            }
         }
-    }).catch(() => window.showAdminToast("❌ Network error verifying PIN."));
+    }).catch(() => {
+        window.showAdminToast("❌ Network error verifying PIN.");
+        if (loginBtn) {
+            loginBtn.disabled = false;
+            loginBtn.textContent = 'LOGIN';
+        }
+    });
 };
 window.toggleUserApprove  = function(uid, isAppr) {
     update(ref(db, `users/${uid}`), { approved: isAppr, requestPending: false })
