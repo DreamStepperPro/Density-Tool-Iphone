@@ -1,3 +1,7 @@
 ## 2026-05-13 - Replaced redundant visually hidden labels with proper structural elements
 **Learning:** Adding `.sr-only` elements that duplicate existing `aria-label` attributes on input elements is redundant and can cause noise for screen reader users. The application already handles screen reader accessibility for inputs using `aria-label`. A genuine micro-UX improvement involves converting visual, non-semantic labels (like `<span>SPEED</span>`) into actual programmatic `<label for="...">` elements that benefit all users, and adding missing `alt` text for images, rather than adding redundant visually hidden nodes.
 **Action:** Transformed the `<span>` element displaying 'SPEED' into a semantic `<label for="mainBeltSpeed">` element to programmatically link the visible text to the input. Added missing `alt` attributes to image elements to enhance accessibility without creating redundant DOM structures.
+
+## 2026-05-30 - Replaced ambiguous '--' empty states with descriptive text
+**Learning:** Using double dashes (`--`) for empty states in UI lists (like Shift History) is ambiguous and unhelpful for users, especially those using screen readers. Properly translated and descriptive messages clarify the widget's purpose and indicate that the absence of data is expected.
+**Action:** Replaced the `--` empty state indicator in the Shift History widget with a descriptive, translated message (`window.t('noHistory')`) and applied distinct styling.
