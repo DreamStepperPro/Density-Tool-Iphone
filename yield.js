@@ -120,7 +120,7 @@ window.loadYieldHistory = function() {
 
 window.wipeYieldHistory = function() {
     if (window.currentUserData.role !== 'supervisor' && !window.getIsAdmin()) return;
-    if (confirm("Permanently delete all saved yield history?")) {
+    if (confirm(window.t("wipeYieldConfirm") || "Permanently delete all saved yield history?")) {
         set(ref(db, 'yieldHistory'), null)
             .then(() => window.showAdminToast("🗑️ Yield history wiped."));
     }
