@@ -221,15 +221,20 @@ window.initApp = function() {
     }, 2500);
 };
 
+let hasAutoLanded = false;
+
 window.routeUserByRole = function() {
     const role = window.currentUserData.role || 'operator';
 
     // Auto-landing on Default Machine
-    const defaultMach = window.currentUserData.defaultMachine;
-    if (defaultMach === '4635') {
-        config.currentMachine = 1;
-    } else if (defaultMach === '4636') {
-        config.currentMachine = 2;
+    if (!hasAutoLanded) {
+        const defaultMach = window.currentUserData.defaultMachine;
+        if (defaultMach === '4635') {
+            config.currentMachine = 1;
+        } else if (defaultMach === '4636') {
+            config.currentMachine = 2;
+        }
+        hasAutoLanded = true;
     }
 
     document.getElementById('globalStatsBar').style.display = 'flex';
@@ -773,6 +778,13 @@ window.renderHistoryCards = function() {
     }
     const arr = Array.isArray(history) ? history : Object.values(history);
     container.innerHTML = arr.map((r, idx) => {
+        if (r.isMarker || !Array.isArray(r.lanes)) {
+            return `
+            <div class="hist-card marker-card" id="hcard-${idx}" style="padding:10px 13px; font-weight:bold; font-size:0.85rem; background:var(--input-bg); border-left:4px solid var(--accent); display:flex; justify-space-between; align-items:center;">
+                <span>${escapeHTML(r.text || r.action || 'Event Log')}</span>
+                <span style="font-size:0.75rem; opacity:0.6;">${escapeHTML(r.time || '')}</span>
+            </div>`;
+        }
         const laneGrid = r.lanes.map((l, li) => `
             <div class="hist-lane-cell">
                 <span class="hist-lane-lbl">L${li+1}</span>
@@ -1168,40 +1180,37 @@ window.factoryReset   = function() { if (confirm("Erase LOCAL settings? Cloud da
 window.openHelp  = function() { window.toggleSettings(); document.getElementById('helpModal').style.display = 'flex'; };
 window.closeHelp = function() { document.getElementById('helpModal').style.display = 'none'; };
 window.switchMachine = function(m) {
+    if (config.currentMachine === m) return;
+
+    let switchLog = null;
     if (window.currentUserData && window.currentUserData.role === 'operator' && window.currentUserData.defaultMachine) {
-        if (config.currentMachine !== m) {
-            const requiredPin = m === 1 ? '4635' : '4636';
-            const enteredPin = prompt(`Enter PIN for DSI ${m} to switch:`);
-            if (enteredPin !== requiredPin) {
-                window.showAdminToast("❌ Incorrect PIN. Switch cancelled.");
-                return;
-            }
+        const requiredPin = m === 1 ? '4635' : '4636';
+        const rawPin = prompt(`Enter PIN for DSI ${m} to switch:`);
+        const enteredPin = String(rawPin || '').trim();
+        if (enteredPin !== requiredPin) {
+            window.showAdminToast("❌ Incorrect PIN. Switch cancelled.");
+            return;
+        }
 
-            const targetMachine = `DSI ${m}`;
-            const sourceMachine = `DSI ${config.currentMachine}`;
-            const opName = window.currentUserData.adminName || window.currentUserData.displayName || "Operator";
-            const time = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+        const targetMachine = `DSI ${m}`;
+        const sourceMachine = `DSI ${config.currentMachine}`;
+        const opName = window.currentUserData.adminName || window.currentUserData.displayName || "Operator";
+        const time = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
 
-            const switchLog = {
-                timestamp: Date.now(),
-                operatorName: opName,
-                operatorUid: window.myUid || '',
-                action: `Machine Switch: ${sourceMachine} -> ${targetMachine}`,
-                machine: targetMachine,
-                isMarker: true,
-                text: `Machine Switch: ${sourceMachine} -> ${targetMachine}`,
-                time: time
-            };
+        switchLog = {
+            timestamp: Date.now(),
+            operatorName: opName,
+            operatorUid: window.myUid || '',
+            action: `Machine Switch: ${sourceMachine} -> ${targetMachine}`,
+            machine: targetMachine,
+            isMarker: true,
+            text: `Machine Switch: ${sourceMachine} -> ${targetMachine}`,
+            time: time,
+            lanes: []
+        };
 
-            if (!window.isOfflineMode && db) {
-                push(ref(db, `shiftLedger/M${m}`), switchLog).catch(e => console.warn('Switch log write:', e));
-            }
-
-            // Also push to local history so it renders immediately
-            if (!Array.isArray(history)) history = [];
-            history.unshift(switchLog);
-            if (history.length > 50) history.pop();
-            window.renderHistoryCards();
+        if (!window.isOfflineMode && db) {
+            push(ref(db, `shiftLedger/M${m}`), switchLog).catch(e => console.warn('Switch log write:', e));
         }
     }
 
@@ -1211,6 +1220,13 @@ window.switchMachine = function(m) {
     const bsInput = document.getElementById('mainBeltSpeed');
     if (bsInput) bsInput.value = window.sessionContext[`M${m}`]?.beltSpeed || '';
     if (!window.isOfflineMode) { window.startCloudSync(); window.listenForGlobalReset(`M${m}`); }
+
+    if (switchLog) {
+        if (!Array.isArray(history)) history = [];
+        history.unshift(switchLog);
+        if (history.length > 50) history.pop();
+        window.renderHistoryCards();
+    }
 };
 window.switchProfile  = function() { window.departmentSnipe = { active: false }; config.lanes = parseInt(document.getElementById('setLanes').value); config.product = document.getElementById('setProd').value; window.saveLocalSettings(); window.renderInterface(); if (!window.isOfflineMode) window.startCloudSync(); };
 
