@@ -160,4 +160,37 @@ describe("Machine Switching Logic", () => {
     expect(global.history[0].text).toBe("Machine Switch: DSI 1 -> DSI 2");
     expect(global.history[0].operatorName).toBe("Test Operator");
   });
+
+  test("Test 5: Verify switching machine with DOM elements renders switch marker inside #historyCards without throwing on r.lanes", () => {
+    const historyCardsEl = { innerHTML: '' };
+    global.document.getElementById = mock((id) => {
+      if (id === 'historyCards') return historyCardsEl;
+      return { style: {}, classList: { add: mock(), remove: mock() }, innerText: '', innerHTML: '', value: '' };
+    });
+
+    global.window.renderHistoryCards = function() {
+      const container = global.document.getElementById('historyCards');
+      if (!global.history || global.history.length === 0) {
+        container.innerHTML = '<div style="text-align:center; opacity:0.5; padding:20px; font-size:0.85rem;">--</div>';
+        return;
+      }
+      const arr = Array.isArray(global.history) ? global.history : Object.values(global.history);
+      container.innerHTML = arr.map((r, idx) => {
+        if (r.isMarker || !Array.isArray(r.lanes)) {
+          return `<div class="hist-card marker-card">${r.text || r.action || 'Event Log'}</div>`;
+        }
+        return r.lanes.map(l => l.w).join(',');
+      }).join('');
+    };
+
+    global.window.currentUserData = { role: 'operator', defaultMachine: '4635', displayName: 'Test Operator' };
+    global.config.currentMachine = 1;
+    global.history = [];
+
+    global.prompt.mockReturnValue("4636");
+
+    expect(() => global.window.switchMachine(2)).not.toThrow();
+    expect(global.config.currentMachine).toBe(2);
+    expect(historyCardsEl.innerHTML).toContain("Machine Switch: DSI 1 -> DSI 2");
+  });
 });
