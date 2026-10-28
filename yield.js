@@ -97,7 +97,7 @@ window.loadYieldHistory = function() {
     unsubYieldHistory = onValue(ref(db, 'yieldHistory'), (snap) => {
         const list = document.getElementById('yieldHistoryList');
         const data = snap.val();
-        if (!data) { list.innerHTML = '<div style="opacity:0.5; text-align:center;">No history saved yet.</div>'; return; }
+        if (!data) { list.innerHTML = `<div style="opacity:0.5; text-align:center; padding:20px; font-size:0.85rem;">${window.t('noYieldHistory') || 'No yield history saved yet.'}</div>`; return; }
         const arr = Object.values(data).sort((a, b) => b.timestamp - a.timestamp);
         list.innerHTML = arr.map(y => `
             <div class="yield-hist-card">

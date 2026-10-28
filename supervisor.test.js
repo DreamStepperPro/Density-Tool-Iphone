@@ -196,7 +196,7 @@ test("openSupHistory displays empty state when no history found", async () => {
     window.openSupHistory(1);
 
     expect(titleEl.innerText).toBe("📋 DSI 1 Ledger");
-    expect(listEl.innerHTML).toContain("No shift history found");
+    expect(listEl.innerHTML).toContain(global.window.t('noShiftHistory') || 'No shift history recorded yet.');
     expect(modalEl.style.display).toBe("flex");
 });
 

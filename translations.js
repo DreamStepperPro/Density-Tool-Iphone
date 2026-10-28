@@ -45,7 +45,7 @@ const i18n = {
         faultReason: "Fault Reason", notesOpt: "Notes (Optional)",
         disable: "DISABLE", repair: "REPAIR", close: "CLOSE",
         maintLogs: "Maintenance Logs", backToMatrix: "BACK TO MATRIX",
-        noLogs: "No downtime logged yet.", loadingLogs: "Loading logs...",
+        noLogs: "No downtime logged yet.", loadingLogs: "Loading logs...", noShiftHistory: "No shift history recorded yet.", noYieldHistory: "No yield history saved yet.",
         sysRunning: "RUNNING", sysDegraded: "DEGRADED",
         allActive: "All components active. Tap for Maintenance.",
         compsDown: "component(s) down. TAP TO VIEW.", selectReason: "-- Select Reason --",

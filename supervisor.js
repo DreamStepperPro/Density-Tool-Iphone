@@ -379,7 +379,7 @@ window.openSupHistory = function(machineNum) {
         }
     }
     if (allChecks.length === 0) {
-        container.innerHTML = '<div style="text-align:center; opacity:0.5; padding:20px;">No shift history found.</div>';
+        container.innerHTML = `<div style="text-align:center; opacity:0.5; padding:20px; font-size:0.85rem;">${window.t('noShiftHistory') || 'No shift history recorded yet.'}</div>`;
         document.getElementById('supHistoryModal').style.display = 'flex';
         return;
     }
