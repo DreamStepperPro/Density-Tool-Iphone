@@ -22,6 +22,7 @@ mock.module("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js", ()
     orderByChild: mock(() => ({})),
     equalTo: mock(() => ({})),
     limitToLast: mock(() => ({})),
+    startAt: mock(() => ({})),
     onValue: mock((ref, cb, errCb) => {
         // Because `ref` is mocked as `(db, path) => ({ db, path })`
         // we can check if `ref.path` is `'users'`. Wait, in `app.js`,

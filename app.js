@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, get, set, onValue, update, push, serverTimestamp, goOnline, goOffline, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, get, set, onValue, update, push, serverTimestamp, goOnline, goOffline, query, orderByChild, equalTo, startAt } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 import { escapeHTML } from "./utils.js";
@@ -71,6 +71,7 @@ window.db          = db;
 window.ADMIN_UID   = ADMIN_UID;
 window.getConfig   = () => config;
 window.getStore    = () => store;
+window.setStore    = (s) => { store = s; };
 window.getHistory  = () => history;
 window.getIsAdmin  = () => isAdmin;
 
@@ -167,7 +168,7 @@ let pressTimer;
 window.weightDebounceTimers = {};
 window.localWriteLocks = {};
 window.betaData = JSON.parse((typeof localStorage !== 'undefined' ? localStorage.getItem('dsi_beta_data') : null) || '[]');
-window.sessionContext = JSON.parse(localStorage.getItem('dsi_session_context') || '{"M1":{}, "M2":{}}');
+window.sessionContext = JSON.parse((typeof localStorage !== 'undefined' ? localStorage.getItem('dsi_session_context') : null) || '{"M1":{}, "M2":{}}');
 window.pendingBetaActions = JSON.parse((typeof localStorage !== 'undefined' ? localStorage.getItem('dsi_beta_pending') : null) || '{}');
 window.FACTORS = FACTORS;
 
@@ -178,6 +179,32 @@ let prevAvg            = null;
 let pendingTargetValue = null;
 let localSessionStartTime = Date.now(); // Global End Shift: marks when this tablet session started
 let unsubGlobalReset   = null;          // Global End Shift: holds the Firebase reset listener
+
+window.getCloudMachine = function(machine) {
+    const mStr = String(machine ?? config.currentMachine ?? 1).trim();
+    if (mStr === '4635' || mStr === '1' || mStr === 'M1') return 'M1';
+    if (mStr === '4636' || mStr === '2' || mStr === 'M2') return 'M2';
+    return mStr.startsWith('M') ? mStr : `M${mStr}`;
+};
+
+window.getModeKey = function(prod, lanes) {
+    const p = String(prod ?? config.product ?? 'lunch').trim().toLowerCase();
+    const l = lanes ?? config.lanes ?? 4;
+    if (p === 'lunch') return 'lunch_4L';
+    if (p === 'breakfast' || p === 'bfast') return 'bfast_4L';
+    if (p === 'nuggets_standard') return 'nuggets_4L';
+    if (p === 'nuggets_rework_all') return 'nuggets_all';
+    return `${p}_${l}L`;
+};
+
+window.getCurrentShiftStartTime = function() {
+    const now = new Date();
+    const shift = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 22, 0, 0, 0);
+    if (now.getHours() < 22) {
+        shift.setDate(shift.getDate() - 1);
+    }
+    return shift.getTime();
+};
 
 // =====================================================================
 // INIT
@@ -278,7 +305,9 @@ window.departmentSnipe = { active: false }; // Initialize before listener fires
 
 window.startCloudSync = function() {
     if (!db) { setTimeout(window.startCloudSync, 500); return; }
-    cloudPathKey = `M${config.currentMachine}/${config.product}_${config.lanes}L`;
+    const cloudMach = window.getCloudMachine ? window.getCloudMachine(config.currentMachine) : `M${config.currentMachine}`;
+    const modeKey   = window.getModeKey ? window.getModeKey(config.product, config.lanes) : `${config.product}_${config.lanes}L`;
+    cloudPathKey = `${cloudMach}/${modeKey}`;
     if (unsubStore) unsubStore();
     if (unsubHistory) unsubHistory();
     dbRef_Store   = ref(db, `stores/${cloudPathKey}`);
@@ -309,9 +338,15 @@ window.startCloudSync = function() {
             }
         }
     });
-    unsubHistory = onValue(dbRef_History, (snapshot) => {
+
+    const shiftStart = typeof window.getCurrentShiftStartTime === 'function' ? window.getCurrentShiftStartTime() : 0;
+    const historyQuery = query(dbRef_History, orderByChild('timestamp'), startAt(shiftStart));
+    unsubHistory = onValue(historyQuery, (snapshot) => {
         const val = snapshot.val();
         history = val ? (Array.isArray(val) ? val : Object.values(val)) : [];
+        if (Array.isArray(history)) {
+            history.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        }
         window.renderHistoryCards();
     });
     // Snipe receiver — listen for supervisor broadcast, update UI when state changes
@@ -346,16 +381,17 @@ window.pushLaneToCloud = function(idx) {
     document.getElementById('statusDot').className = "status-dot status-syncing";
     const updates = {};
     const lane = store.lanes[idx-1];
+    const now = Date.now();
     updates[`lanes/${idx-1}/d`]           = lane.d;
     updates[`lanes/${idx-1}/w`]           = lane.w;
     updates[`lanes/${idx-1}/locked`]      = lane.locked;
     updates[`lanes/${idx-1}/disabled`]    = lane.disabled || false;
     updates[`lanes/${idx-1}/attempts`]    = lane.attempts ?? 0;
     updates[`lanes/${idx-1}/smartActive`] = lane.smartActive ?? false;
-    updates[`lanes/${idx-1}/lastD`]       = lane.lastD ?? null;
-    updates[`lanes/${idx-1}/lastW`]       = lane.lastW ?? null;
+    updates[`lanes/${idx-1}/lastD`]       = lane.lastD !== null && lane.lastD !== undefined ? Number(lane.lastD) : null;
+    updates[`lanes/${idx-1}/lastW`]       = lane.lastW !== null && lane.lastW !== undefined ? Number(lane.lastW) : null;
     updates[`lanes/${idx-1}/stableCount`] = lane.stableCount ?? 0;
-    updates[`lanes/${idx-1}/lastUpdated`] = serverTimestamp();
+    updates[`lanes/${idx-1}/lastUpdated`] = now;
     updates['lastUpdated']                = serverTimestamp();
     update(dbRef_Store, updates).then(() => {
         document.getElementById('statusDot').className = "status-dot status-online";
@@ -835,27 +871,78 @@ window.checkAutoSave = function() {
 window.saveToHistory = function() {
     const time      = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
     const timestamp = Date.now();
-    const avg       = document.getElementById('machAvg') ? document.getElementById('machAvg').innerText : '--';
-    prevAvg         = parseFloat(avg) || null;
-    const opName    = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
-    let row = { time, timestamp, avg, operator: opName, target: store.target, lanes: [] };
+    const machAvgEl = document.getElementById('machAvg');
+    const rawAvg    = machAvgEl ? parseFloat(machAvgEl.innerText) : NaN;
+    const avgStr    = !isNaN(rawAvg) ? `${rawAvg.toFixed(1)}g` : '--';
+    prevAvg         = !isNaN(rawAvg) ? rawAvg : null;
 
-    for (let i = 1; i <= config.lanes; i++) {
-        if (store.lanes[i-1] && store.lanes[i-1].disabled) {
-            row.lanes.push({ w: 'OFF', d: '--' });
+    const rawTgt    = parseFloat(store && store.target !== undefined ? store.target : 102);
+    const targetStr = !isNaN(rawTgt) ? `${rawTgt.toFixed(1)}g` : '--';
+
+    const opName    = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
+
+    const p = String(config.product || 'lunch').toLowerCase();
+    const isNugget = p.includes('nugget');
+
+    const lanesData = [];
+    for (let li = 0; li < 4; li++) {
+        const laneIdx = li + 1;
+        const laneObj = store && store.lanes ? store.lanes[li] : null;
+
+        if (li >= config.lanes) {
+            lanesData.push({ d: '--', w: 'OFF' });
+        } else if (laneObj && laneObj.disabled) {
+            lanesData.push({ d: '--', w: 'OFF' });
         } else {
-            const wt   = store.lanes[i-1] ? store.lanes[i-1].w : '';
-            const calc = document.getElementById(`calcVal-${i}`).value;
-            const dens = store.lanes[i-1] ? store.lanes[i-1].d : '';
-            row.lanes.push({ w: wt ? `${wt}g` : '--', d: calc || dens || '--' });
+            const wVal = laneObj && laneObj.w !== undefined && laneObj.w !== '' && laneObj.w !== null ? parseFloat(laneObj.w) : NaN;
+            if (isNaN(wVal)) {
+                // Enabled but unweighed in this check
+                const currentDens = laneObj && laneObj.d !== undefined && laneObj.d !== '' && laneObj.d !== null ? laneObj.d : store.target;
+                lanesData.push({ d: currentDens !== undefined && currentDens !== '' ? String(currentDens) : '--', w: '--' });
+            } else {
+                // Weighed lane
+                const calcEl = document.getElementById(`calcVal-${laneIdx}`);
+                const calc = calcEl ? calcEl.value : '';
+                const dens = laneObj && laneObj.d !== undefined && laneObj.d !== '' && laneObj.d !== null ? laneObj.d : '';
+                const activeDens = calc || dens;
+                const parsedDens = parseFloat(activeDens);
+                let dStr = '--';
+                if (!isNaN(parsedDens)) {
+                    dStr = isNugget ? parsedDens.toFixed(1) : parsedDens.toFixed(3);
+                } else if (activeDens) {
+                    dStr = String(activeDens);
+                }
+                lanesData.push({ d: dStr, w: `${wVal.toFixed(1)}g` });
+            }
         }
     }
+
+    const row = {
+        avg: avgStr,
+        lanes: lanesData,
+        operator: opName,
+        target: targetStr,
+        time: time,
+        timestamp: timestamp
+    };
+
     if (!Array.isArray(history)) history = [];
     history.unshift(row);
     if (history.length > 50) history.pop();
-    if (!window.isOfflineMode && dbRef_History) {
-        set(dbRef_History, history).catch(e => window.showAdminToast("❌ Network Error: History not saved."));
-        push(ref(db, `shiftLedger/M${config.currentMachine}`), row).catch(e => console.warn('Ledger write:', e));
+
+    if (!window.isOfflineMode && db) {
+        const cloudMach = window.getCloudMachine ? window.getCloudMachine(config.currentMachine) : `M${config.currentMachine}`;
+        const modeKey   = window.getModeKey ? window.getModeKey(config.product, config.lanes) : `${config.product}_${config.lanes}L`;
+        const pushKey   = push(ref(db, `histories/${cloudMach}/${modeKey}`)).key;
+
+        const updates = {};
+        updates[`histories/${cloudMach}/${modeKey}/${pushKey}`] = row;
+        updates[`shiftLedger/${cloudMach}/${pushKey}`] = row;
+
+        update(ref(db), updates).catch(e => {
+            console.warn('Sync check write:', e);
+            window.showAdminToast("❌ Network Error: History not saved.");
+        });
     }
     window.renderHistoryCards();
 };
