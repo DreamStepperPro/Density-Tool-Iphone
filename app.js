@@ -38,6 +38,35 @@ export {
     pingAdmin,
     showAdminToast
 };
+import {
+    saveToHistory,
+    renderHistoryCards,
+    performLocalWipe,
+    triggerGlobalShiftReset,
+    toggleHistCard,
+    checkAutoSave,
+    deleteHistoryEntry,
+    clearHistory,
+    listenForGlobalReset,
+    flushSmartLogic,
+    getCurrentShiftStartTime,
+    resetAutoSaveState,
+    initShiftHistory
+} from "./shiftHistory.js";
+export {
+    saveToHistory,
+    renderHistoryCards,
+    performLocalWipe,
+    triggerGlobalShiftReset,
+    toggleHistCard,
+    checkAutoSave,
+    deleteHistoryEntry,
+    clearHistory,
+    listenForGlobalReset,
+    flushSmartLogic,
+    getCurrentShiftStartTime,
+    resetAutoSaveState
+};
 const firebaseConfig = {
     apiKey: "AIzaSyA84WGuDvVMTci0KTZHVxDCle8dbiE1XB4",
     authDomain: "dsi-pro-bcb5c.firebaseapp.com",
@@ -102,17 +131,20 @@ window.showDebugLogs = function() {
 // SHARED STATE GETTERS — used by split modules (comms, supervisor, etc.)
 // These closures always return the CURRENT value of each variable.
 // =====================================================================
-window.db          = db;
-window.auth        = auth;
-window.ADMIN_UID   = ADMIN_UID;
-window.getConfig   = () => config;
-window.getStore    = () => store;
-window.setStore    = (s) => { store = s; };
-window.getHistory  = () => history;
-window.getIsAdmin  = () => isAdmin;
-window.setIsAdmin  = (v) => { isAdmin = Boolean(v); };
-window.getPrevAvg  = () => prevAvg;
-window.setPrevAvg  = (v) => { prevAvg = v; };
+window.db              = db;
+window.auth            = auth;
+window.ADMIN_UID       = ADMIN_UID;
+window.getConfig       = () => config;
+window.getStore        = () => store;
+window.setStore        = (s) => { store = s; };
+window.getHistory      = () => history;
+window.setHistory      = (h) => { history = h; };
+window.getIsAdmin      = () => isAdmin;
+window.setIsAdmin      = (v) => { isAdmin = Boolean(v); };
+window.getPrevAvg      = () => prevAvg;
+window.setPrevAvg      = (v) => { prevAvg = v; };
+window.getDbRefStore   = () => dbRef_Store;
+window.getDbRefHistory = () => dbRef_History;
 
 // =====================================================================
 // TRUE NETWORK HEARTBEAT
@@ -210,13 +242,9 @@ window.sessionContext = JSON.parse((typeof localStorage !== 'undefined' ? localS
 window.pendingBetaActions = JSON.parse((typeof localStorage !== 'undefined' ? localStorage.getItem('dsi_beta_pending') : null) || '{}');
 window.FACTORS = FACTORS;
 
-let autoSaveTimer      = null;
-let lastAutoSaveCombo  = "";
 let cloudPathKey       = "";
 let prevAvg            = null;
 let pendingTargetValue = null;
-let localSessionStartTime = Date.now(); // Global End Shift: marks when this tablet session started
-let unsubGlobalReset   = null;          // Global End Shift: holds the Firebase reset listener
 
 window.getCloudMachine = function(machine) {
     const mStr = String(machine ?? config.currentMachine ?? 1).trim();
@@ -235,14 +263,7 @@ window.getModeKey = function(prod, lanes) {
     return `${p}_${l}L`;
 };
 
-window.getCurrentShiftStartTime = function() {
-    const now = new Date();
-    const shift = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 22, 0, 0, 0);
-    if (now.getHours() < 22) {
-        shift.setDate(shift.getDate() - 1);
-    }
-    return shift.getTime();
-};
+window.getCurrentShiftStartTime = getCurrentShiftStartTime;
 
 // =====================================================================
 // INIT
@@ -615,239 +636,13 @@ window.calculateDensity  = calculateDensity;
 window.calculateVelocity = calculateVelocity;
 
 // =====================================================================
-// HISTORY CARDS
+// HISTORY CARDS & GLOBAL END SHIFT ENGINE (Extracted to shiftHistory.js)
 // =====================================================================
-window.renderHistoryCards = function() {
-    const container = document.getElementById('historyCards');
-    if (!history || history.length === 0) {
-        container.innerHTML = '<div style="text-align:center; opacity:0.5; padding:20px; font-size:0.85rem;">--</div>';
-        return;
-    }
-    const arr = Array.isArray(history) ? history : Object.values(history);
-    container.innerHTML = arr.map((r, idx) => {
-        if (r.isMarker || !Array.isArray(r.lanes)) {
-            return `
-            <div class="hist-card marker-card" id="hcard-${idx}" style="padding:10px 13px; font-weight:bold; font-size:0.85rem; background:var(--input-bg); border-left:4px solid var(--accent); display:flex; justify-space-between; align-items:center;">
-                <span>${escapeHTML(r.text || r.action || 'Event Log')}</span>
-                <span style="font-size:0.75rem; opacity:0.6;">${escapeHTML(r.time || '')}</span>
-            </div>`;
-        }
-        const laneGrid = r.lanes.map((l, li) => `
-            <div class="hist-lane-cell">
-                <span class="hist-lane-lbl">L${li+1}</span>
-                <span class="hist-lane-wt">${escapeHTML(l.w)}</span>
-                <span class="hist-lane-dens">${escapeHTML(l.d)}</span>
-            </div>`).join('');
-        return `
-        <div class="hist-card" id="hcard-${idx}">
-            <div class="hist-card-header" role="button" tabindex="0" aria-label="Toggle history details for entry ${idx}" onclick="window.toggleHistCard(${idx})" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.toggleHistCard(${idx}); }">
-                <div>
-                    <span class="hist-card-time">${escapeHTML(r.time)}</span>
-                    ${r.operator ? `<span style="font-size:0.72rem; opacity:0.6; margin-left:8px;">by ${escapeHTML(r.operator)}</span>` : ''}
-                </div>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <button class="btn-icon" style="color:var(--danger); font-size:1rem; padding:0 5px; margin-right:8px;" onclick="event.stopPropagation(); window.deleteHistoryEntry(${idx})" aria-label="Delete history entry ${idx}" title="Delete Entry">🗑️</button>
-                    <span class="hist-card-avg">Avg: <strong>${escapeHTML(r.avg)}g</strong></span>
-                    <span class="hist-card-chevron">▼</span>
-                </div>
-            </div>
-            <div class="hist-card-body">
-                <div style="font-size:0.72rem; opacity:0.55; margin-bottom:4px;">${window.t('target')}: ${r.target || '--'}g</div>
-                <div class="hist-lane-grid">${laneGrid}</div>
-            </div>
-        </div>`;
-    }).join('');
-};
-
-window.toggleHistCard = function(idx) { document.getElementById(`hcard-${idx}`).classList.toggle('expanded'); };
-
-window.checkAutoSave = function() {
-    let currentCombo = "", allFilled = true;
-    for (let i = 1; i <= config.lanes; i++) {
-        if (store.lanes[i-1] && store.lanes[i-1].disabled) continue;
-        const w = document.getElementById(`avgWt-${i}`).value;
-        if (!w) { allFilled = false; break; }
-        currentCombo += w + ",";
-    }
-    if (allFilled && currentCombo !== lastAutoSaveCombo) {
-        if (autoSaveTimer) clearTimeout(autoSaveTimer);
-        autoSaveTimer = setTimeout(() => {
-            lastAutoSaveCombo = currentCombo;
-            window.saveToHistory();
-            autoSaveTimer = null;
-        }, 2500);
-    }
-};
-
-window.saveToHistory = function() {
-    const time      = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
-    const timestamp = Date.now();
-    const machAvgEl = document.getElementById('machAvg');
-    const rawAvg    = machAvgEl ? parseFloat(machAvgEl.innerText) : NaN;
-    const avgStr    = !isNaN(rawAvg) ? `${rawAvg.toFixed(1)}g` : '--';
-    prevAvg         = !isNaN(rawAvg) ? rawAvg : null;
-
-    const rawTgt    = parseFloat(store && store.target !== undefined ? store.target : 102);
-    const targetStr = !isNaN(rawTgt) ? `${rawTgt.toFixed(1)}g` : '--';
-
-    const opName    = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
-
-    const p = String(config.product || 'lunch').toLowerCase();
-    const isNugget = p.includes('nugget');
-
-    const lanesData = [];
-    for (let li = 0; li < 4; li++) {
-        const laneIdx = li + 1;
-        const laneObj = store && store.lanes ? store.lanes[li] : null;
-
-        if (li >= config.lanes) {
-            lanesData.push({ d: '--', w: 'OFF' });
-        } else if (laneObj && laneObj.disabled) {
-            lanesData.push({ d: '--', w: 'OFF' });
-        } else {
-            const wVal = laneObj && laneObj.w !== undefined && laneObj.w !== '' && laneObj.w !== null ? parseFloat(laneObj.w) : NaN;
-            if (isNaN(wVal)) {
-                // Enabled but unweighed in this check
-                const currentDens = laneObj && laneObj.d !== undefined && laneObj.d !== '' && laneObj.d !== null ? laneObj.d : store.target;
-                lanesData.push({ d: currentDens !== undefined && currentDens !== '' ? String(currentDens) : '--', w: '--' });
-            } else {
-                // Weighed lane
-                const calcEl = document.getElementById(`calcVal-${laneIdx}`);
-                const calc = calcEl ? calcEl.value : '';
-                const dens = laneObj && laneObj.d !== undefined && laneObj.d !== '' && laneObj.d !== null ? laneObj.d : '';
-                const activeDens = calc || dens;
-                const parsedDens = parseFloat(activeDens);
-                let dStr = '--';
-                if (!isNaN(parsedDens)) {
-                    dStr = isNugget ? parsedDens.toFixed(1) : parsedDens.toFixed(3);
-                } else if (activeDens) {
-                    dStr = String(activeDens);
-                }
-                lanesData.push({ d: dStr, w: `${wVal.toFixed(1)}g` });
-            }
-        }
-    }
-
-    const row = {
-        avg: avgStr,
-        lanes: lanesData,
-        operator: opName,
-        target: targetStr,
-        time: time,
-        timestamp: timestamp
-    };
-
-    if (!Array.isArray(history)) history = [];
-    history.unshift(row);
-    if (history.length > 50) history.pop();
-
-    if (!window.isOfflineMode && db) {
-        const cloudMach = window.getCloudMachine ? window.getCloudMachine(config.currentMachine) : `M${config.currentMachine}`;
-        const modeKey   = window.getModeKey ? window.getModeKey(config.product, config.lanes) : `${config.product}_${config.lanes}L`;
-        const pushKey   = push(ref(db, `histories/${cloudMach}/${modeKey}`)).key;
-
-        const updates = {};
-        updates[`histories/${cloudMach}/${modeKey}/${pushKey}`] = row;
-        updates[`shiftLedger/${cloudMach}/${pushKey}`] = row;
-
-        update(ref(db), updates).catch(e => {
-            console.warn('Sync check write:', e);
-            window.showAdminToast("❌ Network Error: History not saved.");
-        });
-    }
-    window.renderHistoryCards();
-};
-
-window.deleteHistoryEntry = function(idx) {
-    if (!confirm(window.t('deleteEntryConfirm') || "Delete this history entry?")) return;
-    history.splice(idx, 1);
-    if (!window.isOfflineMode && dbRef_History) {
-        set(dbRef_History, history).catch(e => window.showAdminToast("❌ Network Error: Could not delete entry."));
-    }
-    window.renderHistoryCards();
-    window.calculateLocal(); // Re-trigger velocity math without the bad data point
-};
-
-window.clearHistory = function() {
-    if (!confirm(window.t('clearTableConfirm') || "Clear shift history?")) return;
-
-    history = [];
-    if (!window.isOfflineMode && dbRef_History) {
-        set(dbRef_History, history).catch(e => window.showAdminToast("❌ Network Error: History not cleared."));
-    }
-    window.renderHistoryCards();
-};
-
-// =====================================================================
-// GLOBAL END SHIFT ENGINE
-// =====================================================================
-window.performLocalWipe = function(isRemote = false) {
-    // Only write ledger marker if this tablet triggered the wipe (prevents all tablets from spamming the ledger)
-    if (!isRemote) {
-        const opName = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
-        const time   = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
-        const marker = { isMarker: true, text: `🏁 SHIFT ENDED BY ${opName.toUpperCase()}`, timestamp: Date.now(), time };
-        if (!window.isOfflineMode && db) push(ref(db, `shiftLedger/M${config.currentMachine}`), marker).catch(e => console.warn('Marker write:', e));
-    }
-    history = [];
-    lastAutoSaveCombo = "";
-    if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveTimer = null; }
-    if (!window.isOfflineMode && dbRef_History) set(dbRef_History, history).catch(e => console.warn(e));
-    window.renderHistoryCards();
-    if (store && store.lanes) {
-        store.lanes.forEach(l => { l.w = ''; l.locked = true; l.smartActive = false; l.stableCount = 0; });
-        if (!window.isOfflineMode && dbRef_Store) update(dbRef_Store, { lanes: store.lanes }).catch(e => console.warn(e));
-        window.updateUIFromCloud();
-    }
-    if (typeof window.clearYieldInputs === 'function') window.clearYieldInputs();
-    if (!isRemote) window.showAdminToast("🏁 Shift Ended & Board Cleared.");
-};
-
-window.listenForGlobalReset = function(machineKey) {
-    if (!machineKey || window.isOfflineMode) return;
-    if (unsubGlobalReset) { unsubGlobalReset(); unsubGlobalReset = null; }
-    const resetRef = ref(db, `stores/${machineKey}/lastShiftReset`);
-    unsubGlobalReset = onValue(resetRef, (snap) => {
-        const resetTimestamp = snap.val();
-        // Only act if the signal was sent AFTER this tablet's session started (prevents old signals firing on boot)
-        if (resetTimestamp && resetTimestamp > localSessionStartTime) {
-            window.performLocalWipe(true);
-            localSessionStartTime = Date.now(); // Reset so we don't trigger again
-            window.showAdminToast("🏁 Shift Reset by Supervisor.");
-        }
-    });
-};
-
-window.flushSmartLogic = function() {
-    history = [];
-    window.renderHistoryCards();
-    window.departmentSnipe = { active: false };
-
-    for (let i = 1; i <= config.lanes; i++) {
-        if (!store.lanes[i-1]) continue;
-        store.lanes[i-1].pveVelocity = null;
-        store.lanes[i-1].pveRunwayMins = null;
-
-        const trendEl = document.getElementById(`trend-${i}`);
-        if (trendEl) trendEl.innerHTML = '';
-    }
-
-    window.showAdminToast("🧹 Smart Logic Flushed: Ready for Fresh Shift.");
-};
-
-window.triggerGlobalShiftReset = function() {
-    if (confirm(window.t('endShiftConfirm') || "🏁 END SHIFT?")) {
-        if (window.isOfflineMode) {
-            window.performLocalWipe(false);
-        } else {
-            window.performLocalWipe(false); // Local wipe + ledger marker
-            const killTime = Date.now();
-            set(ref(db, `stores/M${config.currentMachine}/lastShiftReset`), killTime)
-                .catch(err => console.error("Firebase reset error:", err));
-            localSessionStartTime = Date.now(); // Prevent self-trigger from the signal bouncing back
-        }
-    }
-};
+initShiftHistory();
+window.saveToHistory           = saveToHistory;
+window.renderHistoryCards      = renderHistoryCards;
+window.performLocalWipe        = performLocalWipe;
+window.triggerGlobalShiftReset = triggerGlobalShiftReset;
 
 // =====================================================================
 // LANE ACTIONS
@@ -902,8 +697,7 @@ window.applyResult = function(idx) {
             } else { lane.stableCount = 0; }
         }
         lane.d = val; lane.w = ''; lane.locked = true;
-        if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveTimer = null; }
-        lastAutoSaveCombo = "";
+        resetAutoSaveState();
         const card = document.getElementById(`card-${idx}`);
         card.classList.add('apply-flash');
         setTimeout(() => card.classList.remove('apply-flash'), 300);
@@ -973,8 +767,7 @@ window.recheckLane = function(idx) {
     }
     store.lanes[idx-1].w = '';
     document.getElementById(`avgWt-${idx}`).value = '';
-    if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveTimer = null; }
-    lastAutoSaveCombo = "";
+    resetAutoSaveState();
     if (!isAdmin) document.getElementById(`avgWt-${idx}`).focus();
     window.calculateLocal();
     window.pushLaneToCloud(idx);
