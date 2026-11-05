@@ -2,6 +2,7 @@ import { expect, test, describe, beforeEach, mock } from "bun:test";
 
 describe("translations.js", () => {
     let mockConfig;
+    let importSeq = 0;
 
     beforeEach(async () => {
         mockConfig = { lang: 'en' };
@@ -47,7 +48,7 @@ describe("translations.js", () => {
 
         // Clear module cache to re-evaluate translations.js with our new global.window
         delete require.cache[require.resolve("./translations.js")];
-        await import("./translations.js?isolated=true&ts=" + Date.now());
+        await import("./translations.js?isolated=true&ts=" + Date.now() + "_" + (++importSeq));
     });
 
     describe("window.t()", () => {
