@@ -16,9 +16,10 @@
 - `.Jules/palette.md` — Legacy accessibility/UX learning notes.
 
 ### 2.2 Application Source Files
-- `index.html` (613 lines) — Single-page application shell (v12.6), modals, operator/supervisor views, and ES module script imports (including `portionBrain.js`, `adminCenter.js`, and `shiftHistory.js` before `app.js`).
+- `index.html` (614 lines) — Single-page application shell (v12.6), modals, operator/supervisor views, and ES module script imports (including `portionBrain.js`, `adminCenter.js`, `shiftHistory.js`, and `operatorUI.js` before `app.js`).
 - `styles.css` (272 lines) — Application stylesheet with light/dark theme variables (`--app-scale`), responsive layout, lane card states, and visual runway engine.
-- `app.js` (1,030 lines) — Primary application controller: Firebase init & auth, UI scaling, debug logging, shared state getters, cloud sync (`startCloudSync`, `pushLaneToCloud`, `pushTargetToCloud`), operator UI (`renderInterface`, `updateUIFromCloud`), portioning brain re-exports/bindings (`calculateLocal`, `calculateDensity`, `calculateVelocity`, `FACTORS`), shift history & reset re-exports/bindings (`saveToHistory`, `renderHistoryCards`, `performLocalWipe`, `triggerGlobalShiftReset`), lane input/lock handlers, settings/machine switching (`switchMachine`), Admin Command Center re-exports/bindings (`openAdmin`, `buildAdminUserCard`, `loginWithPin`, `startAdminRadar`), and network/sandbox controls.
+- `app.js` (757 lines) — Primary application controller: Firebase init & auth, UI scaling, debug logging, shared state getters, cloud sync (`startCloudSync`, `pushLaneToCloud`, `pushTargetToCloud`), re-exports/bindings for `operatorUI.js`, `portionBrain.js`, `shiftHistory.js`, and `adminCenter.js`, settings/machine switching (`switchMachine`), and network/sandbox controls.
+- `operatorUI.js` (467 lines) — Standalone Operator UI & Lane Action Engine module exporting `renderInterface`, `updateUIFromCloud`, `applyResult`, `toggleDensitySign`, `toggleLaneDisable`, `unlockAndFocus`, `toggleLock`, `updateBeltSpeed`, `handleInput`, `handleWeightInput`, `lockOnBlur`, `recheckLane`, `unlockWeightAndFocus`, `lockWeightOnBlur`, `onTargetInput`, `confirmTargetChange`, `cancelTargetChange`, `applyTargetNow`, and `initOperatorUI`.
 - `adminCenter.js` (414 lines) — Standalone Admin Command Center & PIN Authentication module exporting `openAdmin`, `buildAdminUserCard`, `loginWithPin`, `startAdminRadar`, `switchAdminTab`, `closeAdmin`, `updateAdminName`, `updateUserRole`, `updateUserPin`, `showAdminDashboard`, `toggleUserApprove`, `deleteUser`, `pingAdmin`, `showAdminToast`, and `initAdminCenter`.
 - `shiftHistory.js` (361 lines) — Standalone Shift History & Global End-Shift Engine module exporting `saveToHistory` (SPEC.md 0-indexed 4-lane dual-write to `/histories` and `/shiftLedger`), `renderHistoryCards`, `performLocalWipe`, `triggerGlobalShiftReset`, `toggleHistCard`, `checkAutoSave`, `deleteHistoryEntry`, `clearHistory`, `listenForGlobalReset`, `flushSmartLogic`, `getCurrentShiftStartTime`, `resetAutoSaveState`, and `initShiftHistory`.
 - `portionBrain.js` (263 lines) — Standalone Portioning Brain module exporting `calculateLocal`, `calculateDensity` (Smart Adapt, Outlier Veto, Copilot Downtime Buffer, SMART-S Deadband, Safety Brake), `calculateVelocity` (3-point PVE lookback, Density Barrier, Bullseye Silencer, Deceleration/Intervention Gates, visual runway), and `FACTORS`.
@@ -67,32 +68,30 @@
 3. Surgical Lane Updates: Granular .update() calls to /stores/{M1|M2}/{modeKey}/lanes/{laneIndex} preserving negative density signs.
 4. 10:00 PM Shift Cutoff & Headless Guards: Inbound history listener filtered via startAt(getCurrentShiftStartTime()) and localStorage guarded for test runners.
 
-## 4.0 Architectural Breakdown: `app.js` Modularization Roadmap (1,030 Lines Remaining)
+## 4.0 Architectural Breakdown: `app.js` Modularization Roadmap (757 Lines Remaining)
 
 > **Test Import Safeguard:** Existing test suites (`app.test.js`, `calculateLocal.test.js`, `openAdmin.test.js`, `pushLaneToCloud.test.js`, `scaleSync.test.js`, `startCloudSync.test.js`) dynamically import `./app.js?isolated=...` after reassigning `global.window` in `beforeEach`. To prevent Bun's ESM module cache from skipping `window.*` bindings when `app.js` is re-imported with a query string, every extracted module must export its functions (or a registration factory) so `app.js` explicitly re-attaches `window.*` methods on each evaluation.
 
 ### [COMPLETED] Step 1: Portioning Brain — Density Math, Smart Adapt & PVE (Extracted to `portionBrain.js`, 263 lines)
-- **Scope:** Extracted `calculateLocal`, `calculateDensity`, `calculateVelocity`, and `FACTORS` from `app.js` into `portionBrain.js` and re-exported/bound them in `app.js` (Lines 631–636).
+- **Scope:** Extracted `calculateLocal`, `calculateDensity`, `calculateVelocity`, and `FACTORS` from `app.js` into `portionBrain.js` and re-exported/bound them in `app.js` (Lines 517–522).
 - **Status:** Complete. Verified 100% pass rate across all 19 test files (125 tests).
 
 ### [COMPLETED] Step 2 (Priority 1): Admin Command Center & PIN Authentication (Extracted to `adminCenter.js`, 414 lines)
-- **Scope:** Extracted `switchAdminTab`, `openAdmin`, `buildAdminUserCard`, `closeAdmin`, `updateAdminName`, `updateUserRole`, `updateUserPin`, `showAdminDashboard`, `loginWithPin`, `toggleUserApprove`, `deleteUser`, `pingAdmin`, `startAdminRadar`, `showAdminToast`, and `initAdminCenter` into `adminCenter.js` and re-exported/bound them in `app.js` (Lines 924–931).
+- **Scope:** Extracted `switchAdminTab`, `openAdmin`, `buildAdminUserCard`, `closeAdmin`, `updateAdminName`, `updateUserRole`, `updateUserPin`, `showAdminDashboard`, `loginWithPin`, `toggleUserApprove`, `deleteUser`, `pingAdmin`, `startAdminRadar`, `showAdminToast`, and `initAdminCenter` into `adminCenter.js` and re-exported/bound them in `app.js` (Lines 651–658).
 - **Status:** Complete. Verified 100% pass rate across all 19 test files (125 tests).
 
 ### [COMPLETED] Step 3 (Priority 3): Shift History & Global End-Shift Engine (Extracted to `shiftHistory.js`, 361 lines)
-- **Scope:** Extracted `saveToHistory` (SPEC.md 0-indexed 4-lane dual-write to `/histories` and `/shiftLedger`), `renderHistoryCards`, `performLocalWipe`, `triggerGlobalShiftReset`, `toggleHistCard`, `checkAutoSave`, `deleteHistoryEntry`, `clearHistory`, `listenForGlobalReset`, `flushSmartLogic`, `getCurrentShiftStartTime`, `resetAutoSaveState`, and `initShiftHistory` into `shiftHistory.js` and re-exported/bound them in `app.js` (Lines 638–645).
+- **Scope:** Extracted `saveToHistory` (SPEC.md 0-indexed 4-lane dual-write to `/histories` and `/shiftLedger`), `renderHistoryCards`, `performLocalWipe`, `triggerGlobalShiftReset`, `toggleHistCard`, `checkAutoSave`, `deleteHistoryEntry`, `clearHistory`, `listenForGlobalReset`, `flushSmartLogic`, `getCurrentShiftStartTime`, `resetAutoSaveState`, and `initShiftHistory` into `shiftHistory.js` and re-exported/bound them in `app.js` (Lines 524–531).
 - **Status:** Complete. Verified 100% pass rate across all 19 test files (125 tests).
 
-### Priority 2: Operator UI Rendering & Lane Input/Lock Actions (Lines 470–629 & 647–804, ~318 lines)
-- **Scope:**
-  - UI Rendering (Lines 470–629, ~160 lines): `renderInterface`, `updateUIFromCloud` (including 1.5s `localWriteLocks` and `activeElement` focus gates).
-  - Lane & Target Actions (Lines 647–804, ~158 lines): `toggleDensitySign`, `applyResult`, `toggleLaneDisable`, `unlockAndFocus`, `toggleLock`, `updateBeltSpeed`, `handleInput`, `handleWeightInput`, `lockOnBlur`, `recheckLane`, `unlockWeightAndFocus`, `lockWeightOnBlur`, `onTargetInput`, `confirmTargetChange`, `cancelTargetChange`, `applyTargetNow`.
-- **Rationale:** Decouples DOM card rendering and operator input handlers from cloud sync state while preserving focus-gate and write-lock behaviors.
+### [COMPLETED] Step 4 (Priority 2): Operator UI Rendering & Lane Input/Lock Actions (Extracted to `operatorUI.js`, 467 lines)
+- **Scope:** Extracted `renderInterface`, `updateUIFromCloud` (including 1.5s `localWriteLocks` and `activeElement` focus gates), `applyResult`, `toggleDensitySign`, `toggleLaneDisable`, `unlockAndFocus`, `toggleLock`, `updateBeltSpeed`, `handleInput`, `handleWeightInput`, `lockOnBlur`, `recheckLane`, `unlockWeightAndFocus`, `lockWeightOnBlur`, `onTargetInput`, `confirmTargetChange`, `cancelTargetChange`, `applyTargetNow`, and `initOperatorUI` into `operatorUI.js` and re-exported/bound them in `app.js` (Lines 509–515).
+- **Status:** Complete. Verified 100% pass rate across all 19 test files (125 tests).
 
-### Priority 4: Settings, Machine/Profile Switching & Network/Sandbox Utilities (Lines 806–922 & 933–1030, ~215 lines)
+### Priority 4: Settings, Machine/Profile Switching & Network/Sandbox Utilities (Lines 533–649 & 660–757, ~215 lines)
 - **Scope:**
-  - Settings & Profile/Machine Switching (Lines 806–922, ~117 lines): `toggleSettings`, `exportBetaData`, `saveLocalSettings`, `toggleTheme`, `saveDisplayName`, `applyTheme`, `completeSetup`, `factoryReset`, `openHelp`, `closeHelp`, `switchMachine`, `switchProfile`.
-  - Network & Sandbox Engine (Lines 933–1030, ~98 lines): `visibilitychange` wake listener, `jumpstartNetwork`, `toggleSandboxMode`, `attachTripleTap`.
+  - Settings & Profile/Machine Switching (Lines 533–649, ~117 lines): `toggleSettings`, `exportBetaData`, `saveLocalSettings`, `toggleTheme`, `saveDisplayName`, `applyTheme`, `completeSetup`, `factoryReset`, `openHelp`, `closeHelp`, `switchMachine`, `switchProfile`.
+  - Network & Sandbox Engine (Lines 660–757, ~98 lines): `visibilitychange` wake listener, `jumpstartNetwork`, `toggleSandboxMode`, `attachTripleTap`.
 - **Rationale:** Leaves `app.js` (~300 lines) as a clean orchestrator responsible only for Firebase initialization, anonymous auth bootstrap, shared state getters, and `startCloudSync` / `pushLaneToCloud` / `pushTargetToCloud`.
 
 ## 5.0 Session Handoff Log
@@ -101,3 +100,4 @@
 - 2026-11-05: Completed Refactoring Step 1 on `app.js` by extracting the Portioning Brain (`calculateLocal`, `calculateDensity`, `calculateVelocity`, `FACTORS`) into `portionBrain.js` (263 lines), reducing `app.js` from 1,741 to 1,517 lines. Added `<script type="module" src="portionBrain.js"></script>` before `app.js` in `index.html`, re-exported and bound globals in `app.js`, and verified 100% test pass rate (125 tests across 19 files via `bun test`).
 - 2026-11-05: Completed Refactoring Step 2 on `app.js` by extracting the Admin Command Center and PIN Authentication (`openAdmin`, `buildAdminUserCard`, `loginWithPin`, `startAdminRadar`, and associated admin DOM/state helpers) into `adminCenter.js` (414 lines), reducing `app.js` from 1,517 to 1,237 lines. Added `<script type="module" src="adminCenter.js"></script>` before `app.js` in `index.html`, re-exported and bound globals in `app.js`, and verified 100% test pass rate (125 tests across 19 files via `bun test`).
 - 2026-11-05: Completed Refactoring Step 3 on `app.js` by extracting the Shift History & Global End-Shift Engine (`saveToHistory`, `renderHistoryCards`, `performLocalWipe`, `triggerGlobalShiftReset`, `getCurrentShiftStartTime`, and associated history/reset helpers) into `shiftHistory.js` (361 lines), reducing `app.js` from 1,237 to 1,030 lines. Added `<script type="module" src="shiftHistory.js"></script>` before `app.js` in `index.html`, re-exported and bound globals in `app.js`, and verified 100% test pass rate (125 tests across 19 files via `bun test`).
+- 2026-11-05: Completed Refactoring Step 4 on `app.js` by extracting the Operator UI & Lane Action Engine (`renderInterface`, `updateUIFromCloud`, `applyResult`, lane input/lock handlers, and target confirmation helpers) into `operatorUI.js` (467 lines), reducing `app.js` from 1,030 to 757 lines. Added `<script type="module" src="operatorUI.js"></script>` before `app.js` in `index.html`, re-exported and bound globals in `app.js`, and verified 100% test pass rate (125 tests across 19 files via `bun test`).
