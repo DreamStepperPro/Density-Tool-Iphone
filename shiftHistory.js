@@ -1,5 +1,6 @@
 import { ref, set, onValue, update, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { escapeHTML } from "./utils.js";
+import { getCloudMachine, getModeKey } from "./machineSettings.js";
 
 // =====================================================================
 // SHIFT HISTORY & GLOBAL END-SHIFT ENGINE (shiftHistory.js)
@@ -83,6 +84,8 @@ function renderHistoryCards() {
                 <span class="hist-lane-wt">${escapeHTML(l.w)}</span>
                 <span class="hist-lane-dens">${escapeHTML(l.d)}</span>
             </div>`).join('');
+        const avgDisp = String(r.avg || '--').endsWith('g') || r.avg === '--' ? String(r.avg || '--') : `${r.avg}g`;
+        const tgtDisp = String(r.target || '--').endsWith('g') || r.target === '--' ? String(r.target || '--') : `${r.target}g`;
         return `
         <div class="hist-card" id="hcard-${idx}">
             <div class="hist-card-header" role="button" tabindex="0" aria-label="Toggle history details for entry ${idx}" onclick="window.toggleHistCard(${idx})" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); window.toggleHistCard(${idx}); }">
@@ -92,12 +95,12 @@ function renderHistoryCards() {
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <button class="btn-icon" style="color:var(--danger); font-size:1rem; padding:0 5px; margin-right:8px;" onclick="event.stopPropagation(); window.deleteHistoryEntry(${idx})" aria-label="Delete history entry ${idx}" title="Delete Entry">🗑️</button>
-                    <span class="hist-card-avg">Avg: <strong>${escapeHTML(r.avg)}g</strong></span>
+                    <span class="hist-card-avg">Avg: <strong>${escapeHTML(avgDisp)}</strong></span>
                     <span class="hist-card-chevron">▼</span>
                 </div>
             </div>
             <div class="hist-card-body">
-                <div style="font-size:0.72rem; opacity:0.55; margin-bottom:4px;">${window.t('target')}: ${r.target || '--'}g</div>
+                <div style="font-size:0.72rem; opacity:0.55; margin-bottom:4px;">${window.t('target')}: ${escapeHTML(tgtDisp)}</div>
                 <div class="hist-lane-grid">${laneGrid}</div>
             </div>
         </div>`;
@@ -133,43 +136,63 @@ function saveToHistory() {
     const store     = getStore();
     const db        = getDb();
     const time      = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
-    const timestamp = Date.now();
+    const timestamp = Math.trunc(Date.now());
+
+    const p = String(config.product || 'lunch').toLowerCase();
+    const isNugget = p.includes('nugget');
+    const configuredLanes = Number(config.lanes) || 4;
+
+    const defaultTgt = p.includes('bfast') || p.includes('breakfast') ? 63.0 : (isNugget ? 15.0 : 102.0);
+    const rawTgt     = parseFloat(store && store.target !== undefined && store.target !== '' && store.target !== null ? store.target : defaultTgt);
+    const targetStr  = !isNaN(rawTgt) ? `${rawTgt.toFixed(1)}g` : `${defaultTgt.toFixed(1)}g`;
+
     const machAvgEl = document.getElementById('machAvg');
-    const rawAvg    = machAvgEl ? parseFloat(machAvgEl.innerText) : NaN;
-    const avgStr    = !isNaN(rawAvg) ? `${rawAvg.toFixed(1)}g` : '--';
+    let rawAvg      = machAvgEl ? parseFloat(machAvgEl.innerText) : NaN;
+    if (isNaN(rawAvg) && store && Array.isArray(store.lanes)) {
+        let sum = 0, count = 0;
+        for (let i = 0; i < Math.min(configuredLanes, 4); i++) {
+            const l = store.lanes[i];
+            if (l && !l.disabled && l.w !== undefined && l.w !== '' && l.w !== null) {
+                const wNum = parseFloat(l.w);
+                if (!isNaN(wNum)) {
+                    sum += wNum;
+                    count++;
+                }
+            }
+        }
+        if (count > 0) rawAvg = sum / count;
+    }
+    const avgStr      = !isNaN(rawAvg) ? `${rawAvg.toFixed(1)}g` : targetStr;
     const nextPrevAvg = !isNaN(rawAvg) ? rawAvg : null;
     if (typeof window !== 'undefined' && typeof window.setPrevAvg === 'function') {
         window.setPrevAvg(nextPrevAvg);
     }
 
-    const rawTgt    = parseFloat(store && store.target !== undefined ? store.target : 102);
-    const targetStr = !isNaN(rawTgt) ? `${rawTgt.toFixed(1)}g` : '--';
-
-    const opName    = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
-
-    const p = String(config.product || 'lunch').toLowerCase();
-    const isNugget = p.includes('nugget');
+    const opName = window.currentUserData
+        ? (window.currentUserData.adminName || window.currentUserData.displayName || config.displayName || 'Operator')
+        : (config.displayName || 'Operator');
 
     const lanesData = [];
     for (let li = 0; li < 4; li++) {
         const laneIdx = li + 1;
-        const laneObj = store && store.lanes ? store.lanes[li] : null;
+        const laneObj = store && Array.isArray(store.lanes) ? store.lanes[li] : null;
 
-        if (li >= config.lanes) {
-            lanesData.push({ d: '--', w: 'OFF' });
-        } else if (laneObj && laneObj.disabled) {
+        if (li >= configuredLanes || !laneObj || laneObj.disabled) {
             lanesData.push({ d: '--', w: 'OFF' });
         } else {
-            const wVal = laneObj && laneObj.w !== undefined && laneObj.w !== '' && laneObj.w !== null ? parseFloat(laneObj.w) : NaN;
+            const wVal = laneObj.w !== undefined && laneObj.w !== '' && laneObj.w !== null ? parseFloat(laneObj.w) : NaN;
             if (isNaN(wVal)) {
                 // Enabled but unweighed in this check
-                const currentDens = laneObj && laneObj.d !== undefined && laneObj.d !== '' && laneObj.d !== null ? laneObj.d : store.target;
-                lanesData.push({ d: currentDens !== undefined && currentDens !== '' ? String(currentDens) : '--', w: '--' });
+                const currentDens = laneObj.d !== undefined && laneObj.d !== '' && laneObj.d !== null ? laneObj.d : store.target;
+                lanesData.push({
+                    d: currentDens !== undefined && currentDens !== null && currentDens !== '' ? String(currentDens) : '--',
+                    w: '--'
+                });
             } else {
                 // Weighed lane
                 const calcEl = document.getElementById(`calcVal-${laneIdx}`);
                 const calc = calcEl ? calcEl.value : '';
-                const dens = laneObj && laneObj.d !== undefined && laneObj.d !== '' && laneObj.d !== null ? laneObj.d : '';
+                const dens = laneObj.d !== undefined && laneObj.d !== '' && laneObj.d !== null ? laneObj.d : '';
                 const activeDens = calc || dens;
                 const parsedDens = parseFloat(activeDens);
                 let dStr = '--';
@@ -199,9 +222,13 @@ function saveToHistory() {
     setHistoryList(history);
 
     if (!window.isOfflineMode && db) {
-        const cloudMach = window.getCloudMachine ? window.getCloudMachine(config.currentMachine) : `M${config.currentMachine}`;
-        const modeKey   = window.getModeKey ? window.getModeKey(config.product, config.lanes) : `${config.product}_${config.lanes}L`;
-        const pushKey   = push(ref(db, `histories/${cloudMach}/${modeKey}`)).key;
+        const cloudMach = typeof window.getCloudMachine === 'function'
+            ? window.getCloudMachine(config.currentMachine)
+            : getCloudMachine(config.currentMachine);
+        const modeKey = typeof window.getModeKey === 'function'
+            ? window.getModeKey(config.product, config.lanes)
+            : getModeKey(config.product, config.lanes);
+        const pushKey = push(ref(db, `histories/${cloudMach}/${modeKey}`)).key;
 
         const updates = {};
         updates[`histories/${cloudMach}/${modeKey}/${pushKey}`] = row;
@@ -249,7 +276,10 @@ function performLocalWipe(isRemote = false) {
         const opName = window.currentUserData ? (window.currentUserData.adminName || window.currentUserData.displayName || 'Operator') : 'Operator';
         const time   = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
         const marker = { isMarker: true, text: `🏁 SHIFT ENDED BY ${opName.toUpperCase()}`, timestamp: Date.now(), time };
-        if (!window.isOfflineMode && db) push(ref(db, `shiftLedger/M${config.currentMachine}`), marker).catch(e => console.warn('Marker write:', e));
+        const cloudMach = typeof window.getCloudMachine === 'function'
+            ? window.getCloudMachine(config.currentMachine)
+            : getCloudMachine(config.currentMachine);
+        if (!window.isOfflineMode && db) push(ref(db, `shiftLedger/${cloudMach}`), marker).catch(e => console.warn('Marker write:', e));
     }
     const history = [];
     setHistoryList(history);
@@ -310,7 +340,10 @@ function triggerGlobalShiftReset() {
         } else {
             window.performLocalWipe(false); // Local wipe + ledger marker
             const killTime = Date.now();
-            set(ref(db, `stores/M${config.currentMachine}/lastShiftReset`), killTime)
+            const cloudMach = typeof window.getCloudMachine === 'function'
+                ? window.getCloudMachine(config.currentMachine)
+                : getCloudMachine(config.currentMachine);
+            set(ref(db, `stores/${cloudMach}/lastShiftReset`), killTime)
                 .catch(err => console.error("Firebase reset error:", err));
             localSessionStartTime = Date.now(); // Prevent self-trigger from the signal bouncing back
         }

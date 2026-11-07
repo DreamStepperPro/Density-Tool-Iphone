@@ -58,9 +58,9 @@ function _getIsAdmin() {
 // =====================================================================
 export function getCloudMachine(machine) {
     const config = _getConfig();
-    const mStr = String(machine ?? config.currentMachine ?? 1).trim();
-    if (mStr === '4635' || mStr === '1' || mStr === 'M1') return 'M1';
-    if (mStr === '4636' || mStr === '2' || mStr === 'M2') return 'M2';
+    const mStr = String(machine ?? config.currentMachine ?? 1).trim().toUpperCase();
+    if (mStr === '4635' || mStr === '1' || mStr === 'M1' || mStr === 'DSI 1' || mStr === 'DSI1') return 'M1';
+    if (mStr === '4636' || mStr === '2' || mStr === 'M2' || mStr === 'DSI 2' || mStr === 'DSI2') return 'M2';
     return mStr.startsWith('M') ? mStr : `M${mStr}`;
 }
 
@@ -68,10 +68,10 @@ export function getModeKey(prod, lanes) {
     const config = _getConfig();
     const p = String(prod ?? config.product ?? 'lunch').trim().toLowerCase();
     const l = lanes ?? config.lanes ?? 4;
-    if (p === 'lunch') return 'lunch_4L';
-    if (p === 'breakfast' || p === 'bfast') return 'bfast_4L';
-    if (p === 'nuggets_standard') return 'nuggets_4L';
-    if (p === 'nuggets_rework_all') return 'nuggets_all';
+    if (p === 'lunch' || p === 'lunch_4l' || p === 'lunch_2l') return 'lunch_4L';
+    if (p === 'breakfast' || p === 'bfast' || p === 'bfast_4l' || p === 'bfast_2l') return 'bfast_4L';
+    if (p === 'nuggets_standard' || p === 'nuggets_4l' || p === 'nuggets') return 'nuggets_4L';
+    if (p === 'nuggets_rework_all' || p === 'nuggets_all') return 'nuggets_all';
     return `${p}_${l}L`;
 }
 

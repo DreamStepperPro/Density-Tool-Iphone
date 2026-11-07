@@ -400,7 +400,7 @@ window.routeUserByRole = function() {
         if (!window.isOfflineMode) {
             window.startSupervisorSync();
             window.startCloudSync();
-            window.listenForGlobalReset(`M${config.currentMachine}`);
+            window.listenForGlobalReset(window.getCloudMachine ? window.getCloudMachine(config.currentMachine) : getCloudMachine(config.currentMachine));
         }
         window.renderInterface();
     } else if (role === 'supervisor') {
@@ -425,8 +425,8 @@ window.departmentSnipe = { active: false }; // Initialize before listener fires
 
 window.startCloudSync = function() {
     if (!db) { setTimeout(window.startCloudSync, 500); return; }
-    const cloudMach = window.getCloudMachine ? window.getCloudMachine(config.currentMachine) : `M${config.currentMachine}`;
-    const modeKey   = window.getModeKey ? window.getModeKey(config.product, config.lanes) : `${config.product}_${config.lanes}L`;
+    const cloudMach = window.getCloudMachine ? window.getCloudMachine(config.currentMachine) : getCloudMachine(config.currentMachine);
+    const modeKey   = window.getModeKey ? window.getModeKey(config.product, config.lanes) : getModeKey(config.product, config.lanes);
     cloudPathKey = `${cloudMach}/${modeKey}`;
     if (unsubStore) unsubStore();
     if (unsubHistory) unsubHistory();
